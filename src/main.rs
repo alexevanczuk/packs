@@ -11,6 +11,8 @@ use std::{
 };
 
 mod project;
+mod error_stack_ext;
+use error_stack_ext::IntoContext;
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -84,7 +86,6 @@ fn cli() -> Result<(), Error> {
     let args = Args::parse();
 
     let config_path = args.absolute_config_path()?;
-    let codeowners_file_path = args.absolute_codeowners_path()?;
     let project_root = args.absolute_project_root()?;
 
     let config_file = File::open(&config_path)
@@ -93,17 +94,14 @@ fn cli() -> Result<(), Error> {
 
     let config = serde_yaml::from_reader(config_file).into_context(Error::Io)?;
 
-    let ownership = Ownership::build(Project::build(&project_root, &codeowners_file_path, &config).change_context(Error::Io)?);
-
+    // let ownership = Ownership::build(Project::build(&project_root, &codeowners_file_path, &config).change_context(Error::Io)?);
+    // We could generate a view of 
     match args.command {
-        Command::Validate => ownership.validate().into_context(Error::ValidationFailed)?,
-        Command::Generate => {
-            std::fs::write(codeowners_file_path, ownership.generate_file()).into_context(Error::Io)?;
+        Command::Validate => {}, // ownership.validate().into_context(Error::ValidationFailed)?,
+        Command::Check => {
+            // std::fs::write(codeowners_file_path, ownership.generate_file()).into_context(Error::Io)?;
         }
-        Command::GenerateAndValidate => {
-            std::fs::write(codeowners_file_path, ownership.generate_file()).into_context(Error::Io)?;
-            ownership.validate().into_context(Error::ValidationFailed)?
-        }
+        Command::Update => todo!(),
     }
 
     Ok(())

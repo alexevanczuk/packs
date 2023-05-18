@@ -135,101 +135,101 @@ impl fmt::Display for Error {
 impl Context for Error {}
 
 impl Project {
-    #[instrument(level = "debug", skip_all)]
-    pub fn build(base_path: &Path, codeowners_file_path: &Path, config: &Config) -> Result<Self, Error> {
-        debug!(base_path = base_path.to_str(), "scanning project");
+    // #[instrument(level = "debug", skip_all)]
+    // pub fn build(base_path: &Path, codeowners_file_path: &Path, config: &Config) -> Result<Self, Error> {
+    //     debug!(base_path = base_path.to_str(), "scanning project");
 
-        let mut owned_file_paths: Vec<PathBuf> = Vec::new();
-        let mut packages: Vec<Package> = Vec::new();
-        let mut teams: Vec<Team> = Vec::new();
-        let mut vendored_gems: Vec<VendoredGem> = Vec::new();
+    //     let mut owned_file_paths: Vec<PathBuf> = Vec::new();
+    //     let mut packages: Vec<Package> = Vec::new();
+    //     let mut teams: Vec<Team> = Vec::new();
+    //     let mut vendored_gems: Vec<VendoredGem> = Vec::new();
 
-        for entry in WalkDir::new(base_path) {
-            let entry = entry.into_context(Error::Io)?;
+    //     for entry in WalkDir::new(base_path) {
+    //         let entry = entry.into_context(Error::Io)?;
 
-            let absolute_path = entry.path();
-            let relative_path = absolute_path.strip_prefix(base_path).into_context(Error::Io)?.to_owned();
+    //         let absolute_path = entry.path();
+    //         let relative_path = absolute_path.strip_prefix(base_path).into_context(Error::Io)?.to_owned();
 
-            if entry.file_type().is_dir() {
-                if relative_path.parent() == Some(Path::new(&config.vendored_gems_path)) {
-                    let file_name = relative_path.file_name().expect("expected a file_name");
-                    vendored_gems.push(VendoredGem {
-                        path: absolute_path,
-                        name: file_name.to_string_lossy().to_string(),
-                    })
-                }
+    //         if entry.file_type().is_dir() {
+    //             if relative_path.parent() == Some(Path::new(&config.vendored_gems_path)) {
+    //                 let file_name = relative_path.file_name().expect("expected a file_name");
+    //                 vendored_gems.push(VendoredGem {
+    //                     path: absolute_path,
+    //                     name: file_name.to_string_lossy().to_string(),
+    //                 })
+    //             }
 
-                continue;
-            }
+    //             continue;
+    //         }
 
-            let file_name = relative_path.file_name().expect("expected a file_name");
+    //         let file_name = relative_path.file_name().expect("expected a file_name");
 
-            if file_name.eq_ignore_ascii_case("package.yml") && matches_globs(relative_path.parent().unwrap(), &config.ruby_package_paths) {
-                if let Some(owner) = ruby_package_owner(&absolute_path)? {
-                    packages.push(Package {
-                        path: relative_path.clone(),
-                        owner,
-                        package_type: PackageType::Ruby,
-                    })
-                }
-            }
+    //         if file_name.eq_ignore_ascii_case("package.yml") && matches_globs(relative_path.parent().unwrap(), &config.ruby_package_paths) {
+    //             if let Some(owner) = ruby_package_owner(&absolute_path)? {
+    //                 packages.push(Package {
+    //                     path: relative_path.clone(),
+    //                     owner,
+    //                     package_type: PackageType::Ruby,
+    //                 })
+    //             }
+    //         }
 
-            if file_name.eq_ignore_ascii_case("package.json")
-                && matches_globs(relative_path.parent().unwrap(), &config.javascript_package_paths)
-            {
-                if let Some(owner) = javascript_package_owner(&absolute_path)? {
-                    packages.push(Package {
-                        path: relative_path.clone(),
-                        owner,
-                        package_type: PackageType::Javascript,
-                    })
-                }
-            }
+    //         if file_name.eq_ignore_ascii_case("package.json")
+    //             && matches_globs(relative_path.parent().unwrap(), &config.javascript_package_paths)
+    //         {
+    //             if let Some(owner) = javascript_package_owner(&absolute_path)? {
+    //                 packages.push(Package {
+    //                     path: relative_path.clone(),
+    //                     owner,
+    //                     package_type: PackageType::Javascript,
+    //                 })
+    //             }
+    //         }
 
-            if matches_globs(&relative_path, &config.team_file_glob) {
-                let file = File::open(&absolute_path).into_context(Error::Io)?;
-                let deserializer: deserializers::Team = serde_yaml::from_reader(file).into_context(Error::SerdeYaml)?;
+    //         if matches_globs(&relative_path, &config.team_file_glob) {
+    //             let file = File::open(&absolute_path).into_context(Error::Io)?;
+    //             let deserializer: deserializers::Team = serde_yaml::from_reader(file).into_context(Error::SerdeYaml)?;
 
-                teams.push(Team {
-                    path: absolute_path.clone(),
-                    name: deserializer.name,
-                    github_team: deserializer.github.team,
-                    owned_globs: deserializer.owned_globs,
-                    owned_gems: deserializer.ruby.map(|ruby| ruby.owned_gems).unwrap_or(Vec::new()),
-                    avoid_ownership: deserializer.github.do_not_add_to_codeowners_file,
-                })
-            }
+    //             teams.push(Team {
+    //                 path: absolute_path.clone(),
+    //                 name: deserializer.name,
+    //                 github_team: deserializer.github.team,
+    //                 owned_globs: deserializer.owned_globs,
+    //                 owned_gems: deserializer.ruby.map(|ruby| ruby.owned_gems).unwrap_or(Vec::new()),
+    //                 avoid_ownership: deserializer.github.do_not_add_to_codeowners_file,
+    //             })
+    //         }
 
-            if matches_globs(&relative_path, &config.owned_globs) && !matches_globs(&relative_path, &config.unowned_globs) {
-                owned_file_paths.push(absolute_path)
-            }
-        }
+    //         if matches_globs(&relative_path, &config.owned_globs) && !matches_globs(&relative_path, &config.unowned_globs) {
+    //             owned_file_paths.push(absolute_path)
+    //         }
+    //     }
 
-        debug!(
-            owned_file_paths = owned_file_paths.len(),
-            packages = packages.len(),
-            teams = teams.len(),
-            vendored_gems = vendored_gems.len(),
-            "finished scanning project",
-        );
+    //     debug!(
+    //         owned_file_paths = owned_file_paths.len(),
+    //         packages = packages.len(),
+    //         teams = teams.len(),
+    //         vendored_gems = vendored_gems.len(),
+    //         "finished scanning project",
+    //     );
 
-        let codeowners_file: String = if codeowners_file_path.exists() {
-            std::fs::read_to_string(codeowners_file_path).into_context(Error::Io)?
-        } else {
-            "".to_owned()
-        };
+    //     let codeowners_file: String = if codeowners_file_path.exists() {
+    //         std::fs::read_to_string(codeowners_file_path).into_context(Error::Io)?
+    //     } else {
+    //         "".to_owned()
+    //     };
 
-        let owned_files = owned_files(owned_file_paths);
+    //     let owned_files = owned_files(owned_file_paths);
 
-        Ok(Project {
-            base_path: base_path.to_owned(),
-            files: owned_files,
-            vendored_gems,
-            teams,
-            packages,
-            codeowners_file,
-        })
-    }
+    //     Ok(Project {
+    //         base_path: base_path.to_owned(),
+    //         files: owned_files,
+    //         vendored_gems,
+    //         teams,
+    //         packages,
+    //         codeowners_file,
+    //     })
+    // }
 
     pub fn relative_path<'a>(&'a self, absolute_path: &'a Path) -> &'a Path {
         absolute_path
@@ -295,20 +295,6 @@ fn owned_files(owned_file_paths: Vec<PathBuf>) -> Vec<ProjectFile> {
         .collect()
 }
 
-fn ruby_package_owner(path: &Path) -> Result<Option<String>, Error> {
-    let file = File::open(path).into_context(Error::Io)?;
-    let deserializer: deserializers::RubyPackage = serde_yaml::from_reader(file).into_context(Error::SerdeYaml)?;
-
-    Ok(deserializer.owner)
-}
-
-fn javascript_package_owner(path: &Path) -> Result<Option<String>, Error> {
-    let file = File::open(path).into_context(Error::Io)?;
-    let deserializer: deserializers::JavascriptPackage = serde_json::from_reader(file).into_context(Error::SerdeJson)?;
-
-    Ok(deserializer.metadata.and_then(|metadata| metadata.owner))
-}
-
-fn matches_globs(path: &Path, globs: &[String]) -> bool {
-    globs.iter().any(|glob| glob_match(glob, path.to_str().unwrap()))
-}
+// fn matches_globs(path: &Path, globs: &[String]) -> bool {
+//     globs.iter().any(|glob| glob_match(glob, path.to_str().unwrap()))
+// }
