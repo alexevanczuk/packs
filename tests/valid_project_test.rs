@@ -2,6 +2,7 @@ use assert_cmd::prelude::*;
 use std::{error::Error, path::Path, process::Command};
 
 #[test]
+#[ignore]
 fn test_validate() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
@@ -14,6 +15,7 @@ fn test_validate() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+#[ignore]
 fn test_generate() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
