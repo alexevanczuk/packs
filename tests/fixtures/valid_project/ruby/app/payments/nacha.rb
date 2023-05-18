@@ -1,0 +1,1 @@
+class Nacha; end

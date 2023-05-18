@@ -1,0 +1,30 @@
+[package]
+name = "packs-rs"
+version = "0.1.0"
+edition = "2021"
+description = "TODO"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+debug = true
+
+[dependencies]
+clap = { version = "4.2.1", features = ["derive"] } # cli
+clap_derive = "4.2.0" # cli
+glob-match = "0.2.1"
+itertools = "0.10.5" # tools for iterating over iterable things
+error-stack = "0.3.1" # wrapping error contexts for simpler error propagation
+jwalk = "0.8.1" # traversing directories
+path-clean = "1.0.1" # Pathname#cleaname in Ruby
+rayon = "1.7.0" # for parallel iteration
+regex = "1.7.3"
+serde = { version = "1.0.159", features = ["derive"] } # de(serialization)
+serde_yaml = "0.9.19"
+tracing = "0.1.37" # observability tooling, may not be necessary!
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+
+[dev-dependencies]
+assert_cmd = "2.0.10" # testing CLI
+rusty-hook = "^0.11.2" # git hooks
+predicates = "3.0.2" # kind of like rspec assertions
