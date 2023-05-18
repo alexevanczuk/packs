@@ -1,4 +1,3 @@
-
 use crate::project::Project;
 use clap::{Parser, Subcommand};
 use core::fmt;
@@ -10,8 +9,8 @@ use std::{
     // process,
 };
 
-mod project;
 mod error_stack_ext;
+mod project;
 use error_stack_ext::IntoContext;
 
 #[derive(Subcommand, Debug)]
@@ -24,7 +23,6 @@ enum Command {
 
     /// Alias for check for packwerk compatibility
     Validate,
-
     // Future commands can be the ones in use_packs
 }
 
@@ -95,9 +93,9 @@ fn cli() -> Result<(), Error> {
     let config = serde_yaml::from_reader(config_file).into_context(Error::Io)?;
 
     // let ownership = Ownership::build(Project::build(&project_root, &codeowners_file_path, &config).change_context(Error::Io)?);
-    // We could generate a view of 
+    // We could generate a view of
     match args.command {
-        Command::Validate => {}, // ownership.validate().into_context(Error::ValidationFailed)?,
+        Command::Validate => {} // ownership.validate().into_context(Error::ValidationFailed)?,
         Command::Check => {
             // std::fs::write(codeowners_file_path, ownership.generate_file()).into_context(Error::Io)?;
         }
