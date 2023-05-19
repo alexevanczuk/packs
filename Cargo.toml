@@ -5,6 +5,12 @@ edition = "2021"
 description = "TODO"
 license = "MIT"
 
+# Couldn't get the CLI import working, but would be nice to have the packs executable!
+# [[bin]]
+# name = "packs"
+# test = false
+# bench = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [profile.release]
 debug = true
