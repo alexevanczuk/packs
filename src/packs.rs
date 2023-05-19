@@ -15,3 +15,25 @@ pub fn list(absolute_root: PathBuf) {
         }
     }
 }
+
+#[derive(Debug, PartialEq)]  // Implement PartialEq trait
+pub struct Pack {
+
+}
+
+pub fn all() -> Vec<Pack> {
+    let packs: Vec<Pack> = Vec::new();
+    packs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add() {
+        let expected_packs: Vec<Pack> = Vec::new();
+        assert_eq!(all(), expected_packs);
+    }
+
+}
