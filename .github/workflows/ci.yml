@@ -1,3 +1,4 @@
+# https://github.com/actions-rs/example/blob/23ffb1bf0016f41999902ba7542b4f1bb1a89c48/.github/workflows/quickstart.yml#L4
 name: CI
 on:
   push:
@@ -9,32 +10,77 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    runs-on: macos-latest
+  check:
+    name: Check
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Update local toolchain
-        run: |
-          rustup update
-          rustup component add clippy
-          rustup install stable
-      - name: Toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
-          cargo clippy --version
-      - name: Lint
-        run: |
-          cargo fmt -- --check
-          cargo clippy -- -D warnings
-      - name: Test
-        run: |
-          cargo check
-          cargo test --all
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        continue-on-error: true  # WARNING: only for this example, remove it!
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        continue-on-error: true  # WARNING: only for this example, remove it!
+        with:
+          command: clippy
+          args: -- -D warnings
 
   release:
     runs-on: macos-latest
-    needs: test
+    needs:
+      - test
+      - lints
+      - check
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
