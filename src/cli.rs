@@ -6,6 +6,7 @@ use std::path::PathBuf;
 enum Command {
     Greet,
     ListPacks,
+    Check,
 }
 
 /// A CLI to interact with packs
@@ -38,5 +39,6 @@ pub fn cli() {
             packs::greet();
         }
         Command::ListPacks => packs::list(absolute_root),
+        Command::Check => packs::check(absolute_root),
     }
 }
