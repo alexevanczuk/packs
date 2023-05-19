@@ -1,4 +1,4 @@
-name: packs
+name: CI
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  packs_test:
+  test:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,9 +32,9 @@ jobs:
           cargo check
           cargo test --all
 
-  packs_release:
+  release:
     runs-on: macos-latest
-    needs: packs_test
+    needs: test
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
