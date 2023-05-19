@@ -4,7 +4,7 @@ use std::{error::Error, process::Command};
 
 #[test]
 #[ignore]
-fn test_validate() -> Result<(), Box<dyn Error>> {
+fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_dependency_violation")
