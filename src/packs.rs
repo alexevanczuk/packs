@@ -21,8 +21,16 @@ pub struct Pack {
 
 }
 
-pub fn all() -> Vec<Pack> {
-    let packs: Vec<Pack> = Vec::new();
+pub fn all(absolute_root: PathBuf) -> Vec<Pack> {
+    let mut packs: Vec<Pack> = Vec::new();
+    let pattern = absolute_root.join("**/package.yml");
+    for entry in glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(_path) => packs.push(Pack{}),
+            Err(e) => println!("{:?}", e),
+        }
+    }
+
     packs
 }
 
@@ -32,8 +40,12 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let expected_packs: Vec<Pack> = Vec::new();
-        assert_eq!(all(), expected_packs);
+        let mut expected_packs: Vec<Pack> = Vec::new();
+        expected_packs.push(Pack {});
+        expected_packs.push(Pack {});
+        expected_packs.push(Pack {});
+        let absolute_root = PathBuf::from("tests/fixtures/simple_dependency_violation");
+        assert_eq!(all(absolute_root), expected_packs);
     }
 
 }
