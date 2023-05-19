@@ -1,11 +1,11 @@
 use crate::packs;
-use std::path::{PathBuf};
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
 enum Command {
     Greet,
-    ListPacks
+    ListPacks,
 }
 
 /// A CLI to interact with packs
@@ -19,7 +19,6 @@ struct Args {
     #[arg(long, default_value = ".")]
     project_root: PathBuf,
 }
-
 
 impl Args {
     fn absolute_project_root(&self) -> Result<PathBuf, std::io::Error> {
