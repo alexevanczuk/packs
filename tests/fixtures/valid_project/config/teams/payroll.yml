@@ -1,9 +1,0 @@
-name: Payroll
-github:
-  team: '@PayrollTeam'
-ruby:
-  owned_gems:
-    - payroll_calculator
-javascript:
-  owned_packages:
-    - 'PayrollFlow'
