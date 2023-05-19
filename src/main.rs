@@ -4,7 +4,7 @@ mod packs;
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    Greet
+    Greet,
 }
 
 /// A CLI to interact with packs
