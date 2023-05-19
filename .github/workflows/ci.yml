@@ -1,0 +1,63 @@
+name: packs
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  packs_test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install stable
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+      - name: Lint
+        run: |
+          cargo fmt -- --check
+          cargo clippy -- -D warnings
+      - name: Test
+        run: |
+          cargo check
+          cargo test --all
+
+  packs_release:
+    runs-on: macos-latest
+    needs: packs_test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version
+      - name: Build
+        run: cargo build --release --target aarch64-apple-darwin --target x86_64-apple-darwin
+      - name: Set sha_short Variable
+        id: sha-short-var
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Create GitHub Release
+        run: |
+          lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
+          gh release create "${{ steps.sha-short-var.outputs.sha_short }}" --target "${{ github.sha }}" -t "${{ steps.sha-short-var.outputs.sha_short }}" --latest
+          gh release upload "${{ steps.sha-short-var.outputs.sha_short }}" target/packs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
