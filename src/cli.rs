@@ -1,4 +1,4 @@
-use crate::packs::Packs;
+use crate::packs;
 use std::path::{PathBuf};
 use clap::{Parser, Subcommand};
 
@@ -36,8 +36,8 @@ pub fn cli() {
     let absolute_root = args.absolute_project_root().expect("Issue getting absolute_project_root!");
     match args.command {
         Command::Greet => {
-            Packs::greet();
+            packs::greet();
         }
-        Command::ListPacks => Packs::list(absolute_root),
+        Command::ListPacks => packs::list(absolute_root),
     }
 }
