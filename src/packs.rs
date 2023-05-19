@@ -20,11 +20,11 @@ pub struct Pack {
     yml: PathBuf,
 }
 
-// impl PartialOrd for Pack {
-//     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-//         self.yml.partial_cmp(&other.yml)
-//     }
-// }
+impl Pack {
+    pub fn from(yml: PathBuf) -> Pack {
+        Pack { yml }
+    }
+}
 
 pub fn all(absolute_root: PathBuf) -> Vec<Pack> {
     let mut packs: Vec<Pack> = Vec::new();
@@ -48,15 +48,12 @@ mod tests {
         let mut expected_packs: Vec<Pack> = Vec::new();
         let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
 
-        expected_packs.push(Pack {
-            yml: absolute_root.join(PathBuf::from("packs/foo/package.yml")),
-        });
-        expected_packs.push(Pack {
-            yml: absolute_root.join(PathBuf::from("package.yml")),
-        });
-        expected_packs.push(Pack {
-            yml: absolute_root.join(PathBuf::from("packs/bar/package.yml")),
-        });
+        let foo_yml = absolute_root.join(PathBuf::from("packs/foo/package.yml"));
+        let root_yml = absolute_root.join(PathBuf::from("package.yml"));
+        let bar_yml = absolute_root.join(PathBuf::from("packs/bar/package.yml"));
+        expected_packs.push(Pack::from(foo_yml));
+        expected_packs.push(Pack::from(root_yml));
+        expected_packs.push(Pack::from(bar_yml));
 
         assert_eq!(all(absolute_root).sort(), expected_packs.sort());
     }
