@@ -44,7 +44,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_add() {
+    fn test_all() {
         let mut expected_packs: Vec<Pack> = Vec::new();
         let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
 
