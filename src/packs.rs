@@ -1,7 +1,7 @@
 use glob::glob;
-use lib_ruby_parser::{ParserOptions, Parser};
-use rayon::prelude::*;
-use std::{path::PathBuf, fs};
+use std::{path::PathBuf};
+
+pub mod parser;
 
 pub fn greet() -> () {
     println!("Hello! This CLI is under construction.")
@@ -15,31 +15,6 @@ pub fn list(absolute_root: PathBuf) {
             Err(e) => println!("{:?}", e),
         }
     }
-}
-
-
-pub fn check(absolute_root: PathBuf) {
-    // Later this can come from config
-    let pattern = absolute_root.join("packs/**/*.rb");
-    glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern")
-        .par_bridge() // Parallel iterator
-        .for_each(|entry| {
-            match entry {
-                Ok(path) => {
-                    let options = ParserOptions {
-                        buffer_name: "".to_string(),
-                        ..Default::default()
-                    };
-                    // TODO: This can be a debug statement instead of a print
-                    // println!("Now parsing {:?}", path);
-                    let contents = fs::read_to_string(&path).expect(&format!("Failed to read contents of {}", path.to_string_lossy()));
-                    let parser = Parser::new(contents, options);
-                    parser.do_parse();
-                    // println!("{:#?}", parser.do_parse());
-                }
-                Err(e) => println!("{:?}", e),
-            }
-    });
 }
 
 #[derive(Debug, PartialEq, Eq, Ord, PartialOrd)] // Implement PartialEq trait
@@ -89,11 +64,5 @@ mod tests {
         expected_packs.push(Pack { yml: bar_yml, name: String::from("packs/bar") });
 
         assert_eq!(all(absolute_root).sort(), expected_packs.sort());
-    }
-
-    #[test]
-    fn test_check() {
-        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
-        check(absolute_root);
     }
 }

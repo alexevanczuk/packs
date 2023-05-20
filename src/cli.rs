@@ -1,4 +1,5 @@
 use crate::packs;
+use crate::packs::parser;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -39,6 +40,9 @@ pub fn cli() {
             packs::greet();
         }
         Command::ListPacks => packs::list(absolute_root),
-        Command::Check => packs::check(absolute_root),
+        Command::Check => {
+            parser::get_references(absolute_root);
+            ();
+        },
     }
 }
