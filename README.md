@@ -1,2 +1,2 @@
 # packs
-Rust implementation of packs for ruby
+WIP: Rust implementation of packs for ruby
