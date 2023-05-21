@@ -5,7 +5,7 @@ use std::{path::PathBuf, fs, collections::HashMap};
 
 pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a str>> {
     // Later this can come from config
-    let mut references_by_file: HashMap<PathBuf, Vec<&str>> = HashMap::new();
+    let references_by_file: HashMap<PathBuf, Vec<&str>> = HashMap::new();
     let pattern = absolute_root.join("packs/**/*.rb");
 
     glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern")
@@ -22,14 +22,14 @@ pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a st
                     let contents = fs::read_to_string(&path).expect(&format!("Failed to read contents of {}", path.to_string_lossy()));
                     let parser = Parser::new(contents, options);
                     let _ret = parser.do_parse();
-                    let references = vec!["test"];
-                    references_by_file.insert(path, references);
+                    // let references = vec!["test"];
+                    // references_by_file.insert(path, references);
                 }
                 Err(e) => println!("{:?}", e),
             }
     });
 
-    println!("{:#?}", references_by_file);
+    // println!("{:#?}", references_by_file);
     references_by_file
 }
 
@@ -43,6 +43,6 @@ mod tests {
         let references_by_file: HashMap<PathBuf, Vec<&str>> = HashMap::new();
 
         assert_eq!(get_references(absolute_root), references_by_file);
-        panic!("for output...")
+        // panic!("for output...")
     }
 }
