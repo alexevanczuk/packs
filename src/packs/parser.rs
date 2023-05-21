@@ -19,7 +19,7 @@ pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a st
                     };
                     // TODO: This can be a debug statement instead of a print
                     // println!("Now parsing {:?}", path);
-                    let contents = fs::read_to_string(&path).expect(&format!("Failed to read contents of {}", path.to_string_lossy()));
+                    let contents = fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read contents of {}", path.to_string_lossy()));
                     let parser = Parser::new(contents, options);
                     let _ret = parser.do_parse();
                     // let references = vec!["test"];

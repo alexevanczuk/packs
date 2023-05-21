@@ -3,7 +3,7 @@ use std::{path::PathBuf};
 
 pub mod parser;
 
-pub fn greet() -> () {
+pub fn greet() {
     println!("Hello! This CLI is under construction.")
 }
 
