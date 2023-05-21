@@ -42,6 +42,6 @@ pub fn cli() {
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
             parser::get_references(absolute_root);
-        },
+        }
     }
 }

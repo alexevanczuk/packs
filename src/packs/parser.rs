@@ -1,14 +1,15 @@
 use glob::glob;
-use lib_ruby_parser::{ParserOptions, Parser};
+use lib_ruby_parser::{Parser, ParserOptions};
 use rayon::prelude::*;
-use std::{path::PathBuf, fs, collections::HashMap};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a str>> {
     // Later this can come from config
     let references_by_file: HashMap<PathBuf, Vec<&str>> = HashMap::new();
     let pattern = absolute_root.join("packs/**/*.rb");
 
-    glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern")
+    glob(pattern.to_str().unwrap())
+        .expect("Failed to read glob pattern")
         .par_bridge() // Parallel iterator
         .for_each(|entry| {
             match entry {
@@ -19,7 +20,8 @@ pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a st
                     };
                     // TODO: This can be a debug statement instead of a print
                     // println!("Now parsing {:?}", path);
-                    let contents = fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read contents of {}", path.to_string_lossy()));
+                    let contents =
+                        fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read contents of {}", path.to_string_lossy()));
                     let parser = Parser::new(contents, options);
                     let _ret = parser.do_parse();
                     // let references = vec!["test"];
@@ -27,7 +29,7 @@ pub fn get_references<'a>(absolute_root: PathBuf) -> HashMap<PathBuf, Vec<&'a st
                 }
                 Err(e) => println!("{:?}", e),
             }
-    });
+        });
 
     // println!("{:#?}", references_by_file);
     references_by_file
