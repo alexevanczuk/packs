@@ -342,4 +342,27 @@ mod tests {
         assert_eq!(reference.name, String::from("Baz"));
         assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar"), String::from("Foo")]);
     }
+
+    #[test]
+    fn test_very_deeply_namespaced_constant() {
+        let contents: String = String::from(
+            "
+            class Foo
+                class Bar
+                    class Baz
+                        Boo
+                    end
+                end
+            end
+        ",
+        );
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Boo"));
+        assert_eq!(
+            reference.module_nesting,
+            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+        );
+    }
 }
