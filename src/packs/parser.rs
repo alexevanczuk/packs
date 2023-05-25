@@ -470,4 +470,26 @@ mod tests {
         assert_eq!(reference.name, String::from("Baz"));
         assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar")]);
     }
+
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_compact_style_with_nesting_class_definition_constant() {
+        let contents: String = String::from(
+            "
+            class Foo::Bar
+                module Baz
+                    Baz
+                end
+            end
+        ",
+        );
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Baz"));
+        assert_eq!(
+            reference.module_nesting,
+            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar")]
+        );
+    }
 }
