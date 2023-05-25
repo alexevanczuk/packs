@@ -79,26 +79,36 @@ fn unstack_constant_node(node: Const) -> String {
     }
 }
 
+fn walk_class_or_module_nodes(
+    remaining_ast: Node,
+    class_or_module_name_node: Node,
+    mut current_module_nesting: Vec<String>,
+) -> Vec<Reference> {
+    let class_or_module_name;
+
+    match class_or_module_name_node {
+        Node::Const(c) => {
+            class_or_module_name = unstack_constant_node(c);
+        }
+        _other => todo!(),
+    }
+    if let Some(previous_module_nesting) = current_module_nesting.get(0).cloned() {
+        let new_nesting_entry = format!("{}::{}", previous_module_nesting, class_or_module_name);
+        current_module_nesting.insert(0, new_nesting_entry);
+    } else {
+        current_module_nesting.insert(0, class_or_module_name);
+    }
+
+    dbg!(format!("current_module_nesting is: {:?}", current_module_nesting));
+    return extract_from_ast(remaining_ast, current_module_nesting, false);
+}
+
 fn extract_from_ast(ast: Node, mut current_module_nesting: Vec<String>, in_constant_definition_block: bool) -> Vec<Reference> {
     match ast {
         Node::Class(class) => {
-            let class_name;
-            match *class.name {
-                Node::Const(c) => {
-                    class_name = unstack_constant_node(c);
-                }
-                _other => todo!(),
-            }
-
-            if let Some(previous_module_nesting) = current_module_nesting.get(0).cloned() {
-                let new_nesting_entry = format!("{}::{}", previous_module_nesting, class_name);
-                current_module_nesting.insert(0, new_nesting_entry);
-            } else {
-                current_module_nesting.insert(0, class_name);
-            }
-
-            dbg!(format!("current_module_nesting is: {:?}", current_module_nesting));
-            return extract_from_ast(*class.body.expect("no body on class node"), current_module_nesting, false);
+            let body = *class.body.expect("no body on class node");
+            let class_name_node = *class.name;
+            return walk_class_or_module_nodes(body, class_name_node, current_module_nesting);
         }
         Node::Const(n) => {
             let fully_qualified_const_reference = unstack_constant_node(n);
