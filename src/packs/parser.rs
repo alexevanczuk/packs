@@ -4,7 +4,6 @@ use rayon::prelude::*;
 use std::{fs, path::PathBuf};
 
 #[derive(Debug, PartialEq)]
-#[allow(dead_code)]
 pub struct Reference {
     name: String,
     // class Foo
@@ -517,6 +516,61 @@ mod tests {
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar")],
             }]
+        );
+    }
+
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_array_of_constant() {
+        let contents: String = String::from("[Foo]");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = references.get(0).expect("There should be a reference at index 0");
+        assert_eq!(
+            *reference,
+            Reference {
+                name: String::from("Foo"),
+                module_nesting: vec![]
+            }
+        );
+    }
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_array_of_multiple_constants() {
+        let contents: String = String::from("[Foo, Bar]");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let reference1 = references.get(0).expect("There should be a reference at index 0");
+        assert_eq!(
+            *reference1,
+            Reference {
+                name: String::from("Foo"),
+                module_nesting: vec![]
+            }
+        );
+        let reference2 = references.get(1).expect("There should be a reference at index 1");
+        assert_eq!(
+            *reference2,
+            Reference {
+                name: String::from("Bar"),
+                module_nesting: vec![]
+            }
+        );
+    }
+
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_array_of_nested_constant() {
+        let contents: String = String::from("[Baz::Boo]");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = references.get(0).expect("There should be a reference at index 0");
+        assert_eq!(
+            *reference,
+            Reference {
+                name: String::from("Baz::Boo"),
+                module_nesting: vec![]
+            }
         );
     }
 }
