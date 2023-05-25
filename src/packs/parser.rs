@@ -275,11 +275,11 @@ mod tests {
 
     #[test]
     fn test_trivial_case() {
-        let contents: String = String::from("Bar");
+        let contents: String = String::from("Foo");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
         let reference = &references[0];
-        assert_eq!(reference.name, String::from("Bar"));
+        assert_eq!(reference.name, String::from("Foo"));
     }
 
     #[test]
@@ -329,9 +329,9 @@ mod tests {
     fn test_deeply_namespaced_constant() {
         let contents: String = String::from(
             "
-            class Baz
-                class Foo
-                    Bar
+            class Foo
+                class Bar
+                    Baz
                 end
             end
         ",
@@ -339,7 +339,7 @@ mod tests {
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
         let reference = &references[0];
-        assert_eq!(reference.name, String::from("Bar"));
-        assert_eq!(reference.module_nesting, vec![String::from("Baz::Foo"), String::from("Baz")]);
+        assert_eq!(reference.name, String::from("Baz"));
+        assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar"), String::from("Foo")]);
     }
 }
