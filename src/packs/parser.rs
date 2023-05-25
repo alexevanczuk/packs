@@ -71,7 +71,7 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     //         name: String::from("test"),
     //     }
     // ]
-    return extract_from_ast(ast);
+    return extract_from_ast(ast, vec![]);
 }
 
 fn unstack_constant_node(node: Const) -> String {
@@ -87,27 +87,30 @@ fn unstack_constant_node(node: Const) -> String {
     }
 }
 
-fn extract_from_ast(ast: Node) -> Vec<Reference> {
+fn extract_from_ast(ast: Node, mut current_module_nesting: Vec<String>) -> Vec<Reference> {
+    dbg!(ast.clone());
     match ast {
-        Node::Class(x) => return extract_from_ast(*x.body.expect("no body on class node")),
+        Node::Class(class) => {
+            let class_name;
+            match *class.name {
+                Node::Const(c) => {
+                    class_name = unstack_constant_node(c);
+                }
+                _other => todo!(),
+            }
+
+            current_module_nesting.push(class_name);
+            dbg!(format!("current_module_nesting is: {:?}", current_module_nesting));
+            return extract_from_ast(*class.body.expect("no body on class node"), current_module_nesting);
+        }
         Node::Const(n) => {
             let fully_qualified_const_reference = unstack_constant_node(n);
             vec![Reference {
                 name: fully_qualified_const_reference.clone(),
-                ..Reference::default()
+                module_nesting: current_module_nesting,
             }]
         }
-        // Node::Module(z) => {
-        //     match z.body {
-        //         Some(b) => {
-        //             return extract_from_ast(b)
-        //         }
-        //         None => {
-        //             return vec![]
-        //         }
-        //     }
-        // },
-        Node::Module(x) => return extract_from_ast(*x.body.expect("no body on module node")),
+        Node::Module(x) => return extract_from_ast(*x.body.expect("no body on module node"), current_module_nesting),
         // Node::Alias(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::And(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::AndAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
@@ -133,7 +136,7 @@ fn extract_from_ast(ast: Node) -> Vec<Reference> {
         // Node::CSend(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Cvar(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Cvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        Node::Def(x) => return extract_from_ast(*x.body.expect("no body on class node")),
+        Node::Def(x) => return extract_from_ast(*x.body.expect("no body on class node"), current_module_nesting),
         // Node::Defined(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Defs(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Dstr(x) => return extract_from_ast(x.body.expect("no body on class node")),
