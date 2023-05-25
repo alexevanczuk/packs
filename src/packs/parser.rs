@@ -6,7 +6,6 @@ use std::{fs, path::PathBuf};
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Reference {
-    path: PathBuf,
     name: String,
 }
 
@@ -60,11 +59,21 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
 fn extract_from_ast(ast: Node) -> Vec<Reference> {
     match ast {
         Node::Class(x) => return extract_from_ast(*x.body.expect("no body on class node")),
-        Node::Const(y) => {
-            return vec![Reference {
-                path: PathBuf::from("test"),
-                name: y.name.clone(),
-            }]
+        Node::Const(n) => {
+            return {
+                let name;
+                if let Some(next_node) = n.scope {
+                    match *next_node {
+                        Node::Const(const_node) => name = format!("{}::{}", const_node.name, n.name),
+                        _other => {
+                            name = n.name;
+                        }
+                    }
+                } else {
+                    name = n.name;
+                }
+                vec![Reference { name: name.clone() }]
+            };
         }
         // Node::Module(z) => {
         //     match z.body {
@@ -214,14 +223,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_from_path() {
-        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
-        // let references_by_file = vec![
-        //     Reference { path: absolute_root.join("packs/foo/app/services/foo.rb"), name: "Bar" }
-        // ];
+    fn test_trivial_case() {
+        let contents: String = String::from("Bar");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Bar"));
+    }
 
-        assert_eq!(extract_from_path(absolute_root).len(), 1);
-        // assert_eq!(get_references(absolute_root), references_by_file);
-        // panic!("for output...")
+    #[test]
+    fn test_nested_constant() {
+        let contents: String = String::from("Foo::Bar");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Foo::Bar"));
     }
 }
