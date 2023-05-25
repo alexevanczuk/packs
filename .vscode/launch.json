@@ -1,0 +1,83 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'packs-rs'",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=packs-rs",
+          "--package=packs-rs"
+        ],
+        "filter": {
+          "name": "packs-rs",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'packs-rs'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--bin=packs-rs",
+          "--package=packs-rs"
+        ],
+        "filter": {
+          "name": "packs-rs",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'list_packs_test'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=list_packs_test",
+          "--package=packs-rs"
+        ],
+        "filter": {
+          "name": "list_packs_test",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug integration test 'simple_dependency_test'",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--test=simple_dependency_test",
+          "--package=packs-rs"
+        ],
+        "filter": {
+          "name": "simple_dependency_test",
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
