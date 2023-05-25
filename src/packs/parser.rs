@@ -143,9 +143,13 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
         // Node::AndAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Arg(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Args(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Array(x) => {
-        //     return x.elements.iter().map(|n| extract_from_ast(n)).collect()
-        // };
+        Node::Array(arr) => {
+            return arr
+                .elements
+                .into_iter()
+                .flat_map(|n| extract_from_ast(n, current_module_nesting.clone(), false))
+                .collect()
+        }
         // Node::ArrayPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::ArrayPatternWithTail(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::BackRef(x) => return extract_from_ast(x.body.expect("no body on class node")),
