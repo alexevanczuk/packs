@@ -1,5 +1,5 @@
 use glob::glob;
-use lib_ruby_parser::{Node, Parser, ParserOptions};
+use lib_ruby_parser::{nodes::Const, Node, Parser, ParserOptions};
 use rayon::prelude::*;
 use std::{fs, path::PathBuf};
 
@@ -56,24 +56,27 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     return extract_from_ast(ast);
 }
 
+fn unstack_constant_node(node: Const) -> String {
+    if let Some(parent_const_node) = node.scope {
+        match *parent_const_node {
+            Node::Const(parent_const) => return format!("{}::{}", unstack_constant_node(parent_const), node.name),
+            _other => {
+                return node.name;
+            }
+        }
+    } else {
+        return node.name;
+    }
+}
+
 fn extract_from_ast(ast: Node) -> Vec<Reference> {
     match ast {
         Node::Class(x) => return extract_from_ast(*x.body.expect("no body on class node")),
         Node::Const(n) => {
-            return {
-                let name;
-                if let Some(next_node) = n.scope {
-                    match *next_node {
-                        Node::Const(const_node) => name = format!("{}::{}", const_node.name, n.name),
-                        _other => {
-                            name = n.name;
-                        }
-                    }
-                } else {
-                    name = n.name;
-                }
-                vec![Reference { name: name.clone() }]
-            };
+            let fully_qualified_const_reference = unstack_constant_node(n);
+            vec![Reference {
+                name: fully_qualified_const_reference.clone(),
+            }]
         }
         // Node::Module(z) => {
         //     match z.body {
@@ -238,5 +241,14 @@ mod tests {
         assert_eq!(references.len(), 1);
         let reference = &references[0];
         assert_eq!(reference.name, String::from("Foo::Bar"));
+    }
+
+    #[test]
+    fn test_deeply_nested_constant() {
+        let contents: String = String::from("Foo::Bar::Baz");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Foo::Bar::Baz"));
     }
 }
