@@ -251,4 +251,13 @@ mod tests {
         let reference = &references[0];
         assert_eq!(reference.name, String::from("Foo::Bar::Baz"));
     }
+
+    #[test]
+    fn test_very_deeply_nested_constant() {
+        let contents: String = String::from("Foo::Bar::Baz::Boo");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Foo::Bar::Baz::Boo"));
+    }
 }
