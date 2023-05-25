@@ -7,6 +7,24 @@ use std::{fs, path::PathBuf};
 #[allow(dead_code)]
 pub struct Reference {
     name: String,
+    // class Foo
+    //   module Bar
+    //     class Baz
+    //       puts Module.nesting.inspect
+    //     end
+    //   end
+    // end
+    // # outputs: [Foo::Bar::Baz, Foo::Bar, Foo]
+    module_nesting: Vec<String>,
+}
+
+impl Default for Reference {
+    fn default() -> Self {
+        Reference {
+            name: String::default(),
+            module_nesting: Vec::default(),
+        }
+    }
 }
 
 pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
@@ -76,6 +94,7 @@ fn extract_from_ast(ast: Node) -> Vec<Reference> {
             let fully_qualified_const_reference = unstack_constant_node(n);
             vec![Reference {
                 name: fully_qualified_const_reference.clone(),
+                ..Reference::default()
             }]
         }
         // Node::Module(z) => {
@@ -259,5 +278,21 @@ mod tests {
         assert_eq!(references.len(), 1);
         let reference = &references[0];
         assert_eq!(reference.name, String::from("Foo::Bar::Baz::Boo"));
+    }
+
+    #[test]
+    fn test_namespaced_constant() {
+        let contents: String = String::from(
+            "
+            class Foo
+                Bar
+            end
+        ",
+        );
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = &references[0];
+        assert_eq!(reference.name, String::from("Bar"));
+        assert_eq!(reference.module_nesting, vec![String::from("Foo")]);
     }
 }
