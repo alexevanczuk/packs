@@ -103,7 +103,7 @@ fn walk_class_or_module_nodes(
     return extract_from_ast(remaining_ast, current_module_nesting, false);
 }
 
-fn extract_from_ast(ast: Node, mut current_module_nesting: Vec<String>, in_constant_definition_block: bool) -> Vec<Reference> {
+fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_definition_block: bool) -> Vec<Reference> {
     match ast {
         Node::Class(class) => {
             let body = *class.body.expect("no body on class node");
@@ -134,12 +134,10 @@ fn extract_from_ast(ast: Node, mut current_module_nesting: Vec<String>, in_const
                 }]
             }
         }
-        Node::Module(x) => {
-            return extract_from_ast(
-                *x.body.expect("no body on module node"),
-                current_module_nesting,
-                in_constant_definition_block,
-            )
+        Node::Module(module) => {
+            let body = *module.body.expect("no body on class node");
+            let class_name_node = *module.name;
+            return walk_class_or_module_nodes(body, class_name_node, current_module_nesting);
         }
         // Node::Alias(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::And(x) => return extract_from_ast(x.body.expect("no body on class node")),
