@@ -3,7 +3,7 @@ use lib_ruby_parser::{nodes::Const, Node, Parser, ParserOptions};
 use rayon::prelude::*;
 use std::{fs, path::PathBuf};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[allow(dead_code)]
 pub struct Reference {
     name: String,
@@ -284,59 +284,74 @@ mod tests {
     #[test]
     fn test_trivial_case() {
         let contents: String = String::from("Foo");
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Foo"));
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Foo"),
+                module_nesting: vec![]
+            }]
+        );
     }
 
     #[test]
     fn test_nested_constant() {
         let contents: String = String::from("Foo::Bar");
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Foo::Bar"));
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Foo::Bar"),
+                module_nesting: vec![]
+            }]
+        );
     }
 
     #[test]
     fn test_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz");
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Foo::Bar::Baz"));
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Foo::Bar::Baz"),
+                module_nesting: vec![]
+            }]
+        );
     }
 
     #[test]
     fn test_very_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz::Boo");
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Foo::Bar::Baz::Boo"));
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Foo::Bar::Baz::Boo"),
+                module_nesting: vec![]
+            }]
+        );
     }
 
     #[test]
     fn test_class_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo
                 Bar
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Bar"));
-        assert_eq!(reference.module_nesting, vec![String::from("Foo")]);
+
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Bar"),
+                module_nesting: vec![String::from("Foo")]
+            }]
+        );
     }
 
     #[test]
     fn test_deeply_class_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo
                 class Bar
                     Baz
@@ -344,17 +359,20 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Baz"));
-        assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar"), String::from("Foo")]);
+
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Baz"),
+                module_nesting: vec![String::from("Foo::Bar"), String::from("Foo")]
+            }]
+        );
     }
 
     #[test]
     fn test_very_deeply_class_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo
                 class Bar
                     class Baz
@@ -364,36 +382,39 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Boo"));
+
         assert_eq!(
-            reference.module_nesting,
-            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Boo"),
+                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            }]
         );
     }
 
     #[test]
     fn test_module_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             module Foo
                 Bar
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Bar"));
-        assert_eq!(reference.module_nesting, vec![String::from("Foo")]);
+
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Bar"),
+                module_nesting: vec![String::from("Foo")]
+            }]
+        );
     }
 
     #[test]
     fn test_deeply_module_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             module Foo
                 module Bar
                     Baz
@@ -401,17 +422,20 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Baz"));
-        assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar"), String::from("Foo")]);
+
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Baz"),
+                module_nesting: vec![String::from("Foo::Bar"), String::from("Foo")]
+            }]
+        );
     }
 
     #[test]
     fn test_very_deeply_module_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             module Foo
                 module Bar
                     module Baz
@@ -421,20 +445,20 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Boo"));
+
         assert_eq!(
-            reference.module_nesting,
-            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Boo"),
+                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            }]
         );
     }
 
     #[test]
     fn test_mixed_namespaced_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo
                 module Bar
                     class Baz
@@ -444,13 +468,13 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Boo"));
+
         assert_eq!(
-            reference.module_nesting,
-            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Boo"),
+                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+            }]
         );
     }
 
@@ -458,24 +482,27 @@ mod tests {
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn test_compact_style_class_definition_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo::Bar
                 Baz
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Baz"));
-        assert_eq!(reference.module_nesting, vec![String::from("Foo::Bar")]);
+
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Baz"),
+                module_nesting: vec![String::from("Foo::Bar")],
+            }]
+        );
     }
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn test_compact_style_with_nesting_class_definition_constant() {
         let contents: String = String::from(
-            "
+            "\
             class Foo::Bar
                 module Baz
                     Baz
@@ -483,13 +510,13 @@ mod tests {
             end
         ",
         );
-        let references = extract_from_contents(contents);
-        assert_eq!(references.len(), 1);
-        let reference = &references[0];
-        assert_eq!(reference.name, String::from("Baz"));
+
         assert_eq!(
-            reference.module_nesting,
-            vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar")]
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Baz"),
+                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar")],
+            }]
         );
     }
 }
