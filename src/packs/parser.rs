@@ -310,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn test_namespaced_constant() {
+    fn test_class_namespaced_constant() {
         let contents: String = String::from(
             "
             class Foo
@@ -326,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deeply_namespaced_constant() {
+    fn test_deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "
             class Foo
@@ -344,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn test_very_deeply_namespaced_constant() {
+    fn test_very_deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "
             class Foo
