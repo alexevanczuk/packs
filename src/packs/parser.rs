@@ -17,15 +17,6 @@ pub struct Reference {
     module_nesting: Vec<String>,
 }
 
-impl Default for Reference {
-    fn default() -> Self {
-        Reference {
-            name: String::default(),
-            module_nesting: Vec::default(),
-        }
-    }
-}
-
 pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
     // Later this can come from config
     let pattern = absolute_root.join("packs/**/*.rb");
@@ -62,19 +53,19 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     let ast = *_ret.ast.expect("No AST found!");
 
     dbg!(ast.clone());
-    return extract_from_ast(ast, vec![], false);
+    extract_from_ast(ast, vec![])
 }
 
 fn unstack_constant_node(node: Const) -> String {
     if let Some(parent_const_node) = node.scope {
         match *parent_const_node {
-            Node::Const(parent_const) => return format!("{}::{}", unstack_constant_node(parent_const), node.name),
+            Node::Const(parent_const) => format!("{}::{}", unstack_constant_node(parent_const), node.name),
             _other => {
-                return node.name;
+                node.name
             }
         }
     } else {
-        return node.name;
+        node.name
     }
 }
 
@@ -83,14 +74,13 @@ fn walk_class_or_module_nodes(
     class_or_module_name_node: Node,
     mut current_module_nesting: Vec<String>,
 ) -> Vec<Reference> {
-    let class_or_module_name;
-
-    match class_or_module_name_node {
+    let class_or_module_name = match class_or_module_name_node {
         Node::Const(c) => {
-            class_or_module_name = unstack_constant_node(c);
+            unstack_constant_node(c)
         }
         _other => todo!(),
-    }
+    };
+
     if let Some(previous_module_nesting) = current_module_nesting.get(0).cloned() {
         let new_nesting_entry = format!("{}::{}", previous_module_nesting, class_or_module_name);
         current_module_nesting.insert(0, new_nesting_entry);
@@ -99,15 +89,15 @@ fn walk_class_or_module_nodes(
     }
 
     dbg!(format!("current_module_nesting is: {:?}", current_module_nesting));
-    return extract_from_ast(remaining_ast, current_module_nesting, false);
+    extract_from_ast(remaining_ast, current_module_nesting)
 }
 
-fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_definition_block: bool) -> Vec<Reference> {
+fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>) -> Vec<Reference> {
     match ast {
         Node::Class(class) => {
             let body = *class.body.expect("no body on class node");
             let class_name_node = *class.name;
-            return walk_class_or_module_nodes(body, class_name_node, current_module_nesting);
+            walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
         }
         Node::Const(n) => {
             let fully_qualified_const_reference = unstack_constant_node(n);
@@ -125,10 +115,10 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
             // end
             // "Foo" and "Foo::Bar" are in a local definition block, but Baz is not.
             if false {
-                return vec![];
+                vec![]
             } else {
                 vec![Reference {
-                    name: fully_qualified_const_reference.clone(),
+                    name: fully_qualified_const_reference,
                     module_nesting: current_module_nesting,
                 }]
             }
@@ -136,7 +126,7 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
         Node::Module(module) => {
             let body = *module.body.expect("no body on class node");
             let class_name_node = *module.name;
-            return walk_class_or_module_nodes(body, class_name_node, current_module_nesting);
+            walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
         }
         // Node::Alias(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::And(x) => return extract_from_ast(x.body.expect("no body on class node")),
@@ -144,10 +134,10 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
         // Node::Arg(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Args(x) => return extract_from_ast(x.body.expect("no body on class node")),
         Node::Array(arr) => {
-            return arr
+            arr
                 .elements
                 .into_iter()
-                .flat_map(|n| extract_from_ast(n, current_module_nesting.clone(), false))
+                .flat_map(|n| extract_from_ast(n, current_module_nesting.clone()))
                 .collect()
         }
         // Node::ArrayPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
@@ -168,10 +158,9 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
         // Node::Cvar(x) => return extract_from_ast(x.body.expect("no body on class node")),
         // Node::Cvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
         Node::Def(x) => {
-            return extract_from_ast(
+            extract_from_ast(
                 *x.body.expect("no body on class node"),
                 current_module_nesting,
-                in_constant_definition_block,
             )
         }
         // Node::Defined(x) => return extract_from_ast(x.body.expect("no body on class node")),
@@ -275,7 +264,7 @@ fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>, in_constant_
         _other => {
             // _other.body();
             // println!("{}", format!("HERE I AM {:#?}", _other));
-            return vec![];
+            vec![]
         }
     }
 }

@@ -25,12 +25,18 @@ pub struct Pack {
 
 impl Pack {
     pub fn from(absolute_root: &PathBuf, yml: PathBuf) -> Pack {
-        let name = yml
+        let mut name = yml
             .strip_prefix(absolute_root)
             .expect("Absolute root is not a prefix to pack YML – should not happen!")
+            .parent().expect("Expected package to be in a parent directory")
             .to_str()
             .expect("Non-unicode characters?")
             .to_owned();
+
+        if name == *"" {
+            name = String::from(".")
+        }
+
         Pack { yml, name }
     }
 }
@@ -73,6 +79,9 @@ mod tests {
             name: String::from("packs/bar"),
         });
 
-        assert_eq!(all(absolute_root).sort(), expected_packs.sort());
+        let mut actual = all(absolute_root);
+        actual.sort();
+        expected_packs.sort();
+        assert_eq!(actual, expected_packs);
     }
 }
