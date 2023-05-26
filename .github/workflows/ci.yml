@@ -100,8 +100,8 @@ jobs:
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Create GitHub Release
         run: |
-          lipo -create -output target/packs-rs target/aarch64-apple-darwin/release/packs-rs target/x86_64-apple-darwin/release/packs-rs
+          lipo -create -output target/pks target/aarch64-apple-darwin/release/pks target/x86_64-apple-darwin/release/pks
           gh release create "${{ steps.sha-short-var.outputs.sha_short }}" --target "${{ github.sha }}" -t "${{ steps.sha-short-var.outputs.sha_short }}" --latest
-          gh release upload "${{ steps.sha-short-var.outputs.sha_short }}" target/packs-rs
+          gh release upload "${{ steps.sha-short-var.outputs.sha_short }}" target/pks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
