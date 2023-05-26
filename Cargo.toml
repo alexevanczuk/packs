@@ -1,3 +1,5 @@
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [package]
 name = "pks"
 version = "0.1.0"
@@ -10,10 +12,6 @@ license = "MIT"
 # name = "packs"
 # test = false
 # bench = false
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[profile.release]
-debug = true
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] } # cli
