@@ -28,7 +28,8 @@ impl Pack {
         let mut name = yml
             .strip_prefix(absolute_root)
             .expect("Absolute root is not a prefix to pack YML – should not happen!")
-            .parent().expect("Expected package to be in a parent directory")
+            .parent()
+            .expect("Expected package to be in a parent directory")
             .to_str()
             .expect("Non-unicode characters?")
             .to_owned();
