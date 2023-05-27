@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_all() {
         let mut expected_packs: Vec<Pack> = Vec::new();
-        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
+        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_app");
 
         let foo_yml = absolute_root.join(PathBuf::from("packs/foo/package.yml"));
         let root_yml = absolute_root.join(PathBuf::from("package.yml"));

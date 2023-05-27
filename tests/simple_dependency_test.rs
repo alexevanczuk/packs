@@ -7,7 +7,7 @@ use std::{error::Error, process::Command};
 fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
-        .arg("tests/fixtures/simple_dependency_violation")
+        .arg("tests/fixtures/simple_app")
         .arg("check")
         .assert()
         .failure()

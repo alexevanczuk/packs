@@ -6,7 +6,7 @@ use std::{error::Error, process::Command};
 fn lint_packs() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("pks")?
         .arg("--project-root")
-        .arg("tests/fixtures/simple_dependency_violation")
+        .arg("tests/fixtures/simple_app")
         .arg("list-packs")
         .assert()
         .success()
