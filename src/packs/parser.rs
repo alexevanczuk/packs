@@ -31,6 +31,7 @@ fn fetch_const_const_name(node: &nodes::Const) -> String {
     }
 }
 
+
 impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
@@ -52,6 +53,19 @@ impl Visitor for ReferenceCollector {
 
         self.current_namespaces.pop();
     }
+
+    // TODO: extract the common stuff from on_class
+    fn on_module(&mut self, node: &nodes::Module) {
+        let namespace = fetch_const_name(&node.name);
+        self.current_namespaces.push(namespace);
+
+        if let Some(inner) = &node.body {
+            self.visit(inner);
+        }
+
+        self.current_namespaces.pop();
+    }
+
     fn on_const(&mut self, node: &nodes::Const) {
         self.references.push(Reference {
             name: fetch_const_const_name(node),
@@ -81,10 +95,17 @@ impl Visitor for ReferenceCollector {
 // # outputs: ['Foo::Bar::Baz', 'Foo::Bar', 'Foo']
 fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
     let mut nesting = Vec::new();
-    for namespace in namespace_nesting.iter().rev() {
-        let new_nesting = format!("{}::{}", namespace, nesting.join("::"));
-        nesting.push(new_nesting);
-    }
+    let mut previous = String::from("");
+    namespace_nesting.iter().for_each(|namespace| {
+        let new_nesting: String = if previous.is_empty() {
+            namespace.to_owned()
+        } else {
+            format!("{}::{}", previous, namespace)
+        };
+
+        previous = new_nesting.to_owned();
+        nesting.insert(0, new_nesting);
+    });
 
     nesting
 }
@@ -128,7 +149,7 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         references: vec![],
         current_namespaces: vec![],
     };
-    // extract_from_ast(ast, vec![])
+
     collector.visit(&ast);
     collector.references
 }
