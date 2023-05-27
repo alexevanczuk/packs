@@ -31,7 +31,6 @@ fn fetch_const_const_name(node: &nodes::Const) -> String {
     }
 }
 
-
 impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
