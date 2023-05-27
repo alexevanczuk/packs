@@ -49,6 +49,8 @@ pub fn cli() {
         }
         Command::GenerateCache { files } => {
             let mut file_string = String::new();
+            // Extract this to src/string_helpers.rs to_sentence function and import it into this
+            // and invoke it.
             for (i, file) in files.iter().enumerate() {
                 if i == 0 {
                     file_string.push_str(file);
