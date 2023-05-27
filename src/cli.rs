@@ -8,6 +8,10 @@ enum Command {
     Greet,
     ListPacks,
     Check,
+    GenerateCache {
+        #[clap(required = true)]
+        files: Vec<String>,
+    },
 }
 
 /// A CLI to interact with packs
@@ -42,6 +46,9 @@ pub fn cli() {
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
             parser::get_references(absolute_root);
+        }
+        Command::GenerateCache { files } => {
+            println!("{:?}", files);
         }
     }
 }
