@@ -14,22 +14,20 @@ struct ReferenceCollector {
     pub current_namespaces: Vec<String>,
 }
 
-fn get_constant_node_name(name: &Node) -> String {
+fn fetch_const_name(name: &nodes::Node) -> String {
     match name {
         Node::Const(node) => fetch_const_const_name(node),
         _ => panic!("Cannot handle other node in get_constant_node_name."),
     }
 }
 
-fn fetch_const_const_name(constant: &nodes::Const) -> String {
-    let scope = &constant.scope;
-
-    match scope {
+fn fetch_const_const_name(node: &nodes::Const) -> String {
+    match &node.scope {
         Some(s) => {
-            let parent_namespace = get_constant_node_name(s);
-            format!("{}::{}", parent_namespace, constant.name)
+            let parent_namespace = fetch_const_name(s);
+            format!("{}::{}", parent_namespace, node.name)
         }
-        None => todo!(),
+        None => node.name.to_owned(),
     }
 }
 
@@ -37,11 +35,15 @@ impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
         // self.visit(&node.name);
-        let namespace = get_constant_node_name(&node.name);
+        let namespace = fetch_const_name(&node.name);
         // We're not visiting super classes either
         // if let Some(inner) = node.superclass.as_ref() {
         //     self.visit(inner);
         // }
+
+        // Note – is there a way to use lifetime specifiers to get rid of this and
+        // just keep current namespaces as a vector of string references or something else
+        // more efficient?
         self.current_namespaces.push(namespace);
 
         if let Some(inner) = &node.body {
@@ -53,7 +55,7 @@ impl Visitor for ReferenceCollector {
     fn on_const(&mut self, node: &nodes::Const) {
         self.references.push(Reference {
             name: fetch_const_const_name(node),
-            module_nesting: calculate_module_nesting(&self.current_namespaces).to_owned(),
+            module_nesting: calculate_module_nesting(&self.current_namespaces),
         })
     }
 }
@@ -77,8 +79,14 @@ impl Visitor for ReferenceCollector {
 // end
 // # inputs: ['Foo', 'Bar', 'Baz']
 // # outputs: ['Foo::Bar::Baz', 'Foo::Bar', 'Foo']
-fn calculate_module_nesting(namespace_nesting: &Vec<String>) -> &Vec<String> {
-    namespace_nesting
+fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
+    let mut nesting = Vec::new();
+    for namespace in namespace_nesting.iter().rev() {
+        let new_nesting = format!("{}::{}", namespace, nesting.join("::"));
+        nesting.push(new_nesting);
+    }
+
+    nesting
 }
 
 pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
@@ -116,7 +124,6 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     let _ret = parser.do_parse();
     let ast = *_ret.ast.expect("No AST found!");
 
-    dbg!(ast.clone());
     let mut collector = ReferenceCollector {
         references: vec![],
         current_namespaces: vec![],
