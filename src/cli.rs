@@ -48,10 +48,19 @@ pub fn cli() {
             parser::get_references(absolute_root);
         }
         Command::GenerateCache { files } => {
-            // This should print out the following statement:
-            // "Cache was generated for files file1.rb, file2.rb, and file3.rb",
-            // But it prints out "[\"file1.rb\", \"file2.rb\", \"file3.rb\"]\n".
-            println!("{:?}", files);
+            let mut file_string = String::new();
+            for (i, file) in files.iter().enumerate() {
+                if i == 0 {
+                    file_string.push_str(file);
+                } else if i == files.len() - 1 {
+                    file_string.push_str(", and ");
+                    file_string.push_str(file);
+                } else {
+                    file_string.push_str(", ");
+                    file_string.push_str(file);
+                }
+            }
+            println!("Cache was generated for files {}", file_string);
         }
     }
 }

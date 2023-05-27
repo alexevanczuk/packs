@@ -12,9 +12,9 @@ fn test_generate_cache() -> Result<(), Box<dyn Error>> {
         .arg("file2.rb")
         .arg("file3.rb")
         .assert()
-        .failure()
+        .success()
         .stdout(predicate::str::contains(
-            "Cache was generated for files file1.rb, file2.rb, and file3.rb",
+            "Cache was generated for files file1.rb, file2.rb, and file3.rb\n",
         ));
     Ok(())
 }
