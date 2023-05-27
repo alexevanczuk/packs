@@ -48,6 +48,9 @@ pub fn cli() {
             parser::get_references(absolute_root);
         }
         Command::GenerateCache { files } => {
+            // This should print out the following statement:
+            // "Cache was generated for files file1.rb, file2.rb, and file3.rb",
+            // But it prints out "[\"file1.rb\", \"file2.rb\", \"file3.rb\"]\n".
             println!("{:?}", files);
         }
     }
