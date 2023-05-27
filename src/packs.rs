@@ -1,6 +1,7 @@
 use glob::glob;
 use std::path::PathBuf;
 
+pub(crate) mod cli;
 pub mod parser;
 
 pub fn greet() {

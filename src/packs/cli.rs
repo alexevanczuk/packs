@@ -36,7 +36,7 @@ impl Args {
     // }
 }
 
-pub fn cli() {
+pub fn run() {
     let args = Args::parse();
     let absolute_root = args.absolute_project_root().expect("Issue getting absolute_project_root!");
     match args.command {
