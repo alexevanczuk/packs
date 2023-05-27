@@ -1,5 +1,5 @@
 use glob::glob;
-use lib_ruby_parser::{nodes::Const, Node, Parser, ParserOptions};
+use lib_ruby_parser::{nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions};
 use rayon::prelude::*;
 use std::{fs, path::PathBuf};
 
@@ -15,6 +15,93 @@ pub struct Reference {
     // end
     // # outputs: [Foo::Bar::Baz, Foo::Bar, Foo]
     module_nesting: Vec<String>,
+}
+
+enum VisitorState {
+    DefiningConstant,
+    ReferencingConstant,
+    Initial,
+}
+struct ReferenceCollector {
+    pub references: Vec<Reference>,
+    pub current_namespaces: Vec<String>,
+    pub state: VisitorState,
+}
+
+fn get_constant_node_name(name: &Node) -> String {
+    match name {
+        Node::Const(node) => fetch_const_const_name(node),
+        other => panic!("Cannot handle other node in get_constant_node_name"),
+    }
+}
+
+impl Visitor for ReferenceCollector {
+    fn on_class(&mut self, node: &nodes::Class) {
+        // We're not collecting definitions, so no need to visit the class definition
+        // self.visit(&node.name);
+        let namespace = get_constant_node_name(&node.name);
+        // We're not visiting super classes either
+        // if let Some(inner) = node.superclass.as_ref() {
+        //     self.visit(inner);
+        // }
+        if let Some(inner) = node.body.as_ref() {
+            let class_or_module_name = match node.name {
+                Node::Const(c) => fetch_const_node(&c),
+                _other => todo!(),
+            };
+            self.current_namespaces.push(node.name);
+            self.visit(inner);
+        }
+    }
+    fn on_const(&mut self, node: &nodes::Const) {
+        // match self.state {
+        //     VisitorState::DefiningConstant => {
+
+        //     },
+        //     VisitorState::ReferencingConstant => todo!(),
+        //     VisitorState::Initial => todo!(),
+        // }
+
+        self.references.push(Reference {
+            name: fetch_const_node(node),
+            module_nesting: vec![],
+        })
+
+        // if let Some(parent_const_node) = node.scope {
+        //     match *parent_const_node {
+        //         Node::Const(parent_const) => {
+        //             // self.state = ReferencingConstant
+        //             format!("{}::{}", visitor::visit_const(self, node))
+        //         }
+        //         _other => node.name,
+        //     }
+        // } else {
+        //     node.name
+        // }
+    }
+}
+
+fn fetch_const_node(node: &nodes::Const) -> String {
+    if let Some(scope) = &node.scope {
+        format!("{}::{}", fetch_const_scope_name(scope), node.name)
+    } else {
+        node.name.to_owned()
+    }
+}
+
+fn fetch_const_scope_name(scope: &nodes::Node) -> String {
+    match scope {
+        Node::Cbase(_) | Node::Self_(_) | Node::Send(_) | Node::Lvar(_) | Node::Ivar(_) => "".to_owned(),
+        Node::Const(node) => fetch_const_node(node),
+        other => panic!("Don't know how to fetch const name from {:?}", other),
+    }
+}
+
+fn fetch_const_name(const_node: &Node) -> String {
+    match const_node {
+        Node::Const(nodes::Const { name, .. }) => name.to_owned(),
+        other => panic!("Don't know how to fetch const name from {:?}", other),
+    }
 }
 
 pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
@@ -53,210 +140,57 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     let ast = *_ret.ast.expect("No AST found!");
 
     dbg!(ast.clone());
-    extract_from_ast(ast, vec![])
-}
-
-fn unstack_constant_node(node: Const) -> String {
-    if let Some(parent_const_node) = node.scope {
-        match *parent_const_node {
-            Node::Const(parent_const) => format!("{}::{}", unstack_constant_node(parent_const), node.name),
-            _other => node.name,
-        }
-    } else {
-        node.name
-    }
-}
-
-fn walk_class_or_module_nodes(
-    remaining_ast: Node,
-    class_or_module_name_node: Node,
-    mut current_module_nesting: Vec<String>,
-) -> Vec<Reference> {
-    let class_or_module_name = match class_or_module_name_node {
-        Node::Const(c) => unstack_constant_node(c),
-        _other => todo!(),
+    let mut collector = ReferenceCollector {
+        references: vec![],
+        current_namespaces: vec![],
+        state: VisitorState::Initial,
     };
-
-    if let Some(previous_module_nesting) = current_module_nesting.get(0).cloned() {
-        let new_nesting_entry = format!("{}::{}", previous_module_nesting, class_or_module_name);
-        current_module_nesting.insert(0, new_nesting_entry);
-    } else {
-        current_module_nesting.insert(0, class_or_module_name);
-    }
-
-    dbg!(format!("current_module_nesting is: {:?}", current_module_nesting));
-    extract_from_ast(remaining_ast, current_module_nesting)
+    // extract_from_ast(ast, vec![])
+    collector.visit(&ast);
+    collector.references
 }
 
-fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>) -> Vec<Reference> {
-    match ast {
-        Node::Class(class) => {
-            let body = *class.body.expect("no body on class node");
-            let class_name_node = *class.name;
-            walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
-        }
-        Node::Const(n) => {
-            let fully_qualified_const_reference = unstack_constant_node(n);
-            // In this ruby file:
-            // class Foo
-            //   class Bar
-            //     Baz
-            //   end
-            // end
-            // "Foo" and "Bar" are in a local definition block, but Baz is not.
-            //
-            // In this ruby file:
-            // class Foo::Bar
-            //   Baz
-            // end
-            // "Foo" and "Foo::Bar" are in a local definition block, but Baz is not.
-            if false {
-                vec![]
-            } else {
-                vec![Reference {
-                    name: fully_qualified_const_reference,
-                    module_nesting: current_module_nesting,
-                }]
-            }
-        }
-        Node::Module(module) => {
-            let body = *module.body.expect("no body on class node");
-            let class_name_node = *module.name;
-            walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
-        }
-        // Node::Alias(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::And(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::AndAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Arg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Args(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        Node::Array(arr) => arr
-            .elements
-            .into_iter()
-            .flat_map(|n| extract_from_ast(n, current_module_nesting.clone()))
-            .collect(),
-        // Node::ArrayPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::ArrayPatternWithTail(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::BackRef(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Begin(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Block(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Blockarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::BlockPass(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Break(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Case(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::CaseMatch(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Casgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Cbase(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Complex(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::ConstPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::CSend(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Cvar(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Cvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        Node::Def(x) => extract_from_ast(*x.body.expect("no body on class node"), current_module_nesting),
-        // Node::Defined(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Defs(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Dstr(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Dsym(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::EFlipFlop(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::EmptyElse(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Encoding(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Ensure(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Erange(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::False(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::File(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::FindPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Float(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::For(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::ForwardArg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::ForwardedArgs(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Gvar(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Gvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Hash(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::HashPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Heredoc(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::If(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::IfGuard(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::IFlipFlop(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::IfMod(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::IfTernary(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Index(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::IndexAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::InPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Int(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Irange(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Ivar(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Ivasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwargs(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::KwBegin(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwnilarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwoptarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwrestarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Kwsplat(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Lambda(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Line(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Lvar(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Lvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Masgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchAlt(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchAs(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchCurrentLine(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchNilPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchPattern(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchPatternP(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchRest(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchVar(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::MatchWithLvasgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Mlhs(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Next(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Nil(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::NthRef(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Numblock(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::OpAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Optarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Or(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::OrAsgn(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Pair(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Pin(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Postexe(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Preexe(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Procarg0(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Rational(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Redo(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Regexp(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::RegOpt(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Rescue(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::RescueBody(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Restarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Retry(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Return(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::SClass(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Selfx(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Send(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Shadowarg(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Splat(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Str(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Super(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Sym(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::True(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Undef(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::UnlessGuard(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Until(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::UntilPost(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::When(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::z => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::While(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::WhilePost(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::XHeredoc(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Xstr(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::Yield(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        // Node::ZSuper(x) => return extract_from_ast(x.body.expect("no body on class node")),
-        _other => {
-            // _other.body();
-            // println!("{}", format!("HERE I AM {:#?}", _other));
-            vec![]
-        }
-    }
-}
+// fn extract_from_ast(ast: Node, current_module_nesting: Vec<String>) -> Vec<Reference> {
+//     match ast {
+//         Node::Class(class) => {
+//             let body = *class.body.expect("no body on class node");
+//             let class_name_node = *class.name;
+//             walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
+//         }
+//         Node::Const(n) => {
+//             let fully_qualified_const_reference = unstack_constant_node(n);
+//             // In this ruby file:
+//             // class Foo
+//             //   class Bar
+//             //     Baz
+//             //   end
+//             // end
+//             // "Foo" and "Bar" are in a local definition block, but Baz is not.
+//             //
+//             // In this ruby file:
+//             // class Foo::Bar
+//             //   Baz
+//             // end
+//             // "Foo" and "Foo::Bar" are in a local definition block, but Baz is not.
+//             if false {
+//                 vec![]
+//             } else {
+//                 vec![Reference {
+//                     name: fully_qualified_const_reference,
+//                     module_nesting: current_module_nesting,
+//                 }]
+//             }
+//         }
+//         Node::Module(module) => {
+//             let body = *module.body.expect("no body on class node");
+//             let class_name_node = *module.name;
+//             walk_class_or_module_nodes(body, class_name_node, current_module_nesting)
+//         }
+//         Node::Array(arr) => arr
+//             .elements
+//             .into_iter()
+//             .flat_map(|n| extract_from_ast(n, current_module_nesting.clone()))
+//             .collect(),
 
 #[cfg(test)]
 mod tests {
@@ -308,6 +242,18 @@ mod tests {
                 module_nesting: vec![]
             }]
         );
+    }
+
+    #[test]
+    fn test_class_definition() {
+        let contents: String = String::from(
+            "\
+            class Foo
+            end
+        ",
+        );
+
+        assert_eq!(extract_from_contents(contents), vec![]);
     }
 
     #[test]
