@@ -1,5 +1,12 @@
-use crate::packs;
 use crate::packs::parser;
+use crate::packs::{self, string_helpers};
+
+// Make this import work
+// I'm getting this error:
+// unresolved import `crate::string_helpers`
+// no `string_helpers` in the root
+// use crate::string_helpers;
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -48,20 +55,7 @@ pub fn run() {
             parser::get_references(absolute_root);
         }
         Command::GenerateCache { files } => {
-            let mut file_string = String::new();
-            // Extract this to src/string_helpers.rs to_sentence function and import it into this
-            // and invoke it.
-            for (i, file) in files.iter().enumerate() {
-                if i == 0 {
-                    file_string.push_str(file);
-                } else if i == files.len() - 1 {
-                    file_string.push_str(", and ");
-                    file_string.push_str(file);
-                } else {
-                    file_string.push_str(", ");
-                    file_string.push_str(file);
-                }
-            }
+            let file_string = string_helpers::to_sentence(files);
             println!("Cache was generated for files {}", file_string);
         }
     }

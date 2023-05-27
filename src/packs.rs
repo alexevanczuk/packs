@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 pub(crate) mod cli;
 pub mod parser;
+mod string_helpers;
 
 pub fn greet() {
     println!("Hello! This CLI is under construction.")
