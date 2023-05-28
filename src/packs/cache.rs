@@ -52,34 +52,29 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
     format!("{:x}", md5::compute(&file_content))
 }
 
-fn references_to_cache_entry(_references: Vec<Reference>) -> CacheEntry {
-    // let reference_entry = CacheEntry {
-    // file_contents_digest: cache_file_path,
-    // unresolved_references: ReferenceEntry {
-    //     constant_name: todo!(),
-    //     namespace_path: todo!(),
-    //     relative_path: todo!(),
-    //     source_location: todo!(),
-    // },
+fn references_to_cache_entry(
+    _references: Vec<Reference>,
+    file_contents_digest: String,
+) -> CacheEntry {
+    let unresolved_references: Vec<ReferenceEntry> = vec![];
     CacheEntry {
-        file_contents_digest: String::from(""),
-        unresolved_references: vec![],
+        file_contents_digest,
+        unresolved_references,
     }
 }
 #[allow(dead_code)]
 pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let references =
         extract_from_path(absolute_root.join(relative_path_to_file));
-    let cache_entry = references_to_cache_entry(references);
 
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
     std::fs::create_dir_all(&cache_dir)
         .expect("Failed to create cache directory");
 
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
-    let file_name = format!("{:x}", file_digest);
-
-    let cache_file_path = cache_dir.join(file_name);
+    let file_digest_str = format!("{:x}", file_digest);
+    let cache_file_path = cache_dir.join(&file_digest_str);
+    let cache_entry = references_to_cache_entry(references, file_digest_str);
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
