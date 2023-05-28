@@ -1,14 +1,15 @@
 use glob::glob;
 use lib_ruby_parser::{nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions};
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Reference {
     name: String,
-    // See
     module_nesting: Vec<String>,
 }
+
 struct ReferenceCollector {
     pub references: Vec<Reference>,
     pub current_namespaces: Vec<String>,
@@ -127,7 +128,7 @@ pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
     x
 }
 
-fn extract_from_path(path: PathBuf) -> Vec<Reference> {
+pub(crate) fn extract_from_path(path: PathBuf) -> Vec<Reference> {
     // TODO: This can be a debug statement instead of a print
     // println!("Now parsing {:?}", path);
     let contents = fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read contents of {}", path.to_string_lossy()));
