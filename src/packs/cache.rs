@@ -83,7 +83,7 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
         .expect("Failed to create cache directory");
 
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
-    let file_digest_str = format!("{:x}", file_digest);
+    let file_digest_str = format!("{:x}-experimental", file_digest);
     let cache_file_path = cache_dir.join(&file_digest_str);
     let cache_entry = references_to_cache_entry(
         references,
