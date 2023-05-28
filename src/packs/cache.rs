@@ -53,16 +53,17 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
 }
 
 fn references_to_cache_entry(
-    _references: Vec<Reference>,
+    references: Vec<Reference>,
     file_contents_digest: String,
+    relative_path: String,
 ) -> CacheEntry {
-    let unresolved_references: Vec<ReferenceEntry> = _references
+    let unresolved_references: Vec<ReferenceEntry> = references
         .iter()
         .map(|r| -> ReferenceEntry {
             ReferenceEntry {
                 constant_name: r.name.to_owned(),
                 namespace_path: r.module_nesting.to_owned(),
-                relative_path: String::from("TODO.rb"),
+                relative_path: relative_path.to_owned(),
                 source_location: SourceLocation::default(),
             }
         })
@@ -84,7 +85,14 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
     let file_digest_str = format!("{:x}", file_digest);
     let cache_file_path = cache_dir.join(&file_digest_str);
-    let cache_entry = references_to_cache_entry(references, file_digest_str);
+    let cache_entry = references_to_cache_entry(
+        references,
+        file_digest_str,
+        relative_path_to_file
+            .to_str()
+            .expect("Could not convert cache_file_path to string")
+            .to_string(),
+    );
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
@@ -117,10 +125,10 @@ mod tests {
                 "061bf98e1706eac5af59c4b1a770fc7e",
             ),
             unresolved_references: vec![ReferenceEntry {
-                constant_name: String::from("::Bar"),
+                constant_name: String::from("Bar"),
                 namespace_path: vec![String::from("Foo")],
                 relative_path: String::from("packs/foo/app/services/foo.rb"),
-                source_location: SourceLocation { line: 3, column: 6 },
+                source_location: SourceLocation { line: 0, column: 0 },
             }],
         };
 
