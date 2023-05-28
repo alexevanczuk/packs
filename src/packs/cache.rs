@@ -35,32 +35,8 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
         .expect("Failed to read file");
 
     // Compute the MD5 digest
-    let digest = md5::compute(&file_content);
-
-    // Convert the digest to a hexadecimal string
-    let hex_digest = format!("{:x}", digest);
-
-    hex_digest
+    format!("{:x}", md5::compute(&file_content))
 }
-
-// fn generate_cache_json(file_contents_digest: &str, relative_path: &str) -> String {
-//     let cache_json = json!({
-//         "file_contents_digest": file_contents_digest,
-//         "unresolved_references": [
-//             {
-//                 "constant_name": "::Bar",
-//                 "namespace_path": ["Foo"],
-//                 "relative_path": relative_path,
-//                 "source_location": {
-//                     "line": 3,
-//                     "column": 6
-//                 }
-//             }
-//         ]
-//     });
-
-//     cache_json.to_string()
-// }
 
 #[allow(dead_code)]
 pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
@@ -82,30 +58,6 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 }
-
-// #[allow(dead_code)]
-// pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
-//     let absolute_path = absolute_root.join(relative_path_to_file);
-//     let contents_digest = file_content_digest(&absolute_path);
-
-//     // Create the cache JSON string
-//     let cache_json = generate_cache_json(&contents_digest, &relative_path_to_file.display().to_string());
-
-//     let path_digest = format!("{:x}", md5::compute(relative_path_to_file.to_str().unwrap()));
-
-//     // Create the directory if it doesn't exist
-//     let cache_dir = absolute_root.join("tmp/cache/packwerk/");
-//     fs::create_dir_all(&cache_dir).expect("Failed to create cache directory");
-
-//     // Create the cache file path
-//     let cache_file = cache_dir.join(path_digest);
-
-//     // Write the cache JSON bytes to the cache file
-//     let file = File::create(cache_file).expect("Failed to create file");
-//     serde_json::to_writer(file, &cache_json).expect("Failed to write JSON to file");
-
-//     // fs::write(cache_file, cache_json).expect("Failed to write cache file");
-// }
 
 #[cfg(test)]
 mod tests {
