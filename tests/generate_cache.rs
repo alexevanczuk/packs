@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
-use std::{error::Error, process::Command};
+use std::{error::Error, process::Command, path::PathBuf};
 
 #[test]
 fn test_generate_cache() -> Result<(), Box<dyn Error>> {
@@ -19,4 +19,10 @@ fn test_generate_cache() -> Result<(), Box<dyn Error>> {
             "The file content digests are {\"packs/bar/app/services/bar.rb\": \"f2af2fc657b71331ff3a8c39b48365eb\", \"packs/foo/app/services/foo.rb\": \"4be8effd7ac57323adcb53d0cf0ce789\"}",
         ));
     Ok(())
+    
+    let filename = "tests/fixtures/simple_app/packs/foo/app/services/foo.rb";
+    let digest = md5::compute(&filename);
+    // Make this code compile
+    let digest_str: String = digest;
+    let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/").join(digest_str);
 }
