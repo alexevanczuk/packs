@@ -5,6 +5,8 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use super::parser::Reference;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct CacheEntry {
     file_contents_digest: String,
@@ -12,7 +14,7 @@ struct CacheEntry {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct Location {
+struct SourceLocation {
     line: usize,
     column: usize,
 }
@@ -22,8 +24,20 @@ struct ReferenceEntry {
     constant_name: String,
     namespace_path: Vec<String>,
     relative_path: String,
-    source_location: Location,
+    source_location: SourceLocation,
 }
+
+// Used for tests, for now!
+#[allow(dead_code)]
+fn read_json_file(
+    path: &PathBuf,
+) -> Result<CacheEntry, Box<dyn std::error::Error>> {
+    let file = std::fs::File::open(path)?;
+    let reader = std::io::BufReader::new(file);
+    let data = serde_json::from_reader(reader)?;
+    Ok(data)
+}
+
 pub(crate) fn file_content_digest(file: &PathBuf) -> String {
     let mut file_content = Vec::new();
 
@@ -38,10 +52,26 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
     format!("{:x}", md5::compute(&file_content))
 }
 
+fn references_to_cache_entry(_references: Vec<Reference>) -> CacheEntry {
+    // let reference_entry = CacheEntry {
+    // file_contents_digest: cache_file_path,
+    // unresolved_references: ReferenceEntry {
+    //     constant_name: todo!(),
+    //     namespace_path: todo!(),
+    //     relative_path: todo!(),
+    //     source_location: todo!(),
+    // },
+    CacheEntry {
+        file_contents_digest: String::from(""),
+        unresolved_references: vec![],
+    }
+}
 #[allow(dead_code)]
 pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let references =
         extract_from_path(absolute_root.join(relative_path_to_file));
+    let cache_entry = references_to_cache_entry(references);
+
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
     std::fs::create_dir_all(&cache_dir)
         .expect("Failed to create cache directory");
@@ -51,7 +81,7 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
 
     let cache_file_path = cache_dir.join(file_name);
 
-    let cache_data = serde_json::to_string(&references)
+    let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
     let mut file =
         File::create(cache_file_path).expect("Failed to create cache file");
@@ -76,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_write_cache() {
-        let expected_cache_json = CacheEntry {
+        let expected = CacheEntry {
             file_contents_digest: String::from(
                 "4be8effd7ac57323adcb53d0cf0ce789",
             ),
@@ -84,7 +114,7 @@ mod tests {
                 constant_name: String::from("::Bar"),
                 namespace_path: vec![String::from("Foo")],
                 relative_path: String::from("packs/foo/app/services/foo.rb"),
-                source_location: Location { line: 3, column: 6 },
+                source_location: SourceLocation { line: 3, column: 6 },
             }],
         };
 
@@ -93,16 +123,9 @@ mod tests {
             &PathBuf::from("packs/foo/app/services/foo.rb"),
         );
 
-        // This is the MD5 digest of "packs/foo/app/services/foo.rb"
-        let digest_str = "061bf98e1706eac5af59c4b1a770fc7e";
+        // 61bf98e1... is the MD5 digest of "packs/foo/app/services/foo.rb"
         let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e");
-        let mut file = std::fs::File::open(&cache_file)
-            .unwrap_or_else(|_| panic!("Failed to open file {:?}", cache_file));
-        let mut file_content = Vec::new();
-        file.read_to_end(&mut file_content)
-            .expect("Failed to read file");
-
-        let file_content_str = String::from_utf8_lossy(&file_content);
-        assert_eq!(expected_cache_json, file_content_str);
+        let actual = read_json_file(&cache_file).unwrap();
+        assert_eq!(actual, expected);
     }
 }
