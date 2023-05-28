@@ -1,5 +1,7 @@
 use glob::glob;
-use lib_ruby_parser::{nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions};
+use lib_ruby_parser::{
+    nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
+};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
@@ -131,7 +133,9 @@ pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
 pub(crate) fn extract_from_path(path: PathBuf) -> Vec<Reference> {
     // TODO: This can be a debug statement instead of a print
     // println!("Now parsing {:?}", path);
-    let contents = fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read contents of {}", path.to_string_lossy()));
+    let contents = fs::read_to_string(&path).unwrap_or_else(|_| {
+        panic!("Failed to read contents of {}", path.to_string_lossy())
+    });
 
     extract_from_contents(contents)
 }
@@ -253,7 +257,10 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
-                module_nesting: vec![String::from("Foo::Bar"), String::from("Foo")]
+                module_nesting: vec![
+                    String::from("Foo::Bar"),
+                    String::from("Foo")
+                ]
             }]
         );
     }
@@ -276,7 +283,11 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
-                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+                module_nesting: vec![
+                    String::from("Foo::Bar::Baz"),
+                    String::from("Foo::Bar"),
+                    String::from("Foo")
+                ]
             }]
         );
     }
@@ -316,7 +327,10 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
-                module_nesting: vec![String::from("Foo::Bar"), String::from("Foo")]
+                module_nesting: vec![
+                    String::from("Foo::Bar"),
+                    String::from("Foo")
+                ]
             }]
         );
     }
@@ -339,7 +353,11 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
-                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+                module_nesting: vec![
+                    String::from("Foo::Bar::Baz"),
+                    String::from("Foo::Bar"),
+                    String::from("Foo")
+                ]
             }]
         );
     }
@@ -362,7 +380,11 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
-                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar"), String::from("Foo")]
+                module_nesting: vec![
+                    String::from("Foo::Bar::Baz"),
+                    String::from("Foo::Bar"),
+                    String::from("Foo")
+                ]
             }]
         );
     }
@@ -404,7 +426,10 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
-                module_nesting: vec![String::from("Foo::Bar::Baz"), String::from("Foo::Bar")],
+                module_nesting: vec![
+                    String::from("Foo::Bar::Baz"),
+                    String::from("Foo::Bar")
+                ],
             }]
         );
     }
@@ -415,7 +440,9 @@ mod tests {
         let contents: String = String::from("[Foo]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
-        let reference = references.get(0).expect("There should be a reference at index 0");
+        let reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
         assert_eq!(
             *reference,
             Reference {
@@ -430,7 +457,9 @@ mod tests {
         let contents: String = String::from("[Foo, Bar]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 2);
-        let reference1 = references.get(0).expect("There should be a reference at index 0");
+        let reference1 = references
+            .get(0)
+            .expect("There should be a reference at index 0");
         assert_eq!(
             *reference1,
             Reference {
@@ -438,7 +467,9 @@ mod tests {
                 module_nesting: vec![]
             }
         );
-        let reference2 = references.get(1).expect("There should be a reference at index 1");
+        let reference2 = references
+            .get(1)
+            .expect("There should be a reference at index 1");
         assert_eq!(
             *reference2,
             Reference {
@@ -454,7 +485,9 @@ mod tests {
         let contents: String = String::from("[Baz::Boo]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
-        let reference = references.get(0).expect("There should be a reference at index 0");
+        let reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
         assert_eq!(
             *reference,
             Reference {

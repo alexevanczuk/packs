@@ -47,7 +47,9 @@ impl Args {
 
 pub fn run() {
     let args = Args::parse();
-    let absolute_root = args.absolute_project_root().expect("Issue getting absolute_project_root!");
+    let absolute_root = args
+        .absolute_project_root()
+        .expect("Issue getting absolute_project_root!");
     match args.command {
         Command::Greet => {
             packs::greet();
