@@ -1,6 +1,7 @@
 use glob::glob;
 use std::path::PathBuf;
 
+mod cache;
 pub(crate) mod cli;
 pub mod parser;
 mod string_helpers;

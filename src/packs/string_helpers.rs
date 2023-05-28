@@ -1,12 +1,14 @@
-pub(crate) fn to_sentence(list: Vec<String>) -> String {
+pub(crate) fn to_sentence(list: &Vec<String>) -> String {
     let mut file_string = String::new();
-    // Extract this to src/string_helpers.rs to_sentence function and import it into this
-    // and invoke it.
     for (i, file) in list.iter().enumerate() {
+        let second_to_last = i == list.len() - 1;
         if i == 0 {
             file_string.push_str(file);
-        } else if i == list.len() - 1 {
+        } else if second_to_last && list.len() > 2 {
             file_string.push_str(", and ");
+            file_string.push_str(file);
+        } else if second_to_last {
+            file_string.push_str(" and ");
             file_string.push_str(file);
         } else {
             file_string.push_str(", ");
