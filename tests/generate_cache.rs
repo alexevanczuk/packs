@@ -8,13 +8,12 @@ fn test_generate_cache() -> Result<(), Box<dyn Error>> {
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("generate-cache")
-        .arg("file1.rb")
-        .arg("file2.rb")
-        .arg("file3.rb")
+        .arg("packs/bar/app/services/bar.rb")
+        .arg("packs/foo/app/services/foo.rb")
         .assert()
         .success()
         .stdout(predicate::str::contains(
-            "Cache was generated for files file1.rb, file2.rb, and file3.rb\n",
+            "Cache was generated for files packs/bar/app/services/bar.rb and packs/foo/app/services/foo.rb\n",
         ));
     Ok(())
 }

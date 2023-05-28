@@ -1,3 +1,4 @@
+use crate::packs::cache::file_content_digest;
 use crate::packs::parser;
 use crate::packs::{self, string_helpers};
 
@@ -8,6 +9,7 @@ use crate::packs::{self, string_helpers};
 // use crate::string_helpers;
 
 use clap::{Parser, Subcommand};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
@@ -45,7 +47,9 @@ impl Args {
 
 pub fn run() {
     let args = Args::parse();
-    let absolute_root = args.absolute_project_root().expect("Issue getting absolute_project_root!");
+    let absolute_root = args
+        .absolute_project_root()
+        .expect("Issue getting absolute_project_root!");
     match args.command {
         Command::Greet => {
             packs::greet();
@@ -54,9 +58,18 @@ pub fn run() {
         Command::Check => {
             parser::get_references(absolute_root);
         }
-        Command::GenerateCache { files } => {
-            let file_string = string_helpers::to_sentence(files);
+        Command::GenerateCache { mut files } => {
+            let file_string = string_helpers::to_sentence(&files);
             println!("Cache was generated for files {}", file_string);
+            let mut file_content_digests = HashMap::new();
+            files.sort();
+            for file in files {
+                let path = PathBuf::from(file);
+                let absolute_path = absolute_root.join(&path);
+                let digest = file_content_digest(&absolute_path);
+                file_content_digests.insert(path, digest);
+            }
+            println!("The file content digests are {:?}", file_content_digests);
         }
     }
 }
