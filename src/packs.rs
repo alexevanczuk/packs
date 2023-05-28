@@ -1,7 +1,9 @@
 use glob::glob;
 use std::path::PathBuf;
 
+pub(crate) mod cli;
 pub mod parser;
+mod string_helpers;
 
 pub fn greet() {
     println!("Hello! This CLI is under construction.")
@@ -62,7 +64,7 @@ mod tests {
     #[test]
     fn test_all() {
         let mut expected_packs: Vec<Pack> = Vec::new();
-        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_dependency_violation");
+        let absolute_root: PathBuf = PathBuf::from("tests/fixtures/simple_app");
 
         let foo_yml = absolute_root.join(PathBuf::from("packs/foo/package.yml"));
         let root_yml = absolute_root.join(PathBuf::from("package.yml"));

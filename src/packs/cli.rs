@@ -1,5 +1,12 @@
-use crate::packs;
 use crate::packs::parser;
+use crate::packs::{self, string_helpers};
+
+// Make this import work
+// I'm getting this error:
+// unresolved import `crate::string_helpers`
+// no `string_helpers` in the root
+// use crate::string_helpers;
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -8,6 +15,10 @@ enum Command {
     Greet,
     ListPacks,
     Check,
+    GenerateCache {
+        #[clap(required = true)]
+        files: Vec<String>,
+    },
 }
 
 /// A CLI to interact with packs
@@ -32,7 +43,7 @@ impl Args {
     // }
 }
 
-pub fn cli() {
+pub fn run() {
     let args = Args::parse();
     let absolute_root = args.absolute_project_root().expect("Issue getting absolute_project_root!");
     match args.command {
@@ -42,6 +53,10 @@ pub fn cli() {
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
             parser::get_references(absolute_root);
+        }
+        Command::GenerateCache { files } => {
+            let file_string = string_helpers::to_sentence(files);
+            println!("Cache was generated for files {}", file_string);
         }
     }
 }

@@ -1,7 +1,6 @@
-pub mod cli;
-pub mod packs;
-use cli::cli;
+use packs::cli;
 
+pub mod packs;
 fn main() {
-    cli()
+    cli::run()
 }

@@ -463,3 +463,7 @@ mod tests {
         );
     }
 }
+
+pub fn generate_cache(_absolute_root: PathBuf) {
+    todo!()
+}
