@@ -124,42 +124,32 @@ mod tests {
 
     #[test]
     fn test_write_cache() {
-        // let expected_cache_json = CacheEntry {
-        //     file_contents_digest: "4be8effd7ac57323adcb53d0cf0ce789",
-        //     unresolved_references: vec![
-        //         ReferenceEntry { constant_name: "::Bar", namespace_path: vec![String::from("Foo")], relative_path: String::from("packs/foo/app/services/foo.rb"), source_location: todo!() }
-        //     ],
-        // }
-        r#"{
-
-                "file_contents_digest": "4be8effd7ac57323adcb53d0cf0ce789",
-                "unresolved_references": [
-                    {
-                        "constant_name": "::Bar",
-                        "namespace_path": ["Foo"],
-                        "relative_path": "packs/foo/app/services/foo.rb",
-                        "source_location": {
-                            "line": 3,
-                            "column": 6
-                        }
-                    }
-                ]
-            }"#;
+        let expected_cache_json = CacheEntry {
+            file_contents_digest: String::from(
+                "4be8effd7ac57323adcb53d0cf0ce789",
+            ),
+            unresolved_references: vec![ReferenceEntry {
+                constant_name: String::from("::Bar"),
+                namespace_path: vec![String::from("Foo")],
+                relative_path: String::from("packs/foo/app/services/foo.rb"),
+                source_location: Location { line: 3, column: 6 },
+            }],
+        };
 
         write_cache(
             &PathBuf::from("tests/fixtures/simple_app"),
             &PathBuf::from("packs/foo/app/services/foo.rb"),
         );
-        let digest = md5::compute("packs/foo/app/services/foo.rb");
-        let digest_str = format!("{:x}", digest);
-        let cache_file =
-            PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/")
-                .join(digest_str);
+
+        // This is the MD5 digest of "packs/foo/app/services/foo.rb"
+        let digest_str = "061bf98e1706eac5af59c4b1a770fc7e";
+        let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e");
         let mut file = std::fs::File::open(&cache_file)
             .unwrap_or_else(|_| panic!("Failed to open file {:?}", cache_file));
         let mut file_content = Vec::new();
         file.read_to_end(&mut file_content)
             .expect("Failed to read file");
+
         let file_content_str = String::from_utf8_lossy(&file_content);
         assert_eq!(expected_cache_json, file_content_str);
     }
