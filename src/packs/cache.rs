@@ -103,7 +103,8 @@ mod tests {
     fn test_write_cache() {
         let expected = CacheEntry {
             file_contents_digest: String::from(
-                "4be8effd7ac57323adcb53d0cf0ce789",
+                // This is the MD5 digest of the string literal "packs/foo/app/services/foo.rb"
+                "061bf98e1706eac5af59c4b1a770fc7e",
             ),
             unresolved_references: vec![ReferenceEntry {
                 constant_name: String::from("::Bar"),
@@ -118,7 +119,6 @@ mod tests {
             &PathBuf::from("packs/foo/app/services/foo.rb"),
         );
 
-        // 61bf98e1... is the MD5 digest of "packs/foo/app/services/foo.rb"
         let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e");
         let actual = read_json_file(&cache_file).unwrap();
         assert_eq!(actual, expected);
