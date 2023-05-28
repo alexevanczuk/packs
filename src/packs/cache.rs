@@ -13,7 +13,7 @@ struct CacheEntry {
     unresolved_references: Vec<ReferenceEntry>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 struct SourceLocation {
     line: usize,
     column: usize,
@@ -56,7 +56,17 @@ fn references_to_cache_entry(
     _references: Vec<Reference>,
     file_contents_digest: String,
 ) -> CacheEntry {
-    let unresolved_references: Vec<ReferenceEntry> = vec![];
+    let unresolved_references: Vec<ReferenceEntry> = _references
+        .iter()
+        .map(|r| -> ReferenceEntry {
+            ReferenceEntry {
+                constant_name: r.name.to_owned(),
+                namespace_path: r.module_nesting.to_owned(),
+                relative_path: String::from("TODO.rb"),
+                source_location: SourceLocation::default(),
+            }
+        })
+        .collect();
     CacheEntry {
         file_contents_digest,
         unresolved_references,

@@ -8,8 +8,8 @@ use std::{fs, path::PathBuf};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Reference {
-    name: String,
-    module_nesting: Vec<String>,
+    pub name: String,
+    pub module_nesting: Vec<String>,
 }
 
 struct ReferenceCollector {
