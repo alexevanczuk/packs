@@ -13,6 +13,13 @@ use std::{
 pub struct Reference {
     pub name: String,
     pub module_nesting: Vec<String>,
+    pub location: Location,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Location {
+    pub row: usize,
+    pub column: usize,
 }
 
 struct ReferenceCollector {
@@ -78,6 +85,7 @@ impl Visitor for ReferenceCollector {
         self.references.push(Reference {
             name: fetch_const_const_name(node),
             module_nesting: calculate_module_nesting(&self.current_namespaces),
+            location: Location { row: 0, column: 0 },
         })
     }
 }
@@ -175,7 +183,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -187,7 +196,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -199,7 +209,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar::Baz"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -211,7 +222,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar::Baz::Boo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -242,7 +254,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Bar"),
-                module_nesting: vec![String::from("Foo")]
+                module_nesting: vec![String::from("Foo")],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -266,7 +279,8 @@ mod tests {
                 module_nesting: vec![
                     String::from("Foo::Bar"),
                     String::from("Foo")
-                ]
+                ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -293,7 +307,8 @@ mod tests {
                     String::from("Foo::Bar::Baz"),
                     String::from("Foo::Bar"),
                     String::from("Foo")
-                ]
+                ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -312,7 +327,8 @@ mod tests {
             extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Bar"),
-                module_nesting: vec![String::from("Foo")]
+                module_nesting: vec![String::from("Foo")],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -336,7 +352,8 @@ mod tests {
                 module_nesting: vec![
                     String::from("Foo::Bar"),
                     String::from("Foo")
-                ]
+                ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -363,7 +380,8 @@ mod tests {
                     String::from("Foo::Bar::Baz"),
                     String::from("Foo::Bar"),
                     String::from("Foo")
-                ]
+                ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -390,7 +408,8 @@ mod tests {
                     String::from("Foo::Bar::Baz"),
                     String::from("Foo::Bar"),
                     String::from("Foo")
-                ]
+                ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -411,6 +430,7 @@ mod tests {
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar")],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -436,6 +456,7 @@ mod tests {
                     String::from("Foo::Bar::Baz"),
                     String::from("Foo::Bar")
                 ],
+                location: Location { row: 0, column: 0 }
             }]
         );
     }
@@ -453,7 +474,8 @@ mod tests {
             *reference,
             Reference {
                 name: String::from("Foo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }
         );
     }
@@ -470,7 +492,8 @@ mod tests {
             *reference1,
             Reference {
                 name: String::from("Foo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }
         );
         let reference2 = references
@@ -480,7 +503,8 @@ mod tests {
             *reference2,
             Reference {
                 name: String::from("Bar"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }
         );
     }
@@ -498,7 +522,8 @@ mod tests {
             *reference,
             Reference {
                 name: String::from("Baz::Boo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }
         );
     }
@@ -516,7 +541,8 @@ mod tests {
             *reference,
             Reference {
                 name: String::from("::Foo"),
-                module_nesting: vec![]
+                module_nesting: vec![],
+                location: Location { row: 0, column: 0 }
             }
         );
     }
