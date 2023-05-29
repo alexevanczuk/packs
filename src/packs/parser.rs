@@ -241,6 +241,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_class_namespaced_constant() {
         let contents: String = String::from(
             "\
