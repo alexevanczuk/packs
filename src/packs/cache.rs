@@ -75,8 +75,8 @@ fn references_to_cache_entry(
 }
 #[allow(dead_code)]
 pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
-    let references =
-        extract_from_path(absolute_root.join(relative_path_to_file));
+    let absolute_path = absolute_root.join(relative_path_to_file);
+    let references = extract_from_path(&absolute_path);
 
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
     std::fs::create_dir_all(&cache_dir)
@@ -84,10 +84,10 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
 
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
     let file_digest_str = format!("{:x}-experimental", file_digest);
-    let cache_file_path = cache_dir.join(&file_digest_str);
+    let cache_file_path = cache_dir.join(file_digest_str);
     let cache_entry = references_to_cache_entry(
         references,
-        file_digest_str,
+        file_content_digest(&absolute_path),
         relative_path_to_file
             .to_str()
             .expect("Could not convert cache_file_path to string")
@@ -97,9 +97,11 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
     let mut file =
-        File::create(cache_file_path).expect("Failed to create cache file");
+        File::create(&cache_file_path).expect("Failed to create cache file");
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
+
+    println!("Writing cache to {:?}", cache_file_path)
 }
 
 #[cfg(test)]
@@ -121,8 +123,10 @@ mod tests {
     fn test_write_cache() {
         let expected = CacheEntry {
             file_contents_digest: String::from(
-                // This is the MD5 digest of the string literal "packs/foo/app/services/foo.rb"
-                "061bf98e1706eac5af59c4b1a770fc7e",
+                // This is the MD5 digest of the contents of "packs/foo/app/services/foo.rb"
+                // i.e. in ruby, it's:
+                // Digest::MD5.hexdigest(File.read('tests/fixtures/simple_app/packs/foo/app/services/foo.rb'))
+                "4be8effd7ac57323adcb53d0cf0ce789",
             ),
             unresolved_references: vec![ReferenceEntry {
                 constant_name: String::from("Bar"),
@@ -137,7 +141,7 @@ mod tests {
             &PathBuf::from("packs/foo/app/services/foo.rb"),
         );
 
-        let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e");
+        let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e-experimental");
         let actual = read_json_file(&cache_file).unwrap();
         assert_eq!(actual, expected);
     }

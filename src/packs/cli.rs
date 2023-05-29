@@ -1,16 +1,11 @@
-use crate::packs::cache::file_content_digest;
+use crate::packs::cache::{write_cache};
 use crate::packs::parser;
 use crate::packs::{self, string_helpers};
-
-// Make this import work
-// I'm getting this error:
-// unresolved import `crate::string_helpers`
-// no `string_helpers` in the root
-// use crate::string_helpers;
-
+use glob::glob;
 use clap::{Parser, Subcommand};
-use std::collections::HashMap;
+use rayon::prelude::*;
 use std::path::PathBuf;
+
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -56,20 +51,26 @@ pub fn run() {
         }
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
-            parser::get_references(absolute_root);
+            parser::get_references(&absolute_root);
         }
         Command::GenerateCache { mut files } => {
             let file_string = string_helpers::to_sentence(&files);
             println!("Cache was generated for files {}", file_string);
-            let mut file_content_digests = HashMap::new();
+            // let mut file_content_digests = HashMap::new();
             files.sort();
-            for file in files {
-                let path = PathBuf::from(file);
-                let absolute_path = absolute_root.join(&path);
-                let digest = file_content_digest(&absolute_path);
-                file_content_digests.insert(path, digest);
-            }
-            println!("The file content digests are {:?}", file_content_digests);
+            let pattern = absolute_root.join("packs/**/*.rb");
+            glob(pattern.to_str().unwrap())
+                .expect("Failed to read glob pattern")
+                .par_bridge() // Parallel iterator
+                .for_each(|entry| match entry {
+                    Ok(path) => {
+                        write_cache(absolute_root.as_path(), path.as_path())
+                    }
+                    Err(e) => {
+                        println!("{:?}", e);
+                        panic!("blah");
+                    }
+                });
         }
     }
 }

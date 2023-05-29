@@ -4,7 +4,10 @@ use lib_ruby_parser::{
 };
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Reference {
@@ -17,10 +20,13 @@ struct ReferenceCollector {
     pub current_namespaces: Vec<String>,
 }
 
-fn fetch_const_name(name: &nodes::Node) -> String {
-    match name {
-        Node::Const(node) => fetch_const_const_name(node),
-        _ => panic!("Cannot handle other node in get_constant_node_name."),
+fn fetch_const_name(node: &nodes::Node) -> String {
+    match node {
+        Node::Const(const_node) => fetch_const_const_name(const_node),
+        Node::Cbase(_) => String::from(""),
+        _ => {
+            panic!("Cannot handle other node in get_constant_node_name.")
+        }
     }
 }
 
@@ -112,7 +118,7 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
     nesting
 }
 
-pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
+pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
     let pattern = absolute_root.join("packs/**/*.rb");
 
@@ -120,7 +126,7 @@ pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
         .expect("Failed to read glob pattern")
         .par_bridge() // Parallel iterator
         .flat_map(|entry| match entry {
-            Ok(path) => extract_from_path(path),
+            Ok(path) => extract_from_path(&path),
             Err(e) => {
                 println!("{:?}", e);
                 panic!("blah");
@@ -130,10 +136,10 @@ pub fn get_references(absolute_root: PathBuf) -> Vec<Reference> {
     x
 }
 
-pub(crate) fn extract_from_path(path: PathBuf) -> Vec<Reference> {
+pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<Reference> {
     // TODO: This can be a debug statement instead of a print
     // println!("Now parsing {:?}", path);
-    let contents = fs::read_to_string(&path).unwrap_or_else(|_| {
+    let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
@@ -492,6 +498,24 @@ mod tests {
             *reference,
             Reference {
                 name: String::from("Baz::Boo"),
+                module_nesting: vec![]
+            }
+        );
+    }
+
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_globally_referenced_constant() {
+        let contents: String = String::from("::Foo");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            *reference,
+            Reference {
+                name: String::from("::Foo"),
                 module_nesting: vec![]
             }
         );
