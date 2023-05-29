@@ -1,11 +1,10 @@
-use crate::packs::cache::{write_cache};
+use crate::packs::cache::write_cache;
 use crate::packs::parser;
 use crate::packs::{self, string_helpers};
-use glob::glob;
 use clap::{Parser, Subcommand};
+use glob::glob;
 use rayon::prelude::*;
-use std::path::PathBuf;
-
+use std::path::{Path, PathBuf};
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -54,13 +53,17 @@ pub fn run() {
             parser::get_references(&absolute_root);
         }
         Command::GenerateCache { mut files } => {
-            let file_string = string_helpers::to_sentence(&files);
-            println!("Cache was generated for files {}", file_string);
-            // let mut file_content_digests = HashMap::new();
-            files.sort();
-            let pattern = absolute_root.join("packs/**/*.rb");
-            glob(pattern.to_str().unwrap())
-                .expect("Failed to read glob pattern")
+            let pattern = absolute_root.join("app/**/*.rb");
+
+            if files.len() == 0 {
+                let paths =
+                    files.into_iter().map(|s| PathBuf::from(s)).collect();
+            } else {
+                let paths = glob(pattern.to_str().unwrap())
+                    .expect("Failed to read glob pattern");
+            }
+
+            paths
                 .par_bridge() // Parallel iterator
                 .for_each(|entry| match entry {
                     Ok(path) => {

@@ -73,7 +73,7 @@ fn references_to_cache_entry(
         unresolved_references,
     }
 }
-#[allow(dead_code)]
+
 pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let absolute_path = absolute_root.join(relative_path_to_file);
     let references = extract_from_path(&absolute_path);
@@ -101,7 +101,7 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 
-    println!("Writing cache to {:?}", cache_file_path)
+    // println!("Writing cache to {:?}", cache_file_path)
 }
 
 #[cfg(test)]
