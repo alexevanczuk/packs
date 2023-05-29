@@ -82,6 +82,7 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     std::fs::create_dir_all(&cache_dir)
         .expect("Failed to create cache directory");
 
+    println!("{:?}", relative_path_to_file.to_owned());
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
     let file_digest_str = format!("{:x}-experimental", file_digest);
     let cache_file_path = cache_dir.join(file_digest_str);

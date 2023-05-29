@@ -57,17 +57,16 @@ pub fn run() {
                 let pattern = absolute_root.join("app/**/*.rb");
                 let paths = glob(pattern.to_str().unwrap())
                     .expect("Failed to read glob pattern");
-                paths
-                    .par_bridge() // Parallel iterator
-                    .for_each(|path| match path {
-                        Ok(path) => {
-                            write_cache(absolute_root.as_path(), path.as_path())
-                        }
-                        Err(e) => {
-                            println!("{:?}", e);
-                            panic!("blah");
-                        }
-                    });
+                paths.par_bridge().for_each(|path| match path {
+                    Ok(path) => {
+                        // Make the second argument to write_cache be relative to absolute_root
+                        write_cache(absolute_root.as_path(), path.as_path())
+                    }
+                    Err(e) => {
+                        println!("{:?}", e);
+                        panic!("blah");
+                    }
+                });
             }
         }
     }
