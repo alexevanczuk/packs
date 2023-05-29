@@ -59,8 +59,9 @@ pub fn run() {
                     .expect("Failed to read glob pattern");
                 paths.par_bridge().for_each(|path| match path {
                     Ok(path) => {
-                        // Make the second argument to write_cache be relative to absolute_root
-                        write_cache(absolute_root.as_path(), path.as_path())
+                        let relative_path =
+                            path.strip_prefix(absolute_root.as_path()).unwrap();
+                        write_cache(absolute_root.as_path(), relative_path);
                     }
                     Err(e) => {
                         println!("{:?}", e);
