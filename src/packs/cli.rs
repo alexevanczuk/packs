@@ -1,20 +1,17 @@
 use crate::packs::cache::write_cache;
 use crate::packs::parser;
-use crate::packs::{self, string_helpers};
+use crate::packs::{self};
 use clap::{Parser, Subcommand};
 use glob::glob;
 use rayon::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
 enum Command {
     Greet,
     ListPacks,
     Check,
-    GenerateCache {
-        #[clap(required = true)]
-        files: Vec<String>,
-    },
+    GenerateCache { files: Vec<String> },
 }
 
 /// A CLI to interact with packs
@@ -33,10 +30,6 @@ impl Args {
     fn absolute_project_root(&self) -> Result<PathBuf, std::io::Error> {
         self.project_root.canonicalize()
     }
-
-    // fn absolute_path(&self, path: &Path) -> Result<PathBuf, std::io::Error> {
-    //     Ok(self.absolute_project_root()?.join(path))
-    // }
 }
 
 pub fn run() {
@@ -52,28 +45,28 @@ pub fn run() {
         Command::Check => {
             parser::get_references(&absolute_root);
         }
-        Command::GenerateCache { mut files } => {
-            let pattern = absolute_root.join("app/**/*.rb");
-
-            if files.len() == 0 {
-                let paths =
-                    files.into_iter().map(|s| PathBuf::from(s)).collect();
+        Command::GenerateCache { files } => {
+            if !files.is_empty() {
+                files.into_iter().par_bridge().for_each(|file| {
+                    let path = PathBuf::from(file);
+                    write_cache(absolute_root.as_path(), path.as_path())
+                })
             } else {
+                let pattern = absolute_root.join("app/**/*.rb");
                 let paths = glob(pattern.to_str().unwrap())
                     .expect("Failed to read glob pattern");
+                paths
+                    .par_bridge() // Parallel iterator
+                    .for_each(|path| match path {
+                        Ok(path) => {
+                            write_cache(absolute_root.as_path(), path.as_path())
+                        }
+                        Err(e) => {
+                            println!("{:?}", e);
+                            panic!("blah");
+                        }
+                    });
             }
-
-            paths
-                .par_bridge() // Parallel iterator
-                .for_each(|entry| match entry {
-                    Ok(path) => {
-                        write_cache(absolute_root.as_path(), path.as_path())
-                    }
-                    Err(e) => {
-                        println!("{:?}", e);
-                        panic!("blah");
-                    }
-                });
         }
     }
 }

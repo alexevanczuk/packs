@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub(crate) fn to_sentence(list: &Vec<String>) -> String {
     let mut file_string = String::new();
     for (i, file) in list.iter().enumerate() {

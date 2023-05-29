@@ -97,7 +97,7 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
     let mut file =
-        File::create(&cache_file_path).expect("Failed to create cache file");
+        File::create(cache_file_path).expect("Failed to create cache file");
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 
