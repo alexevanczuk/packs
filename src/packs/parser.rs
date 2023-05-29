@@ -255,7 +255,7 @@ mod tests {
             vec![Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
-                location: Location { row: 0, column: 0 }
+                location: Location { row: 2, column: 4 }
             }]
         );
     }
