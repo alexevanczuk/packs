@@ -46,6 +46,8 @@ pub fn run() {
             parser::get_references(&absolute_root);
         }
         Command::GenerateCache { files } => {
+            // TODO: This needs to parse include and exclude paths from packwerk.yml
+            // to generate a more accurate cache. Could just use default packs ones to start?
             if !files.is_empty() {
                 files.into_iter().par_bridge().for_each(|file| {
                     let path = PathBuf::from(file);
