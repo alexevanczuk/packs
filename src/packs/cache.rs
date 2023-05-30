@@ -104,8 +104,6 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
         File::create(cache_file_path).expect("Failed to create cache file");
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
-
-    // println!("Writing cache to {:?}", cache_file_path)
 }
 
 #[cfg(test)]

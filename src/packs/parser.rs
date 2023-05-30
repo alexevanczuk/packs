@@ -53,7 +53,10 @@ fn fetch_const_name(node: &nodes::Node) -> String {
         Node::Const(const_node) => fetch_const_const_name(const_node),
         Node::Cbase(_) => String::from(""),
         _ => {
-            panic!("Cannot handle other node in get_constant_node_name.")
+            panic!(
+                "Cannot handle other node in get_constant_node_name: {}",
+                node.inspect(2)
+            )
         }
     }
 }
@@ -154,7 +157,7 @@ pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
     let pattern = absolute_root.join("packs/**/*.rb");
 
-    let x = glob(pattern.to_str().unwrap())
+    glob(pattern.to_str().unwrap())
         .expect("Failed to read glob pattern")
         .par_bridge() // Parallel iterator
         .flat_map(|entry| match entry {
@@ -164,13 +167,10 @@ pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
                 panic!("blah");
             }
         })
-        .collect();
-    x
+        .collect()
 }
 
 pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<Reference> {
-    // TODO: This can be a debug statement instead of a print
-    // println!("Now parsing {:?}", path);
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
