@@ -268,7 +268,7 @@ mod tests {
                     start_row: 1,
                     start_col: 1,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 14
                 }
             }],
             extract_from_contents(contents)
@@ -335,9 +335,9 @@ end
         let contents: String = String::from(
             "\
 class Foo
-    class Bar
-        Baz
-    end
+  class Bar
+    Baz
+  end
 end
         ",
         );
@@ -351,9 +351,9 @@ end
                 ],
                 location: Range {
                     start_row: 3,
-                    start_col: 21,
+                    start_col: 5,
                     end_row: 3,
-                    end_col: 24
+                    end_col: 8
                 }
             }],
             extract_from_contents(contents)
@@ -365,11 +365,11 @@ end
         let contents: String = String::from(
             "\
 class Foo
-    class Bar
-        class Baz
-            Boo
-        end
+  class Bar
+    class Baz
+      Boo
     end
+  end
 end
         ",
         );
@@ -384,9 +384,9 @@ end
                 ],
                 location: Range {
                     start_row: 4,
-                    start_col: 25,
+                    start_col: 7,
                     end_row: 4,
-                    end_col: 28
+                    end_col: 10
                 }
             }],
             extract_from_contents(contents)
@@ -398,7 +398,7 @@ end
         let contents: String = String::from(
             "\
 module Foo
-    Bar
+  Bar
 end
         ",
         );
@@ -408,10 +408,10 @@ end
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 2,
+                    start_col: 3,
+                    end_row: 2,
+                    end_col: 6
                 }
             }],
             extract_from_contents(contents),
@@ -423,9 +423,9 @@ end
         let contents: String = String::from(
             "\
 module Foo
-    module Bar
-        Baz
-    end
+  module Bar
+    Baz
+  end
 end
         ",
         );
@@ -438,10 +438,10 @@ end
                     String::from("Foo")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 3,
+                    start_col: 5,
+                    end_row: 3,
+                    end_col: 8
                 }
             }],
             extract_from_contents(contents)
@@ -453,11 +453,11 @@ end
         let contents: String = String::from(
             "\
 module Foo
-    module Bar
-        module Baz
-            Boo
-        end
+  module Bar
+    module Baz
+      Boo
     end
+  end
 end
         ",
         );
@@ -472,9 +472,9 @@ end
                 ],
                 location: Range {
                     start_row: 4,
-                    start_col: 13,
+                    start_col: 7,
                     end_row: 4,
-                    end_col: 16
+                    end_col: 10
                 }
             }],
             extract_from_contents(contents)
@@ -486,11 +486,11 @@ end
         let contents: String = String::from(
             "\
 class Foo
-    module Bar
-        class Baz
-            Boo
-        end
+  module Bar
+    class Baz
+      Boo
     end
+  end
 end
         ",
         );
@@ -504,10 +504,10 @@ end
                     String::from("Foo")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 4,
+                    start_col: 7,
+                    end_row: 4,
+                    end_col: 10
                 }
             }],
             extract_from_contents(contents)
@@ -520,7 +520,7 @@ end
         let contents: String = String::from(
             "\
 class Foo::Bar
-    Baz
+  Baz
 end
         ",
         );
@@ -530,10 +530,10 @@ end
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar")],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 2,
+                    start_col: 3,
+                    end_row: 2,
+                    end_col: 6
                 }
             }],
             extract_from_contents(contents),
@@ -546,9 +546,9 @@ end
         let contents: String = String::from(
             "\
 class Foo::Bar
-    module Baz
-        Baz
-    end
+  module Baz
+    Baz
+  end
 end
         ",
         );
@@ -561,10 +561,10 @@ end
                     String::from("Foo::Bar")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 3,
+                    start_col: 5,
+                    end_row: 3,
+                    end_col: 8
                 }
             }],
             extract_from_contents(contents)
@@ -586,9 +586,9 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 2,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 5
                 }
             },
             *reference
@@ -609,9 +609,9 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 2,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 5
                 }
             },
             *reference1
@@ -625,9 +625,9 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 7,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 10
                 }
             },
             *reference2,
@@ -649,9 +649,9 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 2,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 10
                 }
             },
             *reference,
@@ -675,7 +675,7 @@ end
                     start_row: 1,
                     start_col: 1,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 6
                 }
             },
             *reference,
