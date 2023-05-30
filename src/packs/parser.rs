@@ -225,7 +225,6 @@ mod tests {
     fn test_trivial_case() {
         let contents: String = String::from("Foo");
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
@@ -233,9 +232,10 @@ mod tests {
                     start_row: 1,
                     start_col: 1,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 4
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -243,7 +243,6 @@ mod tests {
     fn test_nested_constant() {
         let contents: String = String::from("Foo::Bar");
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar"),
                 module_nesting: vec![],
@@ -251,9 +250,10 @@ mod tests {
                     start_row: 1,
                     start_col: 1,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 9
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -261,7 +261,6 @@ mod tests {
     fn test_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz");
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar::Baz"),
                 module_nesting: vec![],
@@ -271,7 +270,8 @@ mod tests {
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -279,7 +279,6 @@ mod tests {
     fn test_very_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz::Boo");
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Foo::Bar::Baz::Boo"),
                 module_nesting: vec![],
@@ -287,9 +286,10 @@ mod tests {
                     start_row: 1,
                     start_col: 1,
                     end_row: 1,
-                    end_col: 3
+                    end_col: 19
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -297,8 +297,8 @@ mod tests {
     fn test_class_definition() {
         let contents: String = String::from(
             "\
-            class Foo
-            end
+class Foo
+end
         ",
         );
 
@@ -316,7 +316,6 @@ end
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
@@ -326,7 +325,8 @@ end
                     end_row: 2,
                     end_col: 6
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -334,16 +334,15 @@ end
     fn test_deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "\
-            class Foo
-                class Bar
-                    Baz
-                end
-            end
+class Foo
+    class Bar
+        Baz
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![
@@ -351,12 +350,13 @@ end
                     String::from("Foo")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 3,
+                    start_col: 21,
+                    end_row: 3,
+                    end_col: 24
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -364,18 +364,17 @@ end
     fn test_very_deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "\
-            class Foo
-                class Bar
-                    class Baz
-                        Boo
-                    end
-                end
-            end
+class Foo
+    class Bar
+        class Baz
+            Boo
+        end
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
                 module_nesting: vec![
@@ -384,12 +383,13 @@ end
                     String::from("Foo")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 4,
+                    start_col: 25,
+                    end_row: 4,
+                    end_col: 28
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -397,14 +397,13 @@ end
     fn test_module_namespaced_constant() {
         let contents: String = String::from(
             "\
-            module Foo
-                Bar
-            end
+module Foo
+    Bar
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
@@ -414,7 +413,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents),
         );
     }
 
@@ -422,16 +422,15 @@ end
     fn test_deeply_module_namespaced_constant() {
         let contents: String = String::from(
             "\
-            module Foo
-                module Bar
-                    Baz
-                end
-            end
+module Foo
+    module Bar
+        Baz
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![
@@ -444,7 +443,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -452,18 +452,17 @@ end
     fn test_very_deeply_module_namespaced_constant() {
         let contents: String = String::from(
             "\
-            module Foo
-                module Bar
-                    module Baz
-                        Boo
-                    end
-                end
-            end
+module Foo
+    module Bar
+        module Baz
+            Boo
+        end
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
                 module_nesting: vec![
@@ -472,12 +471,13 @@ end
                     String::from("Foo")
                 ],
                 location: Range {
-                    start_row: 1,
-                    start_col: 1,
-                    end_row: 1,
-                    end_col: 3
+                    start_row: 4,
+                    start_col: 13,
+                    end_row: 4,
+                    end_col: 16
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -485,18 +485,17 @@ end
     fn test_mixed_namespaced_constant() {
         let contents: String = String::from(
             "\
-            class Foo
-                module Bar
-                    class Baz
-                        Boo
-                    end
-                end
-            end
+class Foo
+    module Bar
+        class Baz
+            Boo
+        end
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Boo"),
                 module_nesting: vec![
@@ -510,7 +509,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -519,14 +519,13 @@ end
     fn test_compact_style_class_definition_constant() {
         let contents: String = String::from(
             "\
-            class Foo::Bar
-                Baz
-            end
+class Foo::Bar
+    Baz
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar")],
@@ -536,7 +535,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents),
         );
     }
 
@@ -545,16 +545,15 @@ end
     fn test_compact_style_with_nesting_class_definition_constant() {
         let contents: String = String::from(
             "\
-            class Foo::Bar
-                module Baz
-                    Baz
-                end
-            end
+class Foo::Bar
+    module Baz
+        Baz
+    end
+end
         ",
         );
 
         assert_eq!(
-            extract_from_contents(contents),
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![
@@ -567,7 +566,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }]
+            }],
+            extract_from_contents(contents)
         );
     }
 
@@ -581,7 +581,6 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            *reference,
             Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
@@ -591,7 +590,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }
+            },
+            *reference
         );
     }
     #[test]
@@ -604,7 +604,6 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            *reference1,
             Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
@@ -614,13 +613,13 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }
+            },
+            *reference1
         );
         let reference2 = references
             .get(1)
             .expect("There should be a reference at index 1");
         assert_eq!(
-            *reference2,
             Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![],
@@ -630,7 +629,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }
+            },
+            *reference2,
         );
     }
 
@@ -644,7 +644,6 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            *reference,
             Reference {
                 name: String::from("Baz::Boo"),
                 module_nesting: vec![],
@@ -654,7 +653,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }
+            },
+            *reference,
         );
     }
 
@@ -668,7 +668,6 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            *reference,
             Reference {
                 name: String::from("::Foo"),
                 module_nesting: vec![],
@@ -678,7 +677,8 @@ end
                     end_row: 1,
                     end_col: 3
                 }
-            }
+            },
+            *reference,
         );
     }
 }
