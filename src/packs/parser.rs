@@ -13,17 +13,37 @@ use std::{
 pub struct Reference {
     pub name: String,
     pub module_nesting: Vec<String>,
+    pub location: Range,
+}
+
+pub struct ParsedReference {
+    pub name: String,
+    pub module_nesting: Vec<String>,
     pub location: Location,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Range {
+    pub start_row: usize,
+    pub start_col: usize,
+    pub end_row: usize,
+    pub end_col: usize,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Location {
-    pub row: usize,
-    pub column: usize,
+    pub begin: usize,
+    pub end: usize,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct LocationRange {
+    pub start: Location,
+    pub end: Location,
 }
 
 struct ReferenceCollector {
-    pub references: Vec<Reference>,
+    pub references: Vec<ParsedReference>,
     pub current_namespaces: Vec<String>,
 }
 
@@ -82,10 +102,13 @@ impl Visitor for ReferenceCollector {
     }
 
     fn on_const(&mut self, node: &nodes::Const) {
-        self.references.push(Reference {
+        self.references.push(ParsedReference {
             name: fetch_const_const_name(node),
             module_nesting: calculate_module_nesting(&self.current_namespaces),
-            location: Location { row: 0, column: 0 },
+            location: Location {
+                begin: node.expression_l.begin,
+                end: node.expression_l.end,
+            },
         })
     }
 }
@@ -159,7 +182,7 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         buffer_name: "".to_string(),
         ..Default::default()
     };
-    let parser = Parser::new(contents, options);
+    let parser = Parser::new(contents.clone(), options);
     let _ret = parser.do_parse();
     let ast = *_ret.ast.expect("No AST found!");
 
@@ -169,7 +192,75 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     };
 
     collector.visit(&ast);
-    collector.references
+    collector
+        .references
+        .into_iter()
+        .map(|parsed_reference| Reference {
+            name: parsed_reference.name,
+            module_nesting: parsed_reference.module_nesting,
+            location: convert_to_row_col(
+                &contents,
+                parsed_reference.location.begin,
+                parsed_reference.location.end,
+            )
+            .unwrap(),
+        })
+        .collect()
+}
+fn convert_to_row_col(
+    contents: &str,
+    start_pos: usize,
+    end_pos: usize,
+) -> Option<Range> {
+    let mut row = 1;
+    let mut col = 1;
+    let mut start_found = false;
+
+    let mut start_row = 0;
+    let mut start_col = 0;
+    let mut end_row = 0;
+    let mut end_col = 0;
+
+    for (idx, ch) in contents.chars().enumerate() {
+        if idx == start_pos {
+            start_found = true;
+            start_row = row;
+            start_col = col;
+            if start_pos == end_pos {
+                end_row = row;
+                end_col = col + 2; // Adjusted ending column calculation
+                return Some(Range {
+                    start_row,
+                    start_col,
+                    end_row,
+                    end_col,
+                });
+            }
+        }
+        if idx == end_pos {
+            end_row = row;
+            end_col = col + 1;
+            return Some(Range {
+                start_row,
+                start_col,
+                end_row,
+                end_col,
+            });
+        }
+
+        if ch == '\n' {
+            row += 1;
+            col = 1;
+        } else {
+            col += 1;
+        }
+
+        if start_found {
+            col -= 1; // Adjust the column to exclude the newline character
+        }
+    }
+
+    None // Return None if the positions are out of bounds
 }
 
 #[cfg(test)]
@@ -184,7 +275,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -197,7 +293,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Foo::Bar"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -210,7 +311,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Foo::Bar::Baz"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -223,7 +329,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Foo::Bar::Baz::Boo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -241,13 +352,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_class_namespaced_constant() {
         let contents: String = String::from(
             "\
-            class Foo
-                Bar
-            end
+class Foo
+  Bar
+end
         ",
         );
 
@@ -256,7 +366,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
-                location: Location { row: 2, column: 4 }
+                location: Range {
+                    start_row: 2,
+                    start_col: 3,
+                    end_row: 2,
+                    end_col: 5
+                }
             }]
         );
     }
@@ -281,7 +396,12 @@ mod tests {
                     String::from("Foo::Bar"),
                     String::from("Foo")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -309,7 +429,12 @@ mod tests {
                     String::from("Foo::Bar"),
                     String::from("Foo")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -329,7 +454,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -354,7 +484,12 @@ mod tests {
                     String::from("Foo::Bar"),
                     String::from("Foo")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -382,7 +517,12 @@ mod tests {
                     String::from("Foo::Bar"),
                     String::from("Foo")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -410,7 +550,12 @@ mod tests {
                     String::from("Foo::Bar"),
                     String::from("Foo")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -431,7 +576,12 @@ mod tests {
             vec![Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar")],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -457,7 +607,12 @@ mod tests {
                     String::from("Foo::Bar::Baz"),
                     String::from("Foo::Bar")
                 ],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }]
         );
     }
@@ -476,7 +631,12 @@ mod tests {
             Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }
         );
     }
@@ -494,7 +654,12 @@ mod tests {
             Reference {
                 name: String::from("Foo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }
         );
         let reference2 = references
@@ -505,7 +670,12 @@ mod tests {
             Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }
         );
     }
@@ -524,7 +694,12 @@ mod tests {
             Reference {
                 name: String::from("Baz::Boo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }
         );
     }
@@ -543,7 +718,12 @@ mod tests {
             Reference {
                 name: String::from("::Foo"),
                 module_nesting: vec![],
-                location: Location { row: 0, column: 0 }
+                location: Range {
+                    start_row: 1,
+                    start_col: 1,
+                    end_row: 1,
+                    end_col: 3
+                }
             }
         );
     }
