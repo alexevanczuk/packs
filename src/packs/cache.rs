@@ -64,7 +64,10 @@ fn references_to_cache_entry(
                 constant_name: r.name.to_owned(),
                 namespace_path: r.module_nesting.to_owned(),
                 relative_path: relative_path.to_owned(),
-                source_location: SourceLocation::default(),
+                source_location: SourceLocation {
+                    line: r.location.start_col,
+                    column: r.location.end_col,
+                },
             }
         })
         .collect();
@@ -133,7 +136,7 @@ mod tests {
                 constant_name: String::from("Bar"),
                 namespace_path: vec![String::from("Foo")],
                 relative_path: String::from("packs/foo/app/services/foo.rb"),
-                source_location: SourceLocation { line: 0, column: 0 },
+                source_location: SourceLocation { line: 5, column: 8 },
             }],
         };
 
