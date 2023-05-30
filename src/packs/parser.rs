@@ -2,6 +2,7 @@ use glob::glob;
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
 };
+use line_col::LineColLookup;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -182,6 +183,8 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         buffer_name: "".to_string(),
         ..Default::default()
     };
+
+    let lookup = LineColLookup::new(&contents);
     let parser = Parser::new(contents.clone(), options);
     let _ret = parser.do_parse();
     let ast = *_ret.ast.expect("No AST found!");
@@ -195,72 +198,23 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     collector
         .references
         .into_iter()
-        .map(|parsed_reference| Reference {
-            name: parsed_reference.name,
-            module_nesting: parsed_reference.module_nesting,
-            location: convert_to_row_col(
-                &contents,
-                parsed_reference.location.begin,
-                parsed_reference.location.end,
-            )
-            .unwrap(),
-        })
-        .collect()
-}
-fn convert_to_row_col(
-    contents: &str,
-    start_pos: usize,
-    end_pos: usize,
-) -> Option<Range> {
-    let mut row = 1;
-    let mut col = 1;
-    let mut start_found = false;
+        .map(|parsed_reference| {
+            let (start_row, start_col) =
+                lookup.get(parsed_reference.location.begin);
+            let (end_row, end_col) = lookup.get(parsed_reference.location.end);
 
-    let mut start_row = 0;
-    let mut start_col = 0;
-    let mut end_row = 0;
-    let mut end_col = 0;
-
-    for (idx, ch) in contents.chars().enumerate() {
-        if idx == start_pos {
-            start_found = true;
-            start_row = row;
-            start_col = col;
-            if start_pos == end_pos {
-                end_row = row;
-                end_col = col + 2; // Adjusted ending column calculation
-                return Some(Range {
+            Reference {
+                name: parsed_reference.name,
+                module_nesting: parsed_reference.module_nesting,
+                location: Range {
                     start_row,
                     start_col,
                     end_row,
                     end_col,
-                });
+                },
             }
-        }
-        if idx == end_pos {
-            end_row = row;
-            end_col = col + 1;
-            return Some(Range {
-                start_row,
-                start_col,
-                end_row,
-                end_col,
-            });
-        }
-
-        if ch == '\n' {
-            row += 1;
-            col = 1;
-        } else {
-            col += 1;
-        }
-
-        if start_found {
-            col -= 1; // Adjust the column to exclude the newline character
-        }
-    }
-
-    None // Return None if the positions are out of bounds
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -370,7 +324,7 @@ end
                     start_row: 2,
                     start_col: 3,
                     end_row: 2,
-                    end_col: 5
+                    end_col: 6
                 }
             }]
         );
