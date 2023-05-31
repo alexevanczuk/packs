@@ -86,8 +86,15 @@ impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
         // self.visit(&node.name);
-        let namespace = fetch_const_name(&node.name)
-            .expect("We expect no parse errors in class/module definitions");
+        let namespace_result = fetch_const_name(&node.name);
+        // For now, we simply exit and stop traversing if we encounter an error when fetching the constant name of a class
+        // We can iterate on this if this is different than the packwerk implementation
+        if namespace_result.is_err() {
+            return;
+        }
+
+        let namespace = namespace_result.unwrap();
+
         // We're not visiting super classes either
         // if let Some(inner) = node.superclass.as_ref() {
         //     self.visit(inner);
