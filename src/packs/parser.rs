@@ -1,6 +1,6 @@
 use glob::glob;
 use lib_ruby_parser::{
-    nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
+    nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
 use rayon::prelude::*;
@@ -27,19 +27,13 @@ impl Reference {
     }
 }
 
-pub struct ParsedReference {
-    pub name: String,
-    pub module_nesting: Vec<String>,
-    pub location: Location,
-}
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct ParsedDefinition {
+pub struct Definition {
     pub fully_qualified_name: String,
-    pub location: Location,
+    pub location: Range,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Range {
     pub start_row: usize,
     pub start_col: usize,
@@ -59,16 +53,30 @@ pub struct LocationRange {
     pub end: Location,
 }
 
-struct ReferenceCollector {
-    pub references: Vec<ParsedReference>,
-    pub definitions: Vec<ParsedDefinition>,
+struct ReferenceCollector<'a> {
+    pub references: Vec<Reference>,
+    pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
+    pub line_col_lookup: LineColLookup<'a>,
 }
 
 #[derive(Debug)]
 enum ParseError {
     Metaprogramming,
     // Add more variants as needed for different error cases
+}
+
+fn fetch_node_location(node: &nodes::Node) -> Result<Loc, ParseError> {
+    match node {
+        Node::Const(const_node) => Ok(const_node.expression_l),
+        node => {
+            dbg!(node);
+            panic!(
+                "Cannot handle other node in get_constant_node_name: {:?}",
+                node
+            )
+        }
+    }
 }
 
 fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
@@ -110,7 +118,7 @@ fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     }
 }
 
-impl Visitor for ReferenceCollector {
+impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
         // self.visit(&node.name);
@@ -131,12 +139,18 @@ impl Visitor for ReferenceCollector {
         name_components.push(namespace.to_owned());
         let fully_qualified_name = name_components.join("::");
 
-        self.definitions.push(ParsedDefinition {
+        let definition_loc = fetch_node_location(&node.name).unwrap();
+        let location = loc_to_range(definition_loc, &self.line_col_lookup);
+        self.definitions.push(Definition {
             fully_qualified_name,
-            location: Location {
-                begin: node.expression_l.begin,
-                end: node.expression_l.end,
-            },
+            location: location.to_owned(),
+        });
+
+        // Packwerk also considers a definition to be a "reference"
+        self.references.push(Reference {
+            name: namespace.to_owned(),
+            module_nesting: calculate_module_nesting(&self.current_namespaces),
+            location,
         });
 
         // Note – is there a way to use lifetime specifiers to get rid of this and
@@ -163,12 +177,9 @@ impl Visitor for ReferenceCollector {
         name_components.push(name);
         let fully_qualified_name = name_components.join("::");
 
-        self.definitions.push(ParsedDefinition {
+        self.definitions.push(Definition {
             fully_qualified_name,
-            location: Location {
-                begin: node.expression_l.begin,
-                end: node.expression_l.end,
-            },
+            location: loc_to_range(node.expression_l, &self.line_col_lookup),
         });
     }
 
@@ -187,17 +198,29 @@ impl Visitor for ReferenceCollector {
 
     fn on_const(&mut self, node: &nodes::Const) {
         if let Ok(name) = fetch_const_const_name(node) {
-            self.references.push(ParsedReference {
+            self.references.push(Reference {
                 name,
                 module_nesting: calculate_module_nesting(
                     &self.current_namespaces,
                 ),
-                location: Location {
-                    begin: node.expression_l.begin,
-                    end: node.expression_l.end,
-                },
+                location: loc_to_range(
+                    node.expression_l,
+                    &self.line_col_lookup,
+                ),
             })
         }
+    }
+}
+
+fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
+    let (start_row, start_col) = lookup.get(loc.begin);
+    let (end_row, end_col) = lookup.get(loc.end);
+
+    Range {
+        start_row,
+        start_col,
+        end_row,
+        end_col,
     }
 }
 
@@ -284,6 +307,7 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         references: vec![],
         current_namespaces: vec![],
         definitions: vec![],
+        line_col_lookup: lookup,
     };
 
     collector.visit(&ast);
@@ -296,24 +320,9 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     collector
         .references
         .into_iter()
-        .map(|parsed_reference| {
-            let (start_row, start_col) =
-                lookup.get(parsed_reference.location.begin);
-            let (end_row, end_col) = lookup.get(parsed_reference.location.end);
-
-            Reference {
-                name: parsed_reference.name,
-                module_nesting: parsed_reference.module_nesting,
-                location: Range {
-                    start_row,
-                    start_col,
-                    end_row,
-                    end_col,
-                },
-            }
-        })
         .filter(|r| {
             dbg!(&collector.definitions);
+            dbg!(r);
             for constant_name in r.possible_fully_qualified_constants() {
                 if def_set.contains(&constant_name) {
                     return false;
@@ -404,8 +413,8 @@ mod tests {
     fn test_class_definition() {
         let contents: String = String::from(
             "\
-    class Foo
-    end
+class Foo
+end
             ",
         );
 
