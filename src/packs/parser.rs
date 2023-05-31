@@ -316,13 +316,13 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         .iter()
         .map(|d| &d.fully_qualified_name);
     let def_set: HashSet<&String> = definition_iter.collect();
+    dbg!(&collector.definitions);
+    dbg!(&collector.references);
 
     collector
         .references
         .into_iter()
         .filter(|r| {
-            dbg!(&collector.definitions);
-            dbg!(r);
             for constant_name in r.possible_fully_qualified_constants() {
                 if def_set.contains(&constant_name) {
                     return false;
@@ -832,5 +832,52 @@ end
         );
 
         assert_eq!(extract_from_contents(contents), vec![]);
+    }
+
+    #[test]
+    fn test_super_classes_are_references() {
+        let contents: String = String::from(
+            "\
+class Foo < Bar
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("Bar"),
+                module_nesting: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 13,
+                    end_row: 1,
+                    end_col: 16
+                }
+            },
+            *first_reference,
+        );
+
+        let second_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+
+        assert_eq!(
+            Reference {
+                name: String::from("Foo"),
+                module_nesting: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 7,
+                    end_row: 1,
+                    end_col: 10
+                }
+            },
+            *second_reference,
+        );
     }
 }
