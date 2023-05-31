@@ -3,7 +3,7 @@ use std::{error::Error, process::Command};
 
 #[test]
 fn test_generate_cache() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("pks")?
+    Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("generate-cache")

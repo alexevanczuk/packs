@@ -7,15 +7,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'pks'",
+      "name": "Debug executable 'packs'",
       "cargo": {
         "args": [
           "build",
-          "--bin=pks",
-          "--package=pks"
+          "--bin=packs",
+          "--package=packs"
         ],
         "filter": {
-          "name": "pks",
+          "name": "packs",
           "kind": "bin"
         }
       },
@@ -25,16 +25,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'pks'",
+      "name": "Debug unit tests in executable 'packs'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=pks",
-          "--package=pks"
+          "--bin=packs",
+          "--package=packs"
         ],
         "filter": {
-          "name": "pks",
+          "name": "packs",
           "kind": "bin"
         }
       },
@@ -50,7 +50,7 @@
           "test",
           "--no-run",
           "--test=list_packs_test",
-          "--package=pks"
+          "--package=packs"
         ],
         "filter": {
           "name": "list_packs_test",
@@ -69,7 +69,7 @@
           "test",
           "--no-run",
           "--test=simple_dependency_test",
-          "--package=pks"
+          "--package=packs"
         ],
         "filter": {
           "name": "simple_dependency_test",
