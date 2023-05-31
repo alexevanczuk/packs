@@ -48,26 +48,34 @@ struct ReferenceCollector {
     pub current_namespaces: Vec<String>,
 }
 
-fn fetch_const_name(node: &nodes::Node) -> String {
+#[derive(Debug)]
+enum ParseError {
+    Metaprogramming,
+    // Add more variants as needed for different error cases
+}
+
+fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
     match node {
-        Node::Const(const_node) => fetch_const_const_name(const_node),
-        Node::Cbase(_) => String::from(""),
-        _ => {
+        Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
+        Node::Cbase(_) => Ok(String::from("")),
+        Node::Send(_) => Err(ParseError::Metaprogramming),
+        node => {
+            dbg!(node);
             panic!(
-                "Cannot handle other node in get_constant_node_name: {}",
-                node.inspect(2)
+                "Cannot handle other node in get_constant_node_name: {:?}",
+                node
             )
         }
     }
 }
 
-fn fetch_const_const_name(node: &nodes::Const) -> String {
+fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
     match &node.scope {
         Some(s) => {
-            let parent_namespace = fetch_const_name(s);
-            format!("{}::{}", parent_namespace, node.name)
+            let parent_namespace = fetch_const_name(s)?;
+            Ok(format!("{}::{}", parent_namespace, node.name))
         }
-        None => node.name.to_owned(),
+        None => Ok(node.name.to_owned()),
     }
 }
 
@@ -75,7 +83,8 @@ impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
         // self.visit(&node.name);
-        let namespace = fetch_const_name(&node.name);
+        let namespace = fetch_const_name(&node.name)
+            .expect("We expect no parse errors in class/module definitions");
         // We're not visiting super classes either
         // if let Some(inner) = node.superclass.as_ref() {
         //     self.visit(inner);
@@ -95,7 +104,8 @@ impl Visitor for ReferenceCollector {
 
     // TODO: extract the common stuff from on_class
     fn on_module(&mut self, node: &nodes::Module) {
-        let namespace = fetch_const_name(&node.name);
+        let namespace = fetch_const_name(&node.name)
+            .expect("We expect no parse errors in class/module definitions");
         self.current_namespaces.push(namespace);
 
         if let Some(inner) = &node.body {
@@ -106,14 +116,18 @@ impl Visitor for ReferenceCollector {
     }
 
     fn on_const(&mut self, node: &nodes::Const) {
-        self.references.push(ParsedReference {
-            name: fetch_const_const_name(node),
-            module_nesting: calculate_module_nesting(&self.current_namespaces),
-            location: Location {
-                begin: node.expression_l.begin,
-                end: node.expression_l.end,
-            },
-        })
+        if let Ok(name) = fetch_const_const_name(node) {
+            self.references.push(ParsedReference {
+                name,
+                module_nesting: calculate_module_nesting(
+                    &self.current_namespaces,
+                ),
+                location: Location {
+                    begin: node.expression_l.begin,
+                    end: node.expression_l.end,
+                },
+            })
+        }
     }
 }
 
