@@ -324,6 +324,29 @@ mod tests {
         );
     }
 
+    // #[test]
+    //     fn test_class_definition() {
+    //         let contents: String = String::from(
+    //             "\
+    // class Foo
+    // end
+    //         ",
+    //         );
+
+    //         assert_eq!(
+    //             vec![Reference {
+    //                 name: String::from("Foo"),
+    //                 module_nesting: vec![],
+    //                 location: Range {
+    //                     start_row: 1,
+    //                     start_col: 7,
+    //                     end_row: 1,
+    //                     end_col: 10
+    //                 }
+    //             }],
+    //             extract_from_contents(contents)
+    //         );
+    //     }
     #[test]
     fn test_class_definition() {
         let contents: String = String::from(
