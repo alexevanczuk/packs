@@ -720,4 +720,20 @@ end
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 0);
     }
+
+    #[test]
+    fn test_ignore_local_constant() {
+        let contents: String = String::from(
+            "\
+class Foo
+  BAR = 1
+  def use_bar
+    puts BAR
+  end
+end
+        ",
+        );
+
+        assert_eq!(extract_from_contents(contents), vec![]);
+    }
 }
