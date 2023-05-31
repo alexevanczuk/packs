@@ -59,6 +59,7 @@ fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
         Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
         Node::Cbase(_) => Ok(String::from("")),
         Node::Send(_) => Err(ParseError::Metaprogramming),
+        Node::Lvar(_) => Err(ParseError::Metaprogramming),
         node => {
             dbg!(node);
             panic!(
