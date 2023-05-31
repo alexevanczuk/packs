@@ -6,6 +6,7 @@ use line_col::LineColLookup;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -17,9 +18,24 @@ pub struct Reference {
     pub location: Range,
 }
 
+impl Reference {
+    fn possible_fully_qualified_constants(&self) -> Vec<String> {
+        self.module_nesting
+            .iter()
+            .map(|nesting| format!("{}::{}", nesting, self.name))
+            .collect()
+    }
+}
+
 pub struct ParsedReference {
     pub name: String,
     pub module_nesting: Vec<String>,
+    pub location: Location,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ParsedDefinition {
+    pub fully_qualified_name: String,
     pub location: Location,
 }
 
@@ -45,6 +61,7 @@ pub struct LocationRange {
 
 struct ReferenceCollector {
     pub references: Vec<ParsedReference>,
+    pub definitions: Vec<ParsedDefinition>,
     pub current_namespaces: Vec<String>,
 }
 
@@ -82,6 +99,17 @@ fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
     }
 }
 
+// TODO: Combine with fetch_const_const_name
+fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
+    match &node.scope {
+        Some(s) => {
+            let parent_namespace = fetch_const_name(s)?;
+            Ok(format!("{}::{}", parent_namespace, node.name))
+        }
+        None => Ok(node.name.to_owned()),
+    }
+}
+
 impl Visitor for ReferenceCollector {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definition
@@ -100,6 +128,18 @@ impl Visitor for ReferenceCollector {
         //     self.visit(inner);
         // }
 
+        let mut name_components = self.current_namespaces.clone();
+        name_components.push(namespace.to_owned());
+        let fully_qualified_name = name_components.join("::");
+
+        self.definitions.push(ParsedDefinition {
+            fully_qualified_name,
+            location: Location {
+                begin: node.expression_l.begin,
+                end: node.expression_l.end,
+            },
+        });
+
         // Note – is there a way to use lifetime specifiers to get rid of this and
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
@@ -110,6 +150,27 @@ impl Visitor for ReferenceCollector {
         }
 
         self.current_namespaces.pop();
+    }
+
+    fn on_casgn(&mut self, node: &nodes::Casgn) {
+        let name_result = fetch_casgn_name(node);
+        if name_result.is_err() {
+            return;
+        }
+
+        let name = name_result.unwrap();
+
+        let mut name_components: Vec<String> = self.current_namespaces.clone();
+        name_components.push(name);
+        let fully_qualified_name = name_components.join("::");
+
+        self.definitions.push(ParsedDefinition {
+            fully_qualified_name,
+            location: Location {
+                begin: node.expression_l.begin,
+                end: node.expression_l.end,
+            },
+        });
     }
 
     // TODO: extract the common stuff from on_class
@@ -223,9 +284,16 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     let mut collector = ReferenceCollector {
         references: vec![],
         current_namespaces: vec![],
+        definitions: vec![],
     };
 
     collector.visit(&ast);
+    let definition_iter = collector
+        .definitions
+        .iter()
+        .map(|d| &d.fully_qualified_name);
+    let def_set: HashSet<&String> = definition_iter.collect();
+
     collector
         .references
         .into_iter()
@@ -244,6 +312,15 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
                     end_col,
                 },
             }
+        })
+        .filter(|r| {
+            dbg!(&collector.definitions);
+            for constant_name in r.possible_fully_qualified_constants() {
+                if def_set.contains(&constant_name) {
+                    return false;
+                }
+            }
+            true
         })
         .collect()
 }
