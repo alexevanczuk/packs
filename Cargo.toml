@@ -7,11 +7,9 @@ edition = "2021"
 description = "TODO"
 license = "MIT"
 
-# Couldn't get the CLI import working, but would be nice to have the packs executable!
-# [[bin]]
-# name = "packs"
-# test = false
-# bench = false
+[[bin]]
+name = "packs"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] } # cli
