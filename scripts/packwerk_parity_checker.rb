@@ -15,6 +15,11 @@ require 'pry'
 require 'yaml'
 require 'digest'
 
+Dir.chdir('../packs') do
+  puts "Running cargo build --release in ../packs"
+  system('cargo build --release')
+end
+
 command = "time ../packs/target/release/packs generate-cache"
 puts "Running: #{command}"
 system(command)
@@ -40,6 +45,8 @@ Dir['app/**/*.rb'].each do |f|
     "cache has #{cache.count} unresolved references",
     "experimental cache has #{experimental_cache.count} unresolved references",
     "diff count is #{diff.count}",
+    "cache content: #{cache.inspect}",
+    "experimental_cache content: #{experimental_cache.inspect}",
     "diff is #{diff}"
   ]
   break if diff.count > 0
