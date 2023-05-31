@@ -15,6 +15,10 @@ require 'pry'
 require 'yaml'
 require 'digest'
 
+command = "time ../packs/target/release/packs generate-cache"
+puts "Running: #{command}"
+system(command)
+
 output = Pathname.new('tmp/filename_to_digest_map.yml')
 filemap = {}
 Dir['app/**/*.rb'].each do |f|

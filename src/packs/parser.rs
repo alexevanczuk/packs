@@ -123,10 +123,9 @@ impl Visitor for ReferenceCollector {
 
         let namespace = namespace_result.unwrap();
 
-        // We're not visiting super classes either
-        // if let Some(inner) = node.superclass.as_ref() {
-        //     self.visit(inner);
-        // }
+        if let Some(inner) = node.superclass.as_ref() {
+            self.visit(inner);
+        }
 
         let mut name_components = self.current_namespaces.clone();
         name_components.push(namespace.to_owned());
