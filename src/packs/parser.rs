@@ -681,4 +681,12 @@ end
             *reference,
         );
     }
+
+    #[test]
+    // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
+    fn test_metaprogrammatically_referenced_constant() {
+        let contents: String = String::from("described_class::Foo");
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 0);
+    }
 }
