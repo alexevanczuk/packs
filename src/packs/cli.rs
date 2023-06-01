@@ -54,7 +54,7 @@ pub fn run() {
                     write_cache(absolute_root.as_path(), path.as_path())
                 })
             } else {
-                let pattern = absolute_root.join("packs/**/*.rb");
+                let pattern = absolute_root.join("app/**/*.rb");
                 let paths = glob(pattern.to_str().unwrap())
                     .expect("Failed to read glob pattern");
                 paths.par_bridge().for_each(|path| match path {

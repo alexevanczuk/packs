@@ -120,8 +120,7 @@ fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
 
 impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_class(&mut self, node: &nodes::Class) {
-        // We're not collecting definitions, so no need to visit the class definition
-        // self.visit(&node.name);
+        // We're not collecting definitions, so no need to visit the class definitioname);
         let namespace_result = fetch_const_name(&node.name);
         // For now, we simply exit and stop traversing if we encounter an error when fetching the constant name of a class
         // We can iterate on this if this is different than the packwerk implementation
@@ -138,6 +137,14 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let mut name_components = self.current_namespaces.clone();
         name_components.push(namespace.to_owned());
         let fully_qualified_name = name_components.join("::");
+
+        // let fully_qualified_name = if self.current_namespaces.len() > 0 {
+        //     let mut name_components = self.current_namespaces.clone();
+        //     name_components.push(namespace.to_owned());
+        //     name_components.join("::")
+        // } else {
+        //     format!("::{}", namespace)
+        // };
 
         let definition_loc = fetch_node_location(&node.name).unwrap();
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
@@ -218,7 +225,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
 
     Range {
         start_row,
-        start_col,
+        start_col: start_col - 1, // There's an off-by-one difference here with packwerk
         end_row,
         end_col,
     }
@@ -262,7 +269,7 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
 
 pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
-    let pattern = absolute_root.join("packs/**/*.rb");
+    let pattern = absolute_root.join("app/**/*.rb");
 
     glob(pattern.to_str().unwrap())
         .expect("Failed to read glob pattern")
@@ -316,8 +323,6 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         .iter()
         .map(|d| &d.fully_qualified_name);
     let def_set: HashSet<&String> = definition_iter.collect();
-    dbg!(&collector.definitions);
-    dbg!(&collector.references);
 
     collector
         .references

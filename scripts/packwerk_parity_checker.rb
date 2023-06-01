@@ -32,8 +32,9 @@ Dir['app/**/*.rb'].each do |f|
   cache_path = Pathname.new('tmp/cache/packwerk').join(cache_basename)
   experimental_cache_path = Pathname.new('tmp/cache/packwerk').join(experimental_cache_basename)
 
-  cache = JSON.parse(cache_path.read)['unresolved_references']
-  experimental_cache = JSON.parse(experimental_cache_path.read)['unresolved_references']
+  cache = JSON.parse(cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
+  experimental_cache = JSON.parse(experimental_cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
+  # binding.pry
   diff = Hashdiff.diff(
     cache,
     experimental_cache
