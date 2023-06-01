@@ -133,7 +133,7 @@ mod tests {
                 constant_name: String::from("Bar"),
                 namespace_path: vec![String::from("Foo")],
                 relative_path: String::from("packs/foo/app/services/foo.rb"),
-                source_location: SourceLocation { line: 3, column: 5 },
+                source_location: SourceLocation { line: 3, column: 4 },
             }],
         };
 

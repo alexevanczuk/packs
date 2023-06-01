@@ -351,7 +351,7 @@ mod tests {
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 0,
                     end_row: 1,
                     end_col: 4
                 }
@@ -369,7 +369,7 @@ mod tests {
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 0,
                     end_row: 1,
                     end_col: 9
                 }
@@ -387,7 +387,7 @@ mod tests {
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 0,
                     end_row: 1,
                     end_col: 14
                 }
@@ -405,7 +405,7 @@ mod tests {
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 0,
                     end_row: 1,
                     end_col: 19
                 }
@@ -429,7 +429,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 1,
                     end_col: 10
                 }
@@ -454,7 +454,7 @@ end
                 module_nesting: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
-                    start_col: 3,
+                    start_col: 2,
                     end_row: 2,
                     end_col: 6
                 }
@@ -484,7 +484,7 @@ end
                 ],
                 location: Range {
                     start_row: 3,
-                    start_col: 5,
+                    start_col: 4,
                     end_row: 3,
                     end_col: 8
                 }
@@ -517,7 +517,7 @@ end
                 ],
                 location: Range {
                     start_row: 4,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 4,
                     end_col: 10
                 }
@@ -542,7 +542,7 @@ end
                 module_nesting: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
-                    start_col: 3,
+                    start_col: 2,
                     end_row: 2,
                     end_col: 6
                 }
@@ -572,7 +572,7 @@ end
                 ],
                 location: Range {
                     start_row: 3,
-                    start_col: 5,
+                    start_col: 4,
                     end_row: 3,
                     end_col: 8
                 }
@@ -605,7 +605,7 @@ end
                 ],
                 location: Range {
                     start_row: 4,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 4,
                     end_col: 10
                 }
@@ -638,7 +638,7 @@ end
                 ],
                 location: Range {
                     start_row: 4,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 4,
                     end_col: 10
                 },
@@ -664,7 +664,7 @@ end
                 module_nesting: vec![String::from("Foo::Bar")],
                 location: Range {
                     start_row: 2,
-                    start_col: 3,
+                    start_col: 2,
                     end_row: 2,
                     end_col: 6
                 }
@@ -695,7 +695,7 @@ end
                 ],
                 location: Range {
                     start_row: 3,
-                    start_col: 5,
+                    start_col: 4,
                     end_row: 3,
                     end_col: 8
                 }
@@ -719,7 +719,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 2,
+                    start_col: 1,
                     end_row: 1,
                     end_col: 5
                 }
@@ -742,7 +742,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 2,
+                    start_col: 1,
                     end_row: 1,
                     end_col: 5
                 }
@@ -758,7 +758,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 1,
                     end_col: 10
                 }
@@ -782,7 +782,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 2,
+                    start_col: 1,
                     end_row: 1,
                     end_col: 10
                 }
@@ -806,7 +806,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 1,
+                    start_col: 0,
                     end_row: 1,
                     end_col: 6
                 }
@@ -843,7 +843,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 1,
                     end_col: 10
                 }
@@ -871,7 +871,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 13,
+                    start_col: 12,
                     end_row: 1,
                     end_col: 16
                 }
@@ -889,7 +889,7 @@ end
                 module_nesting: vec![],
                 location: Range {
                     start_row: 1,
-                    start_col: 7,
+                    start_col: 6,
                     end_row: 1,
                     end_col: 10
                 }
