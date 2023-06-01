@@ -104,16 +104,23 @@ class Result < T::Struct
 end
 
 all_files = Dir['packs/**/*.rb']
+# Shuffle can be used to find a simpler error to fix
+all_files.shuffle! if ENV['SHUFFLE']
 
 bar = ProgressBar.create(total: all_files.count, throttle_rate: 1, format: '%a %t [%c/%C files]: %B %j%%, %E')
 found_failure = false
+success_count = 0
+all_count = 0
 all_results = Parallel.map(all_files, in_threads: 8) do |f|
   bar.increment
+  all_count += 1
   next if found_failure && ENV['FAIL_FAST']
   result = Result.from_file(f)
   if result.success?
-    bar.log "Success for #{f}!"
+    success_count += 1
+    bar.log "Success! Success ratio is now: #{(success_count/all_count.to_f*100).round(2)} (#{f} was successful)!"
   else
+    bar.log "Failure! Success ratio is now: #{(success_count/all_count.to_f*100).round(2)} (#{f} failed)!"
     found_failure = true
   end
   result
