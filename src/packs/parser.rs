@@ -233,6 +233,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             fully_qualified_name,
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         });
+
+        // TODO: Write a failing test for references to constants within a constant assignment
+        // self.visit(node.value)
     }
 
     // TODO: extract the common stuff from on_class
