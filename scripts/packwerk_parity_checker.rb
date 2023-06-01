@@ -32,33 +32,40 @@ command = "time ../#{packs_dir}/target/release/packs generate-cache"
 puts "Running: #{command}"
 system(command)
 
+class Cache < T::Struct
+  const :file, Pathname
+  const :unresolved_references, T.untyped
+
+  def self.from(file)
+    unresolved_references = sorted_unresolved_references_for(file)
+    Cache.new(file:, unresolved_references:)
+  end
+
+  def self.sorted_unresolved_references_for(cache_path)
+    if cache_path.exist?
+      # Sort by constant name and then location (in case there are multiple references)
+      JSON.parse(cache_path.read)['unresolved_references'].sort_by{|h| [h['constant_name'], h['source_location']['line'], h['source_location']['column']]}
+    else
+      []
+    end
+  end
+
+end
+
 class Result < T::Struct
   const :file, String
-  const :original, T.untyped
-  const :experimental, T.untyped
+  const :original, Cache
+  const :experimental, Cache
   const :diff, T.untyped
 
   def self.from_file(f)
     cache_dir = Pathname.new('tmp/cache/packwerk')
     cache_basename = Digest::MD5.hexdigest(f)
     experimental_cache_basename = "#{cache_basename}-experimental"
-    original_cache_path = cache_dir.join(cache_basename)
-    experimental_cache_path = cache_dir.join(experimental_cache_basename)
-
-    original = sorted_unresolved_references_for(original_cache_path)
-    experimental = sorted_unresolved_references_for(experimental_cache_path)
-
-    diff = Hashdiff.diff(original, experimental)
-
+    original = Cache.from(cache_dir.join(cache_basename))
+    experimental = Cache.from(cache_dir.join(experimental_cache_basename))
+    diff = Hashdiff.diff(original.unresolved_references, experimental.unresolved_references)
     Result.new(original:, experimental:, diff:, file: f)
-  end
-
-  def self.sorted_unresolved_references_for(cache_path)
-    if cache_path.exist?
-      JSON.parse(cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
-    else
-      nil
-    end
   end
 
   def pretty_print
@@ -72,11 +79,11 @@ class Result < T::Struct
 
       lines << "===================================="
       lines << "Results for file: #{file}"
-      lines << "original cache has #{original.count} unresolved references"
-      lines << "experimental cache has #{experimental.count} unresolved references"
+      lines << "original cache at #{original.file} has #{original.unresolved_references.count} unresolved references"
+      lines << "experimental cache at #{experimental.file} has #{experimental.unresolved_references.count} unresolved references"
       lines << "diff count is #{diff.count}"
-      lines << "original cache content: #{get_pretty_printed_string(original)}"
-      lines << "experimental cache content: #{get_pretty_printed_string(experimental)}"
+      lines << "original cache content: #{get_pretty_printed_string(original.unresolved_references)}"
+      lines << "experimental cache content: #{get_pretty_printed_string(experimental.unresolved_references)}"
       lines << "diff is #{get_pretty_printed_string(diff)}"
     end
 

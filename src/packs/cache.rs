@@ -62,7 +62,7 @@ fn references_to_cache_entry(
         .map(|r| -> ReferenceEntry {
             ReferenceEntry {
                 constant_name: r.name.to_owned(),
-                namespace_path: r.module_nesting.to_owned(),
+                namespace_path: r.namespace_path.to_owned(),
                 relative_path: relative_path.to_owned(),
                 source_location: SourceLocation {
                     line: r.location.start_row,
@@ -129,12 +129,24 @@ mod tests {
                 // Digest::MD5.hexdigest(File.read('tests/fixtures/simple_app/packs/foo/app/services/foo.rb'))
                 "4be8effd7ac57323adcb53d0cf0ce789",
             ),
-            unresolved_references: vec![ReferenceEntry {
-                constant_name: String::from("Bar"),
-                namespace_path: vec![String::from("Foo")],
-                relative_path: String::from("packs/foo/app/services/foo.rb"),
-                source_location: SourceLocation { line: 3, column: 4 },
-            }],
+            unresolved_references: vec![
+                ReferenceEntry {
+                    constant_name: String::from("::Foo"),
+                    namespace_path: vec![String::from("Foo")],
+                    relative_path: String::from(
+                        "packs/foo/app/services/foo.rb",
+                    ),
+                    source_location: SourceLocation { line: 1, column: 7 },
+                },
+                ReferenceEntry {
+                    constant_name: String::from("Bar"),
+                    namespace_path: vec![String::from("Foo")],
+                    relative_path: String::from(
+                        "packs/foo/app/services/foo.rb",
+                    ),
+                    source_location: SourceLocation { line: 3, column: 4 },
+                },
+            ],
         };
 
         write_cache(
