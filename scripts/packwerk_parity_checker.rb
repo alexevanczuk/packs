@@ -11,7 +11,8 @@
 #   $ ruby path/to/scripts/packwerk_parity_checker.rb
 # or
 #   $ PACKS_DIR=packs-rs time ruby ../packs-rs/scripts/packwerk_parity_checker.rb 
-#
+# also..
+# add FAIL_FAST=1 to fail on the first failing file
 require 'json'
 require 'hashdiff'
 require 'pathname'
@@ -108,7 +109,7 @@ bar = ProgressBar.create(total: all_files.count, throttle_rate: 1, format: '%a %
 found_failure = false
 all_results = Parallel.map(all_files, in_threads: 8) do |f|
   bar.increment
-  next if found_failure
+  next if found_failure && ENV['FAIL_FAST']
   result = Result.from_file(f)
   if result.success?
     bar.log "Success for #{f}!"
