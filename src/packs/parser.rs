@@ -156,7 +156,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         // Packwerk also considers a definition to be a "reference"
         self.references.push(Reference {
-            name: fully_qualified_name.to_owned(),
+            name: fully_qualified_name,
             module_nesting: calculate_module_nesting(&self.current_namespaces),
             location,
         });
