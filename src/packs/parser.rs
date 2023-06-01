@@ -134,36 +134,32 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             self.visit(inner);
         }
 
-        let mut name_components = self.current_namespaces.clone();
-        name_components.push(namespace.to_owned());
-        let fully_qualified_name = name_components.join("::");
-
-        // let fully_qualified_name = if self.current_namespaces.len() > 0 {
-        //     let mut name_components = self.current_namespaces.clone();
-        //     name_components.push(namespace.to_owned());
-        //     name_components.join("::")
-        // } else {
-        //     format!("::{}", namespace)
-        // };
-
-        let definition_loc = fetch_node_location(&node.name).unwrap();
-        let location = loc_to_range(definition_loc, &self.line_col_lookup);
-        self.definitions.push(Definition {
-            fully_qualified_name,
-            location: location.to_owned(),
-        });
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(Reference {
-            name: namespace.to_owned(),
-            module_nesting: calculate_module_nesting(&self.current_namespaces),
-            location,
-        });
+        let fully_qualified_name = if !self.current_namespaces.is_empty() {
+            let mut name_components = self.current_namespaces.clone();
+            name_components.push(namespace.to_owned());
+            name_components.join("::")
+        } else {
+            format!("::{}", namespace)
+        };
 
         // Note – is there a way to use lifetime specifiers to get rid of this and
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
+
+        let definition_loc = fetch_node_location(&node.name).unwrap();
+        let location = loc_to_range(definition_loc, &self.line_col_lookup);
+        self.definitions.push(Definition {
+            fully_qualified_name: fully_qualified_name.to_owned(),
+            location: location.to_owned(),
+        });
+
+        // Packwerk also considers a definition to be a "reference"
+        self.references.push(Reference {
+            name: fully_qualified_name.to_owned(),
+            module_nesting: calculate_module_nesting(&self.current_namespaces),
+            location,
+        });
 
         if let Some(inner) = &node.body {
             self.visit(inner);
@@ -425,8 +421,8 @@ end
 
         assert_eq!(
             vec![Reference {
-                name: String::from("Foo"),
-                module_nesting: vec![],
+                name: String::from("::Foo"),
+                module_nesting: vec![String::from("Foo")],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
@@ -489,7 +485,7 @@ end
                     end_col: 8
                 }
             },
-            *extract_from_contents(contents).get(1).unwrap()
+            *extract_from_contents(contents).get(2).unwrap()
         );
     }
 
@@ -522,7 +518,7 @@ end
                     end_col: 10
                 }
             },
-            *extract_from_contents(contents).get(1).unwrap()
+            *extract_from_contents(contents).get(3).unwrap()
         );
     }
 
@@ -643,7 +639,7 @@ end
                     end_col: 10
                 },
             },
-            *extract_from_contents(contents).get(1).unwrap()
+            *extract_from_contents(contents).get(2).unwrap()
         );
     }
 
@@ -839,8 +835,8 @@ end
         assert_eq!(
             extract_from_contents(contents),
             vec![Reference {
-                name: String::from("Foo"),
-                module_nesting: vec![],
+                name: String::from("::Foo"),
+                module_nesting: vec![String::from("Foo")],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
@@ -885,8 +881,8 @@ end
 
         assert_eq!(
             Reference {
-                name: String::from("Foo"),
-                module_nesting: vec![],
+                name: String::from("::Foo"),
+                module_nesting: vec![String::from("Foo")],
                 location: Range {
                     start_row: 1,
                     start_col: 6,

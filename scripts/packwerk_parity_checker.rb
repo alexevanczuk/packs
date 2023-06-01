@@ -40,16 +40,25 @@ Dir['app/**/*.rb'].each do |f|
     experimental_cache
   )
 
-  filemap[f] = [
-    cache_path.exist? ? cache_path.to_s : "no cache",
-    experimental_cache_path.exist? ? experimental_cache_path.to_s : "no experimental_cache",
-    "cache has #{cache.count} unresolved references",
-    "experimental cache has #{experimental_cache.count} unresolved references",
-    "diff count is #{diff.count}",
-    "cache content: #{cache.inspect}",
-    "experimental_cache content: #{experimental_cache.inspect}",
-    "diff is #{diff}"
-  ]
+  if diff.count == 0
+    filemap[f] = [
+      cache_path.exist? ? cache_path.to_s : "no cache",
+      experimental_cache_path.exist? ? experimental_cache_path.to_s : "no experimental_cache",
+      "Noo difference!"
+    ]
+  else
+    filemap[f] = [
+      cache_path.exist? ? cache_path.to_s : "no cache",
+      experimental_cache_path.exist? ? experimental_cache_path.to_s : "no experimental_cache",
+      "cache has #{cache.count} unresolved references",
+      "experimental cache has #{experimental_cache.count} unresolved references",
+      "diff count is #{diff.count}",
+      "cache content: #{cache.inspect}",
+      "experimental_cache content: #{experimental_cache.inspect}",
+      "diff is #{diff}"
+    ]
+  end
+
   break if diff.count > 0
 end
 
