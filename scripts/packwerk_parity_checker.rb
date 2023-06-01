@@ -77,7 +77,7 @@ class Result < T::Struct
       lines << "diff count is #{diff.count}"
       lines << "original cache content: #{get_pretty_printed_string(original)}"
       lines << "experimental cache content: #{get_pretty_printed_string(experimental)}"
-      lines << "diff is #{get_pretty_printed_strings(diff)}"
+      lines << "diff is #{get_pretty_printed_string(diff)}"
     end
 
     "- #{lines.join("\n- ")}"
