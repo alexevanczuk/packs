@@ -6,7 +6,11 @@
 # to provide feedback about a failing test to write and fix.
 #
 # Example usage:
-#   $ ruby filename_to_digest_map.rb
+# Use from within a modulith that uses packwerk
+#
+#   $ ruby path/to/scripts/packwerk_parity_checker.rb
+# or
+#   $ PACKS_DIR=packs-rs time ruby ../packs-rs/scripts/packwerk_parity_checker.rb 
 #
 require 'json'
 require 'hashdiff'
@@ -14,53 +18,104 @@ require 'pathname'
 require 'pry'
 require 'yaml'
 require 'digest'
+require 'ruby-progressbar'
+require 'parallel'
+require 'sorbet-runtime'
 
-Dir.chdir('../packs') do
-  puts "Running cargo build --release in ../packs"
+packs_dir = ENV.fetch('PACKS_DIR', 'packs') # could be packs-rs
+Dir.chdir("../#{packs_dir}") do
+  puts "Running cargo build --release in ../#{packs_dir}"
   system('cargo build --release')
 end
 
-command = "time ../packs/target/release/packs generate-cache"
+command = "time ../#{packs_dir}/target/release/packs generate-cache"
 puts "Running: #{command}"
 system(command)
 
-output = Pathname.new('tmp/filename_to_digest_map.yml')
-filemap = {}
-Dir['app/**/*.rb'].each do |f|
-  cache_basename = Digest::MD5.hexdigest(f)
-  experimental_cache_basename = "#{cache_basename}-experimental"
-  cache_path = Pathname.new('tmp/cache/packwerk').join(cache_basename)
-  experimental_cache_path = Pathname.new('tmp/cache/packwerk').join(experimental_cache_basename)
+class Result < T::Struct
+  const :file, String
+  const :original, T.untyped
+  const :experimental, T.untyped
+  const :diff, T.untyped
 
-  cache = JSON.parse(cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
-  experimental_cache = JSON.parse(experimental_cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
-  # binding.pry
-  diff = Hashdiff.diff(
-    cache,
-    experimental_cache
-  )
+  def self.from_file(f)
+    cache_dir = Pathname.new('tmp/cache/packwerk')
+    cache_basename = Digest::MD5.hexdigest(f)
+    experimental_cache_basename = "#{cache_basename}-experimental"
+    original_cache_path = cache_dir.join(cache_basename)
+    experimental_cache_path = cache_dir.join(experimental_cache_basename)
 
-  if diff.count == 0
-    filemap[f] = [
-      cache_path.exist? ? cache_path.to_s : "no cache",
-      experimental_cache_path.exist? ? experimental_cache_path.to_s : "no experimental_cache",
-      "Noo difference!"
-    ]
-  else
-    filemap[f] = [
-      cache_path.exist? ? cache_path.to_s : "no cache",
-      experimental_cache_path.exist? ? experimental_cache_path.to_s : "no experimental_cache",
-      "cache has #{cache.count} unresolved references",
-      "experimental cache has #{experimental_cache.count} unresolved references",
-      "diff count is #{diff.count}",
-      "cache content: #{cache.inspect}",
-      "experimental_cache content: #{experimental_cache.inspect}",
-      "diff is #{diff}"
-    ]
+    original = sorted_unresolved_references_for(original_cache_path)
+    experimental = sorted_unresolved_references_for(experimental_cache_path)
+
+    diff = Hashdiff.diff(original, experimental)
+
+    Result.new(original:, experimental:, diff:, file: f)
   end
 
-  break if diff.count > 0
+  def self.sorted_unresolved_references_for(cache_path)
+    if cache_path.exist?
+      JSON.parse(cache_path.read)['unresolved_references'].sort_by{|h| h['constant_name']}
+    else
+      nil
+    end
+  end
+
+  def pretty_print
+    lines = []
+    lines << "No original cache" if original.nil?
+    lines << "No experimental cache" if experimental.nil?
+
+    if success?
+      lines << "No difference"
+    else
+
+      lines << "===================================="
+      lines << "Results for file: #{file}"
+      lines << "original cache has #{original.count} unresolved references"
+      lines << "experimental cache has #{experimental.count} unresolved references"
+      lines << "diff count is #{diff.count}"
+      lines << "original cache content: #{get_pretty_printed_string(original)}"
+      lines << "experimental cache content: #{get_pretty_printed_string(experimental)}"
+      lines << "diff is #{get_pretty_printed_strings(diff)}"
+    end
+
+    "- #{lines.join("\n- ")}"
+  end
+
+  def success?
+    diff.count == 0
+  end
+
+  def get_pretty_printed_string(object)
+    output = StringIO.new
+    PP.pp(object, output)
+    $stdout = STDOUT
+    "\n#{output.string}"
+  end
 end
 
-output.write(YAML.dump(filemap))
-puts "Wrote content to: #{output}"
+all_files = Dir['packs/**/*.rb']
+
+bar = ProgressBar.create(total: all_files.count, throttle_rate: 1, format: '%a %t [%c/%C files]: %B %j%%, %E')
+found_failure = false
+all_results = Parallel.map(all_files, in_threads: 8) do |f|
+  bar.increment
+  next if found_failure
+  result = Result.from_file(f)
+  if result.success?
+    bar.log "Success for #{f}!"
+  else
+    found_failure = true
+  end
+  result
+end
+
+all_results.compact.group_by(&:success?).each do |success, results|
+  if success
+    puts "There are #{results.count} successes out of #{all_results.count} total"
+    puts "That's #{(results.count/all_results.count.to_f * 100).round(2)}% of files with a cache generated by packs!"
+  else
+    puts results.first.pretty_print
+  end
+end
