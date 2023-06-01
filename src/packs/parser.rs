@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {
     pub name: String,
     pub module_nesting: Vec<String>,
@@ -33,7 +33,7 @@ pub struct Definition {
     pub location: Range,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone)]
 pub struct Range {
     pub start_row: usize,
     pub start_col: usize,
@@ -444,7 +444,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Bar"),
                 module_nesting: vec![String::from("Foo")],
                 location: Range {
@@ -453,8 +453,8 @@ end
                     end_row: 2,
                     end_col: 6
                 }
-            }],
-            extract_from_contents(contents)
+            },
+            *extract_from_contents(contents).get(1).unwrap()
         );
     }
 
@@ -471,7 +471,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![
                     String::from("Foo::Bar"),
@@ -483,8 +483,8 @@ end
                     end_row: 3,
                     end_col: 8
                 }
-            }],
-            extract_from_contents(contents)
+            },
+            *extract_from_contents(contents).get(1).unwrap()
         );
     }
 
@@ -503,7 +503,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Boo"),
                 module_nesting: vec![
                     String::from("Foo::Bar::Baz"),
@@ -516,8 +516,8 @@ end
                     end_row: 4,
                     end_col: 10
                 }
-            }],
-            extract_from_contents(contents)
+            },
+            *extract_from_contents(contents).get(1).unwrap()
         );
     }
 
@@ -624,7 +624,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Boo"),
                 module_nesting: vec![
                     String::from("Foo::Bar::Baz"),
@@ -636,9 +636,9 @@ end
                     start_col: 7,
                     end_row: 4,
                     end_col: 10
-                }
-            }],
-            extract_from_contents(contents)
+                },
+            },
+            *extract_from_contents(contents).get(1).unwrap()
         );
     }
 
@@ -654,7 +654,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![String::from("Foo::Bar")],
                 location: Range {
@@ -663,8 +663,8 @@ end
                     end_row: 2,
                     end_col: 6
                 }
-            }],
-            extract_from_contents(contents),
+            },
+            *extract_from_contents(contents).get(1).unwrap(),
         );
     }
 
@@ -682,7 +682,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            Reference {
                 name: String::from("Baz"),
                 module_nesting: vec![
                     String::from("Foo::Bar::Baz"),
@@ -694,8 +694,8 @@ end
                     end_row: 3,
                     end_col: 8
                 }
-            }],
-            extract_from_contents(contents)
+            },
+            *extract_from_contents(contents).get(1).unwrap()
         );
     }
 
@@ -831,7 +831,19 @@ end
         ",
         );
 
-        assert_eq!(extract_from_contents(contents), vec![]);
+        assert_eq!(
+            extract_from_contents(contents),
+            vec![Reference {
+                name: String::from("Foo"),
+                module_nesting: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 7,
+                    end_row: 1,
+                    end_col: 10
+                }
+            }]
+        );
     }
 
     #[test]
