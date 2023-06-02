@@ -17,3 +17,25 @@ Remaining Challenges include:
 - [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
 - [ ] `packs update`, which can be used to update `deprecated_references.yml`
 - [ ] `packs lsp`, to launch an LSP-server to provide faster feedback
+
+
+# Usage
+Deployment is still a WIP, and it's not ready to use. If you want to try it out to see how well it works on your repo, you can run `packs generate-cache` and then run `bin/packwerk update` to see how violations change using `packs`.
+
+If you want to try it out:
+- Go to https://github.com/alexevanczuk/packs/releases
+- Download the `packs` asset and run `chmod +x path/to/packs`
+- Open the containing directory, right click on the binary, click open, and then accept the warning message that says its from an unknown developer (it's me!)
+- Execute `path/to/packs` to see the CLI help message.
+
+You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
+
+In the future, I hope to:
+- Somehow sign the binary so it does not get a warning message
+- Make it executable before download
+- Add directions to download via some other tool, or ship as a native ruby gem extension.
+
+
+# New to Rust?
+Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
+If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
