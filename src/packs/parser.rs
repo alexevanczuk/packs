@@ -1149,15 +1149,47 @@ FOO = BAR
         let first_reference = references
             .get(0)
             .expect("There should be a reference at index 0");
-        assert_eq!(Reference {
-            name: String::from("BAR"),
-            namespace_path: vec![],
-            location: Range {
-                start_row: 1,
-                start_col: 6,
-                end_row: 1,
-                end_col: 10
-            }
-        })
+        assert_eq!(
+            Reference {
+                name: String::from("BAR"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 6,
+                    end_row: 1,
+                    end_col: 10
+                }
+            },
+            *first_reference
+        )
+    }
+
+    fn test_has_many_association() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_many :some_user_models
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("SomeUserModel"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 10,
+                    end_row: 2,
+                    end_col: 27
+                }
+            },
+            *first_reference,
+        );
     }
 }
