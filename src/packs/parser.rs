@@ -49,6 +49,12 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SuperclassReference {
+    pub name: String,
+    pub namespace_path: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {
     pub name: String,
     pub namespace_path: Vec<String>,
@@ -76,6 +82,7 @@ impl Reference {
 pub struct Definition {
     pub fully_qualified_name: String,
     pub location: Range,
+    pub namespace_path: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone)]
@@ -103,6 +110,8 @@ struct ReferenceCollector<'a> {
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
+    pub in_superclass: bool,
+    pub superclasses: Vec<SuperclassReference>,
 }
 
 #[derive(Debug)]
@@ -177,7 +186,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         if let Some(inner) = node.superclass.as_ref() {
             // dbg!("Visiting superclass!: {:?}", inner);
+            self.in_superclass = true;
             self.visit(inner);
+            self.in_superclass = false;
         }
 
         let fully_qualified_name = if !self.current_namespaces.is_empty() {
@@ -197,6 +208,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
         self.definitions.push(Definition {
             fully_qualified_name: fully_qualified_name.to_owned(),
+            namespace_path: self.current_namespaces.to_owned(),
+
             location: location.to_owned(),
         });
 
@@ -212,6 +225,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         }
 
         self.current_namespaces.pop();
+        self.superclasses.pop();
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
@@ -260,6 +274,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         self.definitions.push(Definition {
             fully_qualified_name,
+            namespace_path: self.current_namespaces.to_owned(),
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         });
 
@@ -295,6 +310,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
         self.definitions.push(Definition {
             fully_qualified_name: fully_qualified_name.to_owned(),
+            namespace_path: self.current_namespaces.to_owned(),
+
             location: location.to_owned(),
         });
 
@@ -314,9 +331,40 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
     fn on_const(&mut self, node: &nodes::Const) {
         let Ok(name) = fetch_const_const_name(node) else { return };
+
+        if self.in_superclass {
+            self.superclasses.push(SuperclassReference {
+                name: name.to_owned(),
+                namespace_path: self.current_namespaces.to_owned(),
+            })
+        }
+        // In packwerk, NodeHelpers.enclosing_namespace_path (erroneously) ignores
+        // namespaces where a superclass OR namespace is the same as the current reference name
+        let matching_superclass_option = self
+            .superclasses
+            .iter()
+            .find(|superclass| superclass.name == name);
+
+        let namespace_path =
+            if let Some(matching_superclass) = matching_superclass_option {
+                matching_superclass.namespace_path.to_owned()
+            } else {
+                self.current_namespaces
+                    .clone()
+                    .into_iter()
+                    .filter(|namespace| {
+                        namespace != &name
+                            || self
+                                .superclasses
+                                .iter()
+                                .any(|superclass| superclass.name == name)
+                    })
+                    .collect::<Vec<String>>()
+            };
+
         self.references.push(Reference {
             name,
-            namespace_path: self.current_namespaces.to_owned(),
+            namespace_path,
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         })
     }
@@ -382,6 +430,8 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         current_namespaces: vec![],
         definitions: vec![],
         line_col_lookup: lookup,
+        in_superclass: false,
+        superclasses: vec![],
     };
 
     collector.visit(&ast);
@@ -1198,7 +1248,7 @@ end
                     start_row: 2,
                     start_col: 2,
                     end_row: 2,
-                    end_col: 29
+                    end_col: 6
                 }
             },
             *first_reference,
