@@ -1254,4 +1254,29 @@ end
             *first_reference,
         );
     }
+
+    #[test]
+    fn test_it_ignores_locally_defined_nested_constants() {
+        let contents: String = String::from(
+            "\
+class Foo
+  class Bar
+    Foo::Bar
+  end
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        let second_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+
+        assert_eq!(first_reference.name, String::from("Foo"));
+        assert_eq!(second_reference.name, String::from("Foo::Bar"));
+    }
 }
