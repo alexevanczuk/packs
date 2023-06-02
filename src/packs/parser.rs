@@ -1027,7 +1027,7 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references: Vec<Reference> = extract_from_contents(contents);
         assert_eq!(
             references,
             vec![
@@ -1058,31 +1058,62 @@ end
         );
     }
 
+    // :belongs_to,
+    // :has_many,
+    // :has_one,
+    // :has_and_belongs_to_many,
+    #[test]
+    fn test_has_one_association() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_one :user
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("::User"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 1,
+                    start_col: 10,
+                    end_row: 1,
+                    end_col: 15
+                }
+            },
+            *first_reference,
+        );
+    }
+
     #[test]
     fn test_const_assignments_are_references() {
         let contents: String = String::from(
             "\
 FOO = BAR
-        ",
+",
         );
+        let references: Vec<Reference> = extract_from_contents(contents);
 
-        let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
             .expect("There should be a reference at index 0");
-        assert_eq!(
-            Reference {
-                name: String::from("BAR"),
-                namespace_path: vec![],
-                location: Range {
-                    start_row: 1,
-                    start_col: 6,
-                    end_row: 1,
-                    end_col: 10
-                }
-            },
-            *first_reference,
-        );
+        assert_eq!(Reference {
+            name: String::from("BAR"),
+            namespace_path: vec![],
+            location: Range {
+                start_row: 1,
+                start_col: 6,
+                end_row: 1,
+                end_col: 10
+            }
+        })
     }
 }
