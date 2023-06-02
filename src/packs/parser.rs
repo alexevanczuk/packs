@@ -1,4 +1,5 @@
 use glob::glob;
+use inflector::cases::classcase::to_class_case;
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
@@ -213,6 +214,34 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.current_namespaces.pop();
     }
 
+    fn on_send(&mut self, node: &nodes::Send) {
+        // TODO: Read in args, process associations as a separate class
+        // These can get complicated! e.g. we can specify a class name
+
+        if node.method_name == *"has_one"
+            || node.method_name == *"has_many"
+            || node.method_name == *"belongs_to"
+            || node.method_name == *"has_and_belongs_to_many"
+        {
+            let first_arg = node.args.get(0);
+            if let Some(association) = first_arg {
+                match association {
+                    Node::Sym(d) => self.references.push(Reference {
+                        name: to_class_case(&d.name.to_string_lossy()),
+                        namespace_path: self.current_namespaces.to_owned(),
+                        location: loc_to_range(
+                            node.expression_l,
+                            &self.line_col_lookup,
+                        ),
+                    }),
+                    _ => {}
+                }
+            }
+        }
+
+        lib_ruby_parser::traverse::visitor::visit_send(self, node);
+    }
+
     fn on_casgn(&mut self, node: &nodes::Casgn) {
         let name_result = fetch_casgn_name(node);
         if name_result.is_err() {
@@ -307,7 +336,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
 
 pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
-    let pattern = absolute_root.join("app/**/*.rb");
+    let pattern = absolute_root.join("packs/**/*.rb");
 
     glob(pattern.to_str().unwrap())
         .expect("Failed to read glob pattern")
@@ -1027,7 +1056,7 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references: Vec<Reference> = extract_from_contents(contents);
         assert_eq!(
             references,
             vec![
@@ -1057,16 +1086,15 @@ end
             ]
         );
     }
-
     #[test]
     fn test_const_assignments_are_references() {
         let contents: String = String::from(
             "\
 FOO = BAR
-        ",
+",
         );
+        let references: Vec<Reference> = extract_from_contents(contents);
 
-        let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
@@ -1080,6 +1108,66 @@ FOO = BAR
                     start_col: 6,
                     end_row: 1,
                     end_col: 10
+                }
+            },
+            *first_reference
+        )
+    }
+
+    #[test]
+    fn test_has_one_association() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_one :some_user_model
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("SomeUserModel"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 27
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
+    fn test_has_many_association() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_many :some_user_models
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("SomeUserModel"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 29
                 }
             },
             *first_reference,
