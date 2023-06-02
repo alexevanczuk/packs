@@ -107,8 +107,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Cargo publish
         run: |
-          published_version=$(cargo pkgid -p pks | awk -F "#" '{print $2}')
-          package_version="pks@$(awk -F '"' '/^name/ {pkg = $2} /^version/ && pkg == "pks" {print $2}' Cargo.toml)"
+          cargo_search_output=$(cargo search pks)
+          published_version=$(echo "$cargo_search_output" | grep -o 'pks = "[^"]*"' | cut -d'"' -f2)
+          package_version=$(awk -F '"' '/^name/ {pkg = $2} /^version/ && pkg == "pks" {print $2}' Cargo.toml)
 
           if [[ "$published_version" == "$package_version" ]]; then
             echo "Package 'pks' version $package_version has already been published."
