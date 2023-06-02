@@ -107,6 +107,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Cargo publish
         run: |
-          cargo publish
+          published_version=$(cargo pkgid -p pks | awk -F "#" '{print $2}')
+          package_version="pks@$(awk -F '"' '/^name/ {pkg = $2} /^version/ && pkg == "pks" {print $2}' Cargo.toml)"
+
+          if [[ "$published_version" == "$package_version" ]]; then
+            echo "Package 'pks' version $package_version has already been published."
+          else
+            cargo publish
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
