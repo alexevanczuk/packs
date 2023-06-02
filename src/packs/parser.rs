@@ -338,7 +338,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
 
 pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
-    let pattern = absolute_root.join("app/**/*.rb");
+    let pattern = absolute_root.join("packs/**/*.rb");
 
     glob(pattern.to_str().unwrap())
         .expect("Failed to read glob pattern")

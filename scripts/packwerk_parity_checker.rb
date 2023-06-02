@@ -103,7 +103,7 @@ class Result < T::Struct
   end
 end
 
-all_files = Dir['app/**/*.rb']
+all_files = Dir['packs/**/*.rb']
 # Shuffle can be used to find a simpler error to fix
 all_files.shuffle! if ENV['SHUFFLE']
 
