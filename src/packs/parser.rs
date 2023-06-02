@@ -386,7 +386,6 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         line_col_lookup: lookup,
     };
 
-    dbg!(&ast);
     collector.visit(&ast);
 
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
