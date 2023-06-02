@@ -238,8 +238,38 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             || node.method_name == *"has_and_belongs_to_many"
         {
             let first_arg: Option<&Node> = node.args.get(0);
+            let second_arg: Option<&Node> = node.args.get(2);
 
-            if let Some(Node::Sym(d)) = first_arg {
+            if let Some(Node::Kwargs(kwargs)) = second_arg {
+                for pair_node in kwargs.pairs.iter() {
+                    match pair_node {
+                        Node::Pair(pair) => {
+                            if let Node::Sym(k) = *pair.key.to_owned() {
+                                if k.name.to_string_lossy()
+                                    == String::from("class_name")
+                                {
+                                    if let Node::Sym(v) = *pair.value.to_owned()
+                                    {
+                                        self.references.push(Reference {
+                                            name: to_class_case(
+                                                &v.name.to_string_lossy(),
+                                            ),
+                                            namespace_path: self
+                                                .current_namespaces
+                                                .to_owned(),
+                                            location: loc_to_range(
+                                                node.expression_l,
+                                                &self.line_col_lookup,
+                                            ),
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            } else if let Some(Node::Sym(d)) = first_arg {
                 self.references.push(Reference {
                     name: to_class_case(&d.name.to_string_lossy()),
                     namespace_path: self.current_namespaces.to_owned(),
