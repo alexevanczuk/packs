@@ -5,6 +5,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use rayon::prelude::*;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -266,13 +267,28 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             // });
             // Later we should probably handle these cases!
             if name.is_some() {
+                let mut unwrapped_name = name.unwrap_or_else(|| {
+                    panic!(
+                        "Could not find class name for association {:?}",
+                        &node,
+                    )
+                });
+                // See https://github.com/whatisinternet/Inflector/pull/87
+                // This can be pulled into a class maybe
+                if unwrapped_name.contains("Statuse") {
+                    let re = Regex::new("Statuse").unwrap();
+                    unwrapped_name =
+                        re.replace_all(&unwrapped_name, "Status").to_string();
+                }
+
+                if unwrapped_name.contains("Lefe") {
+                    let re = Regex::new("Lefe").unwrap();
+                    unwrapped_name =
+                        re.replace_all(&unwrapped_name, "Leave").to_string();
+                }
+
                 self.references.push(Reference {
-                    name: name.unwrap_or_else(|| {
-                        panic!(
-                            "Could not find class name for association {:?}",
-                            &node,
-                        )
-                    }),
+                    name: unwrapped_name,
                     namespace_path: self.current_namespaces.to_owned(),
                     location: loc_to_range(
                         node.expression_l,
@@ -1291,6 +1307,65 @@ end
                     start_col: 2,
                     end_row: 2,
                     end_col: 29
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
+    fn test_has_many_association_with_custom_inflection() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_many :my_statuses
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("MyStatus"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 24
+                }
+            },
+            *first_reference,
+        );
+    }
+    #[test]
+    fn test_has_many_association_with_custom_inflection_2() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_many :my_leaves
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("MyLeave"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 22
                 }
             },
             *first_reference,
