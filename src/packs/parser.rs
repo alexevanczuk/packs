@@ -234,8 +234,13 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         });
 
-        // TODO: Write a failing test for references to constants within a constant assignment
-        // self.visit(node.value)
+        if let Some(v) = node.value.to_owned() {
+            self.visit(&v);
+        } else {
+            // We don't handle constant assignments as part of a multi-assignment yet,
+            // e.g. A, B = 1, 2
+            // See the documentation for nodes::Casgn#value for more info.
+        }
     }
 
     // TODO: extract the common stuff from on_class
@@ -302,7 +307,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
 
 pub fn get_references(absolute_root: &Path) -> Vec<Reference> {
     // Later this can come from config
-    let pattern = absolute_root.join("packs/**/*.rb");
+    let pattern = absolute_root.join("app/**/*.rb");
 
     glob(pattern.to_str().unwrap())
         .expect("Failed to read glob pattern")
@@ -1050,6 +1055,34 @@ end
                     }
                 }
             ]
+        );
+    }
+
+    #[test]
+    fn test_const_assignments_are_references() {
+        let contents: String = String::from(
+            "\
+FOO = BAR
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let first_reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("BAR"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 6,
+                    end_row: 1,
+                    end_col: 10
+                }
+            },
+            *first_reference,
         );
     }
 }
