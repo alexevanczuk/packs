@@ -1197,6 +1197,36 @@ end
     }
 
     #[test]
+    fn test_has_one_association_with_class_name() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_one :some_user_model, class_name: 'User'
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("User"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 27
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
     fn test_has_many_association() {
         let contents: String = String::from(
             "\
