@@ -230,7 +230,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                         name: to_class_case(&d.name.to_string_lossy()),
                         namespace_path: self.current_namespaces.to_owned(),
                         location: loc_to_range(
-                            d.expression_l,
+                            node.expression_l,
                             &self.line_col_lookup,
                         ),
                     }),
@@ -239,9 +239,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             }
         }
 
-        for arg in node.args.iter() {
-            self.visit(arg);
-        }
+        lib_ruby_parser::traverse::visitor::visit_send(self, node);
     }
 
     fn on_casgn(&mut self, node: &nodes::Casgn) {
@@ -1137,7 +1135,7 @@ end
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
-                    start_col: 10,
+                    start_col: 2,
                     end_row: 2,
                     end_col: 27
                 }
@@ -1167,7 +1165,7 @@ end
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
-                    start_col: 11,
+                    start_col: 2,
                     end_row: 2,
                     end_col: 29
                 }
