@@ -238,17 +238,17 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             || node.method_name == *"has_and_belongs_to_many"
         {
             let first_arg: Option<&Node> = node.args.get(0);
-            let second_arg: Option<&Node> = node.args.get(2);
+            let second_arg: Option<&Node> = node.args.get(1);
 
             if let Some(Node::Kwargs(kwargs)) = second_arg {
                 for pair_node in kwargs.pairs.iter() {
                     if let Node::Pair(pair) = pair_node {
                         if let Node::Sym(k) = *pair.key.to_owned() {
                             if k.name.to_string_lossy() == *"class_name" {
-                                if let Node::Sym(v) = *pair.value.to_owned() {
+                                if let Node::Str(v) = *pair.value.to_owned() {
                                     self.references.push(Reference {
                                         name: to_class_case(
-                                            &v.name.to_string_lossy(),
+                                            &v.value.to_string_lossy(),
                                         ),
                                         namespace_path: self
                                             .current_namespaces
@@ -1241,7 +1241,7 @@ end
                     start_row: 2,
                     start_col: 2,
                     end_row: 2,
-                    end_col: 27
+                    end_col: 47
                 }
             },
             *first_reference,
