@@ -240,32 +240,39 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             let first_arg: Option<&Node> = node.args.get(0);
             let second_arg: Option<&Node> = node.args.get(1);
 
+            let mut name: Option<String> = None;
             if let Some(Node::Kwargs(kwargs)) = second_arg {
                 for pair_node in kwargs.pairs.iter() {
                     if let Node::Pair(pair) = pair_node {
                         if let Node::Sym(k) = *pair.key.to_owned() {
                             if k.name.to_string_lossy() == *"class_name" {
                                 if let Node::Str(v) = *pair.value.to_owned() {
-                                    self.references.push(Reference {
-                                        name: to_class_case(
-                                            &v.value.to_string_lossy(),
-                                        ),
-                                        namespace_path: self
-                                            .current_namespaces
-                                            .to_owned(),
-                                        location: loc_to_range(
-                                            node.expression_l,
-                                            &self.line_col_lookup,
-                                        ),
-                                    })
+                                    name = Some(v.value.to_string_lossy());
                                 }
                             }
                         }
                     }
                 }
-            } else if let Some(Node::Sym(d)) = first_arg {
+            }
+
+            if let Some(Node::Sym(d)) = first_arg {
+                if name.is_none() {
+                    name = Some(to_class_case(&d.name.to_string_lossy()));
+                }
+            }
+
+            // let unwrapped_name = name.unwrap_or_else(|| {
+            //     panic!("Could not find class name for association {:?}", &node,)
+            // });
+            // Later we should probably handle these cases!
+            if name.is_some() {
                 self.references.push(Reference {
-                    name: to_class_case(&d.name.to_string_lossy()),
+                    name: name.unwrap_or_else(|| {
+                        panic!(
+                            "Could not find class name for association {:?}",
+                            &node,
+                        )
+                    }),
                     namespace_path: self.current_namespaces.to_owned(),
                     location: loc_to_range(
                         node.expression_l,
