@@ -47,6 +47,24 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
     nesting
 }
 
+fn classify(s: &str) -> String {
+    let mut result = String::new();
+    let mut capitalize_next = true;
+
+    for c in s.chars() {
+        if c == '_' {
+            capitalize_next = true;
+        } else if capitalize_next {
+            result.push(c.to_ascii_uppercase());
+            capitalize_next = false;
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {
     pub name: String,
@@ -213,6 +231,31 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.current_namespaces.pop();
     }
 
+    fn on_send(&mut self, node: &nodes::Send) {
+        // TODO: Read in args, process associations as a separate class
+        // These can get complicated! e.g. we can specify a class name
+        if node.method_name == *"has_one" {
+            let first_arg = node.args.get(0);
+            if let Some(association) = first_arg {
+                match association {
+                    Node::Sym(d) => self.references.push(Reference {
+                        name: classify(&d.name.to_string_lossy()),
+                        namespace_path: self.current_namespaces.to_owned(),
+                        location: loc_to_range(
+                            d.expression_l,
+                            &self.line_col_lookup,
+                        ),
+                    }),
+                    _ => {}
+                }
+            }
+        }
+
+        for arg in node.args.iter() {
+            self.visit(arg);
+        }
+    }
+
     fn on_casgn(&mut self, node: &nodes::Casgn) {
         let name_result = fetch_casgn_name(node);
         if name_result.is_err() {
@@ -355,6 +398,7 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         line_col_lookup: lookup,
     };
 
+    dbg!(&ast);
     collector.visit(&ast);
 
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
@@ -1067,7 +1111,7 @@ end
         let contents: String = String::from(
             "\
 class Foo
-  has_one :user
+  has_one :some_user_model
 end
         ",
         );
@@ -1079,13 +1123,13 @@ end
             .expect("There should be a reference at index 0");
         assert_eq!(
             Reference {
-                name: String::from("::User"),
+                name: String::from("SomeUserModel"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
-                    start_row: 1,
+                    start_row: 2,
                     start_col: 10,
-                    end_row: 1,
-                    end_col: 15
+                    end_row: 2,
+                    end_col: 27
                 }
             },
             *first_reference,
