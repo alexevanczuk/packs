@@ -1333,4 +1333,35 @@ end
         assert_eq!(first_reference.name, String::from("::Foo"));
         assert_eq!(second_reference.name, String::from("::Foo::Bar"));
     }
+
+    #[test]
+    fn test_it_ignores_references_to_subsets_of_locally_defined_nested_constants(
+    ) {
+        let contents: String = String::from(
+            "\
+class Foo::Bar
+  Foo
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("::Foo::Bar"),
+                namespace_path: vec![String::from("Foo::Bar")],
+                location: Range {
+                    start_row: 1,
+                    start_col: 6,
+                    end_row: 1,
+                    end_col: 15
+                }
+            },
+            *reference,
+        );
+    }
 }
