@@ -231,25 +231,23 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_send(&mut self, node: &nodes::Send) {
         // TODO: Read in args, process associations as a separate class
         // These can get complicated! e.g. we can specify a class name
-
+        // dbg!(&node);
         if node.method_name == *"has_one"
             || node.method_name == *"has_many"
             || node.method_name == *"belongs_to"
             || node.method_name == *"has_and_belongs_to_many"
         {
-            let first_arg = node.args.get(0);
-            if let Some(association) = first_arg {
-                match association {
-                    Node::Sym(d) => self.references.push(Reference {
-                        name: to_class_case(&d.name.to_string_lossy()),
-                        namespace_path: self.current_namespaces.to_owned(),
-                        location: loc_to_range(
-                            node.expression_l,
-                            &self.line_col_lookup,
-                        ),
-                    }),
-                    _ => {}
-                }
+            let first_arg: Option<&Node> = node.args.get(0);
+
+            if let Some(Node::Sym(d)) = first_arg {
+                self.references.push(Reference {
+                    name: to_class_case(&d.name.to_string_lossy()),
+                    namespace_path: self.current_namespaces.to_owned(),
+                    location: loc_to_range(
+                        node.expression_l,
+                        &self.line_col_lookup,
+                    ),
+                })
             }
         }
 
