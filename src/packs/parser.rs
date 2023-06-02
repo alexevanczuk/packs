@@ -454,8 +454,10 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
             let mut should_ignore_local_reference = false;
             let possible_constants = r.possible_fully_qualified_constants();
             for constant_name in possible_constants {
-                if let Some(location) =
-                    definition_to_location_map.get(&constant_name)
+                if let Some(location) = definition_to_location_map
+                    .get(&constant_name)
+                    .or(definition_to_location_map
+                        .get(&format!("::{}", constant_name)))
                 {
                     let reference_is_definition = location.start_row
                         == r.location.start_row
@@ -1276,7 +1278,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
 
-        assert_eq!(first_reference.name, String::from("Foo"));
-        assert_eq!(second_reference.name, String::from("Foo::Bar"));
+        assert_eq!(first_reference.name, String::from("::Foo"));
+        assert_eq!(second_reference.name, String::from("::Foo::Bar"));
     }
 }
