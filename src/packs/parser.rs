@@ -1088,6 +1088,33 @@ end
             ]
         );
     }
+    #[test]
+    fn test_const_assignments_are_references() {
+        let contents: String = String::from(
+            "\
+FOO = BAR
+",
+        );
+        let references: Vec<Reference> = extract_from_contents(contents);
+
+        assert_eq!(references.len(), 1);
+        let first_reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("BAR"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 6,
+                    end_row: 1,
+                    end_col: 10
+                }
+            },
+            *first_reference
+        )
+    }
 
     #[test]
     fn test_has_one_association() {
@@ -1120,33 +1147,6 @@ end
     }
 
     #[test]
-    fn test_const_assignments_are_references() {
-        let contents: String = String::from(
-            "\
-FOO = BAR
-",
-        );
-        let references: Vec<Reference> = extract_from_contents(contents);
-
-        assert_eq!(references.len(), 1);
-        let first_reference = references
-            .get(0)
-            .expect("There should be a reference at index 0");
-        assert_eq!(
-            Reference {
-                name: String::from("BAR"),
-                namespace_path: vec![],
-                location: Range {
-                    start_row: 1,
-                    start_col: 6,
-                    end_row: 1,
-                    end_col: 10
-                }
-            },
-            *first_reference
-        )
-    }
-
     fn test_has_many_association() {
         let contents: String = String::from(
             "\
