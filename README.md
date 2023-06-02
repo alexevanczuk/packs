@@ -20,8 +20,12 @@ Remaining Challenges include:
 
 
 # Usage
-Deployment is still a WIP, and it's not ready to use. If you want to try it out to see how well it works on your repo, you can run `packs generate-cache` and then run `bin/packwerk update` to see how violations change using `packs`.
+Deployment is still a WIP, and it's not quite ready for prime time. If you want to try it out to see how well it works on your repo, you can:
+1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
+2. Run `packs generate-cache` (see directions below to get binary) 
+3. Run `bin/packwerk update` to see how violations change using `packs`.
 
+# Downloading the Binary
 If you want to try it out:
 - Go to https://github.com/alexevanczuk/packs/releases
 - Download the `packs` asset and run `chmod +x path/to/packs`
