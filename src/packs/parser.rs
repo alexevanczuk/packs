@@ -1173,4 +1173,35 @@ end
             *first_reference,
         );
     }
+
+    #[test]
+    fn test_it_uses_the_namespace_of_inherited_class_when_referencing_inherited_class(
+    ) {
+        let contents: String = String::from(
+            "\
+class Foo < Bar
+  Bar
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 3);
+        let first_reference = references
+            .get(2)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("Bar"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 29
+                }
+            },
+            *first_reference,
+        );
+    }
 }
