@@ -1,4 +1,5 @@
 use glob::glob;
+use inflector::cases::classcase::to_class_case;
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
@@ -45,24 +46,6 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
     });
 
     nesting
-}
-
-fn classify(s: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize_next = true;
-
-    for c in s.chars() {
-        if c == '_' {
-            capitalize_next = true;
-        } else if capitalize_next {
-            result.push(c.to_ascii_uppercase());
-            capitalize_next = false;
-        } else {
-            result.push(c);
-        }
-    }
-
-    result
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -234,12 +217,17 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_send(&mut self, node: &nodes::Send) {
         // TODO: Read in args, process associations as a separate class
         // These can get complicated! e.g. we can specify a class name
-        if node.method_name == *"has_one" {
+
+        if node.method_name == *"has_one"
+            || node.method_name == *"has_many"
+            || node.method_name == *"belongs_to"
+            || node.method_name == *"has_and_belongs_to_many"
+        {
             let first_arg = node.args.get(0);
             if let Some(association) = first_arg {
                 match association {
                     Node::Sym(d) => self.references.push(Reference {
-                        name: classify(&d.name.to_string_lossy()),
+                        name: to_class_case(&d.name.to_string_lossy()),
                         namespace_path: self.current_namespaces.to_owned(),
                         location: loc_to_range(
                             d.expression_l,
@@ -1102,10 +1090,6 @@ end
         );
     }
 
-    // :belongs_to,
-    // :has_many,
-    // :has_one,
-    // :has_and_belongs_to_many,
     #[test]
     fn test_has_one_association() {
         let contents: String = String::from(
@@ -1184,9 +1168,9 @@ end
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
-                    start_col: 10,
+                    start_col: 11,
                     end_row: 2,
-                    end_col: 27
+                    end_col: 29
                 }
             },
             *first_reference,
