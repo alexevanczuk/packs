@@ -49,6 +49,12 @@ fn calculate_module_nesting(namespace_nesting: &[String]) -> Vec<String> {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SuperclassReference {
+    pub name: String,
+    pub namespace_path: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {
     pub name: String,
     pub namespace_path: Vec<String>,
@@ -76,6 +82,7 @@ impl Reference {
 pub struct Definition {
     pub fully_qualified_name: String,
     pub location: Range,
+    pub namespace_path: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone)]
@@ -103,6 +110,8 @@ struct ReferenceCollector<'a> {
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
+    pub in_superclass: bool,
+    pub superclasses: Vec<SuperclassReference>,
 }
 
 #[derive(Debug)]
@@ -177,7 +186,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         if let Some(inner) = node.superclass.as_ref() {
             // dbg!("Visiting superclass!: {:?}", inner);
+            self.in_superclass = true;
             self.visit(inner);
+            self.in_superclass = false;
         }
 
         let fully_qualified_name = if !self.current_namespaces.is_empty() {
@@ -197,6 +208,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
         self.definitions.push(Definition {
             fully_qualified_name: fully_qualified_name.to_owned(),
+            namespace_path: self.current_namespaces.to_owned(),
+
             location: location.to_owned(),
         });
 
@@ -212,30 +225,60 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         }
 
         self.current_namespaces.pop();
+        self.superclasses.pop();
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
         // TODO: Read in args, process associations as a separate class
         // These can get complicated! e.g. we can specify a class name
-
+        // dbg!(&node);
         if node.method_name == *"has_one"
             || node.method_name == *"has_many"
             || node.method_name == *"belongs_to"
             || node.method_name == *"has_and_belongs_to_many"
         {
-            let first_arg = node.args.get(0);
-            if let Some(association) = first_arg {
-                match association {
-                    Node::Sym(d) => self.references.push(Reference {
-                        name: to_class_case(&d.name.to_string_lossy()),
-                        namespace_path: self.current_namespaces.to_owned(),
-                        location: loc_to_range(
-                            node.expression_l,
-                            &self.line_col_lookup,
-                        ),
-                    }),
-                    _ => {}
+            let first_arg: Option<&Node> = node.args.get(0);
+            let second_arg: Option<&Node> = node.args.get(1);
+
+            let mut name: Option<String> = None;
+            if let Some(Node::Kwargs(kwargs)) = second_arg {
+                for pair_node in kwargs.pairs.iter() {
+                    if let Node::Pair(pair) = pair_node {
+                        if let Node::Sym(k) = *pair.key.to_owned() {
+                            if k.name.to_string_lossy() == *"class_name" {
+                                if let Node::Str(v) = *pair.value.to_owned() {
+                                    name = Some(v.value.to_string_lossy());
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+
+            if let Some(Node::Sym(d)) = first_arg {
+                if name.is_none() {
+                    name = Some(to_class_case(&d.name.to_string_lossy()));
+                }
+            }
+
+            // let unwrapped_name = name.unwrap_or_else(|| {
+            //     panic!("Could not find class name for association {:?}", &node,)
+            // });
+            // Later we should probably handle these cases!
+            if name.is_some() {
+                self.references.push(Reference {
+                    name: name.unwrap_or_else(|| {
+                        panic!(
+                            "Could not find class name for association {:?}",
+                            &node,
+                        )
+                    }),
+                    namespace_path: self.current_namespaces.to_owned(),
+                    location: loc_to_range(
+                        node.expression_l,
+                        &self.line_col_lookup,
+                    ),
+                })
             }
         }
 
@@ -260,6 +303,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         self.definitions.push(Definition {
             fully_qualified_name,
+            namespace_path: self.current_namespaces.to_owned(),
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         });
 
@@ -295,6 +339,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
         self.definitions.push(Definition {
             fully_qualified_name: fully_qualified_name.to_owned(),
+            namespace_path: self.current_namespaces.to_owned(),
+
             location: location.to_owned(),
         });
 
@@ -314,9 +360,40 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
     fn on_const(&mut self, node: &nodes::Const) {
         let Ok(name) = fetch_const_const_name(node) else { return };
+
+        if self.in_superclass {
+            self.superclasses.push(SuperclassReference {
+                name: name.to_owned(),
+                namespace_path: self.current_namespaces.to_owned(),
+            })
+        }
+        // In packwerk, NodeHelpers.enclosing_namespace_path (erroneously) ignores
+        // namespaces where a superclass OR namespace is the same as the current reference name
+        let matching_superclass_option = self
+            .superclasses
+            .iter()
+            .find(|superclass| superclass.name == name);
+
+        let namespace_path =
+            if let Some(matching_superclass) = matching_superclass_option {
+                matching_superclass.namespace_path.to_owned()
+            } else {
+                self.current_namespaces
+                    .clone()
+                    .into_iter()
+                    .filter(|namespace| {
+                        namespace != &name
+                            || self
+                                .superclasses
+                                .iter()
+                                .any(|superclass| superclass.name == name)
+                    })
+                    .collect::<Vec<String>>()
+            };
+
         self.references.push(Reference {
             name,
-            namespace_path: self.current_namespaces.to_owned(),
+            namespace_path,
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
         })
     }
@@ -382,6 +459,8 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
         current_namespaces: vec![],
         definitions: vec![],
         line_col_lookup: lookup,
+        in_superclass: false,
+        superclasses: vec![],
     };
 
     collector.visit(&ast);
@@ -389,12 +468,24 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
 
     for d in collector.definitions {
-        // if d.fully_qualified_name
-        //     .contains("DormantAccountVerificationController")
-        // {
-        //     dbg!(&d);
-        // }
-        definition_to_location_map.insert(d.fully_qualified_name, d.location);
+        let parts: Vec<&str> = d.fully_qualified_name.split("::").collect();
+        // We do this to handle nested constants, e.g.
+        // class Foo::Bar
+        // end
+        for (index, _) in parts.iter().enumerate() {
+            let combined = &parts[..=index].join("::");
+            // If the map already contains the key, skip it.
+            // This is helpful, e.g.
+            // class Foo::Bar
+            //  BAZ
+            // end
+            // The fully name for BAZ IS ::Foo::Bar::BAZ, so we do not want to overwrite
+            // the definition location for ::Foo or ::Foo::Bar
+            if !definition_to_location_map.contains_key(combined) {
+                definition_to_location_map
+                    .insert(combined.to_owned(), d.location);
+            }
+        }
     }
 
     collector
@@ -404,8 +495,10 @@ fn extract_from_contents(contents: String) -> Vec<Reference> {
             let mut should_ignore_local_reference = false;
             let possible_constants = r.possible_fully_qualified_constants();
             for constant_name in possible_constants {
-                if let Some(location) =
-                    definition_to_location_map.get(&constant_name)
+                if let Some(location) = definition_to_location_map
+                    .get(&constant_name)
+                    .or(definition_to_location_map
+                        .get(&format!("::{}", constant_name)))
                 {
                     let reference_is_definition = location.start_row
                         == r.location.start_row
@@ -1145,6 +1238,36 @@ end
     }
 
     #[test]
+    fn test_has_one_association_with_class_name() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_one :some_user_model, class_name: 'User'
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("User"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 47
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
     fn test_has_many_association() {
         let contents: String = String::from(
             "\
@@ -1171,6 +1294,93 @@ end
                 }
             },
             *first_reference,
+        );
+    }
+
+    #[test]
+    fn test_it_uses_the_namespace_of_inherited_class_when_referencing_inherited_class(
+    ) {
+        let contents: String = String::from(
+            "\
+class Foo < Bar
+  Bar
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 3);
+        let reference = references
+            .get(2)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("Bar"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 6
+                }
+            },
+            *reference,
+        );
+    }
+
+    #[test]
+    fn test_it_ignores_locally_defined_nested_constants() {
+        let contents: String = String::from(
+            "\
+class Foo
+  class Bar
+    Foo::Bar
+  end
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        let second_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+
+        assert_eq!(first_reference.name, String::from("::Foo"));
+        assert_eq!(second_reference.name, String::from("::Foo::Bar"));
+    }
+
+    #[test]
+    fn test_it_ignores_references_to_subsets_of_locally_defined_nested_constants(
+    ) {
+        let contents: String = String::from(
+            "\
+class Foo::Bar
+  Foo
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 1);
+        let reference = references
+            .get(0)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("::Foo::Bar"),
+                namespace_path: vec![String::from("Foo::Bar")],
+                location: Range {
+                    start_row: 1,
+                    start_col: 6,
+                    end_row: 1,
+                    end_col: 15
+                }
+            },
+            *reference,
         );
     }
 }
