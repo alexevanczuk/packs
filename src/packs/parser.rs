@@ -1291,7 +1291,7 @@ end
 
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 3);
-        let first_reference = references
+        let reference = references
             .get(2)
             .expect("There should be a reference at index 0");
         assert_eq!(
@@ -1305,7 +1305,7 @@ end
                     end_col: 6
                 }
             },
-            *first_reference,
+            *reference,
         );
     }
 
