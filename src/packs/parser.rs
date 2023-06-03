@@ -1373,6 +1373,37 @@ end
     }
 
     #[test]
+    #[ignore]
+    fn test_has_many_association_with_class_name_after_block() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_one :bar, -> { my_scope }, as: :owner, class_name: 'bar_class'
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            Reference {
+                name: String::from("MyLeave"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 22
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
     fn test_it_uses_the_namespace_of_inherited_class_when_referencing_inherited_class(
     ) {
         let contents: String = String::from(
