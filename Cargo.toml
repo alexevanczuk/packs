@@ -4,7 +4,7 @@
 name = "pks"
 version = "0.1.7"
 edition = "2021"
-description = "TODO"
+description = "Welcome! Please see https://github.com/alexevanczuk/packs for documentation!"
 license = "MIT"
 
 [[bin]]
