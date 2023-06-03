@@ -1,9 +1,6 @@
-use crate::packs::cache::write_cache;
-use crate::packs::parser;
-use crate::packs::{self};
+use crate::packs;
+use crate::packs::{cache, parser};
 use clap::{Parser, Subcommand};
-use glob::glob;
-use rayon::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
@@ -38,37 +35,13 @@ pub fn run() {
         .absolute_project_root()
         .expect("Issue getting absolute_project_root!");
     match args.command {
-        Command::Greet => {
-            packs::greet();
-        }
+        Command::Greet => packs::greet(),
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
-            parser::get_references(&absolute_root);
+            parser::ruby::packwerk::get_references(&absolute_root);
         }
         Command::GenerateCache { files } => {
-            // TODO: This needs to parse include and exclude paths from packwerk.yml
-            // to generate a more accurate cache. Could just use default packs ones to start?
-            if !files.is_empty() {
-                files.into_iter().par_bridge().for_each(|file| {
-                    let path = PathBuf::from(file);
-                    write_cache(absolute_root.as_path(), path.as_path())
-                })
-            } else {
-                let pattern = absolute_root.join("packs/**/*.rb");
-                let paths = glob(pattern.to_str().unwrap())
-                    .expect("Failed to read glob pattern");
-                paths.par_bridge().for_each(|path| match path {
-                    Ok(path) => {
-                        let relative_path =
-                            path.strip_prefix(absolute_root.as_path()).unwrap();
-                        write_cache(absolute_root.as_path(), relative_path);
-                    }
-                    Err(e) => {
-                        println!("{:?}", e);
-                        panic!("blah");
-                    }
-                });
-            }
+            cache::write_cache_for_files(absolute_root, files)
         }
     }
 }
