@@ -1,5 +1,7 @@
 use crate::packs::parser::extract_from_path;
 use crate::packs::parser::UnresolvedReference;
+use glob::glob;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{Read, Write};
@@ -75,7 +77,7 @@ fn references_to_cache_entry(
     }
 }
 
-pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
+fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let absolute_path = absolute_root.join(relative_path_to_file);
     let references = extract_from_path(&absolute_path);
 
@@ -101,6 +103,35 @@ pub(crate) fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
         File::create(cache_file_path).expect("Failed to create cache file");
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
+}
+
+pub(crate) fn write_cache_for_files(
+    absolute_root: PathBuf,
+    files: Vec<String>,
+) {
+    // TODO: This needs to parse include and exclude paths from packwerk.yml
+    // to generate a more accurate cache. Could just use default packs ones to start?
+    if !files.is_empty() {
+        files.into_iter().par_bridge().for_each(|file| {
+            let path = PathBuf::from(file);
+            write_cache(absolute_root.as_path(), path.as_path())
+        })
+    } else {
+        let pattern = absolute_root.join("packs/**/*.rb");
+        let paths = glob(pattern.to_str().unwrap())
+            .expect("Failed to read glob pattern");
+        paths.par_bridge().for_each(|path| match path {
+            Ok(path) => {
+                let relative_path =
+                    path.strip_prefix(absolute_root.as_path()).unwrap();
+                write_cache(absolute_root.as_path(), relative_path);
+            }
+            Err(e) => {
+                println!("{:?}", e);
+                panic!("blah");
+            }
+        });
+    }
 }
 
 #[cfg(test)]

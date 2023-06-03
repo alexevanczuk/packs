@@ -1,8 +1,6 @@
 use crate::packs;
-use crate::packs::{cache::write_cache, parser};
+use crate::packs::{cache, parser};
 use clap::{Parser, Subcommand};
-use glob::glob;
-use rayon::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
@@ -45,29 +43,7 @@ pub fn run() {
             parser::ruby::packwerk::get_references(&absolute_root);
         }
         Command::GenerateCache { files } => {
-            // TODO: This needs to parse include and exclude paths from packwerk.yml
-            // to generate a more accurate cache. Could just use default packs ones to start?
-            if !files.is_empty() {
-                files.into_iter().par_bridge().for_each(|file| {
-                    let path = PathBuf::from(file);
-                    write_cache(absolute_root.as_path(), path.as_path())
-                })
-            } else {
-                let pattern = absolute_root.join("packs/**/*.rb");
-                let paths = glob(pattern.to_str().unwrap())
-                    .expect("Failed to read glob pattern");
-                paths.par_bridge().for_each(|path| match path {
-                    Ok(path) => {
-                        let relative_path =
-                            path.strip_prefix(absolute_root.as_path()).unwrap();
-                        write_cache(absolute_root.as_path(), relative_path);
-                    }
-                    Err(e) => {
-                        println!("{:?}", e);
-                        panic!("blah");
-                    }
-                });
-            }
+            cache::write_cache_for_files(absolute_root, files)
         }
     }
 }
