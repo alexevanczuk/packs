@@ -24,6 +24,7 @@ pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
 #[cfg(test)]
 mod tests {
     use glob::Paths;
+    use itertools::Itertools;
 
     use super::*;
     use crate::packs::configuration;
@@ -33,6 +34,7 @@ mod tests {
             .map(|p| {
                 p.unwrap_or_else(|err| panic!("Could not read file: {:?}", err))
             })
+            .sorted()
             .collect()
     }
 
@@ -41,6 +43,12 @@ mod tests {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
         let actual = configuration::get(absolute_root.clone());
         assert_eq!(actual.absolute_root, absolute_root);
-        assert_eq!(unroll_include(actual.include), vec![PathBuf::from("blah")])
+        assert_eq!(
+            unroll_include(actual.include),
+            vec![
+                absolute_root.join("packs/bar/app/services/bar.rb"),
+                absolute_root.join("packs/foo/app/services/foo.rb")
+            ]
+        )
     }
 }
