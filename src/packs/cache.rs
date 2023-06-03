@@ -126,8 +126,7 @@ pub(crate) fn write_cache_for_files(
                 write_cache(absolute_root.as_path(), relative_path);
             }
             Err(e) => {
-                println!("{:?}", e);
-                panic!("blah");
+                println!("Error! {:?}", e);
             }
         });
     }
