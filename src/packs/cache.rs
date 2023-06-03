@@ -118,17 +118,12 @@ pub(crate) fn write_cache_for_files(
             write_cache(absolute_root.as_path(), path.as_path())
         })
     } else {
-        let paths = configuration.include;
-        paths.par_bridge().for_each(|path| match path {
-            Ok(path) => {
-                let relative_path =
-                    path.strip_prefix(absolute_root.as_path()).unwrap();
-                write_cache(absolute_root.as_path(), relative_path);
-            }
-            Err(e) => {
-                println!("Error! {:?}", e);
-            }
-        });
+        let paths = configuration.included_files;
+        paths.par_iter().for_each(|path| {
+            let relative_path =
+                path.strip_prefix(absolute_root.as_path()).unwrap();
+            write_cache(absolute_root.as_path(), relative_path);
+        })
     }
 }
 

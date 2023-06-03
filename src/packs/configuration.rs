@@ -1,17 +1,42 @@
 use std::path::PathBuf;
 
+use itertools::Itertools;
+
 pub struct Configuration {
-    pub include: glob::Paths,
+    pub included_files: Vec<PathBuf>,
     pub absolute_root: PathBuf,
 }
 impl Configuration {
     fn default(absolute_root: PathBuf) -> Configuration {
-        let pattern = absolute_root.join("packs/**/*.rb");
-        let include = glob::glob(pattern.to_str().unwrap())
-            .expect("Failed to read glob pattern");
+        let default_include_patterns = &["**/*.{rb,rake,erb}"];
+        let default_exclude_patterns =
+            &["!{bin,node_modules,script,tmp,vendor}/**/*"];
+        let mut v3 = vec![];
+        v3.extend_from_slice(default_include_patterns);
+        v3.extend_from_slice(default_exclude_patterns);
+        // let combined: &[str] =
+        //     &[default_include_patterns[..], default_exclude_patterns[..]]
+        //         .concat();
+
+        let included_files: Vec<PathBuf> =
+            globwalk::GlobWalkerBuilder::from_patterns(
+                absolute_root.clone(),
+                // &["*.{png,jpg,gif}", "!Pictures/*"],
+                // default_include_patterns,
+                &v3,
+            )
+            .build()
+            .expect("Could not build glob walker")
+            .filter_map(Result::ok)
+            .map(|x| x.into_path())
+            .sorted()
+            .collect();
+
+        // let include = globwalk::glob(default_include_pattern.to_str().unwrap())
+        //     .expect("Failed to read glob pattern");
 
         Configuration {
-            include,
+            included_files,
             absolute_root,
         }
     }
@@ -23,20 +48,9 @@ pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
 
 #[cfg(test)]
 mod tests {
-    use glob::Paths;
-    use itertools::Itertools;
 
     use super::*;
     use crate::packs::configuration;
-
-    fn unroll_include(include: Paths) -> Vec<PathBuf> {
-        include
-            .map(|p| {
-                p.unwrap_or_else(|err| panic!("Could not read file: {:?}", err))
-            })
-            .sorted()
-            .collect()
-    }
 
     #[test]
     fn default_options() {
@@ -44,7 +58,7 @@ mod tests {
         let actual = configuration::get(absolute_root.clone());
         assert_eq!(actual.absolute_root, absolute_root);
         assert_eq!(
-            unroll_include(actual.include),
+            actual.included_files,
             vec![
                 absolute_root.join("packs/bar/app/services/bar.rb"),
                 absolute_root.join("packs/foo/app/services/foo.rb")
