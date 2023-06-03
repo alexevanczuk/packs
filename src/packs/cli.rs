@@ -41,7 +41,8 @@ pub fn run() {
             parser::ruby::packwerk::get_references(&absolute_root);
         }
         Command::GenerateCache { files } => {
-            cache::write_cache_for_files(absolute_root, files)
+            let configuration = packs::configuration::get(absolute_root);
+            cache::write_cache_for_files(files, configuration);
         }
     }
 }

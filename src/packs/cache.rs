@@ -1,6 +1,6 @@
 use crate::packs::parser::extract_from_path;
 use crate::packs::parser::UnresolvedReference;
-use glob::glob;
+use crate::packs::Configuration;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
@@ -106,9 +106,10 @@ fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
 }
 
 pub(crate) fn write_cache_for_files(
-    absolute_root: PathBuf,
     files: Vec<String>,
+    configuration: Configuration,
 ) {
+    let absolute_root = configuration.absolute_root;
     // TODO: This needs to parse include and exclude paths from packwerk.yml
     // to generate a more accurate cache. Could just use default packs ones to start?
     if !files.is_empty() {
@@ -117,9 +118,7 @@ pub(crate) fn write_cache_for_files(
             write_cache(absolute_root.as_path(), path.as_path())
         })
     } else {
-        let pattern = absolute_root.join("packs/**/*.rb");
-        let paths = glob(pattern.to_str().unwrap())
-            .expect("Failed to read glob pattern");
+        let paths = configuration.include;
         paths.par_bridge().for_each(|path| match path {
             Ok(path) => {
                 let relative_path =
