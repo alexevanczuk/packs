@@ -1,11 +1,10 @@
 use crate::packs::parser::extract_from_path;
+use crate::packs::parser::Reference;
 use md5;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-
-use super::parser::Reference;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct CacheEntry {

@@ -1,6 +1,6 @@
-use crate::packs::cache::write_cache;
-use crate::packs::parser;
-use crate::packs::{self};
+use super::cache::write_cache;
+use super::parser;
+use crate::packs;
 use clap::{Parser, Subcommand};
 use glob::glob;
 use rayon::prelude::*;
