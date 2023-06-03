@@ -7,7 +7,7 @@ mod tests {
     use crate::packs::Reference;
 
     #[test]
-    fn test_trivial_case() {
+    fn trivial_case() {
         let contents: String = String::from("Foo");
         assert_eq!(
             vec![Reference {
@@ -25,7 +25,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nested_constant() {
+    fn nested_constant() {
         let contents: String = String::from("Foo::Bar");
         assert_eq!(
             vec![Reference {
@@ -43,7 +43,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deeply_nested_constant() {
+    fn deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz");
         assert_eq!(
             vec![Reference {
@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn test_very_deeply_nested_constant() {
+    fn very_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz::Boo");
         assert_eq!(
             vec![Reference {
@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    fn test_class_definition() {
+    fn class_definition() {
         let contents: String = String::from(
             "\
 class Foo
@@ -103,7 +103,7 @@ end
     }
 
     #[test]
-    fn test_class_namespaced_constant() {
+    fn class_namespaced_constant() {
         let contents: String = String::from(
             "\
 class Foo
@@ -128,7 +128,7 @@ end
     }
 
     #[test]
-    fn test_deeply_class_namespaced_constant() {
+    fn deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "\
 class Foo
@@ -155,7 +155,7 @@ end
     }
 
     #[test]
-    fn test_very_deeply_class_namespaced_constant() {
+    fn very_deeply_class_namespaced_constant() {
         let contents: String = String::from(
             "\
 class Foo
@@ -188,7 +188,7 @@ end
     }
 
     #[test]
-    fn test_module_namespaced_constant() {
+    fn module_namespaced_constant() {
         let contents: String = String::from(
             "\
 module Foo
@@ -225,7 +225,7 @@ end
     }
 
     #[test]
-    fn test_deeply_module_namespaced_constant() {
+    fn deeply_module_namespaced_constant() {
         let contents: String = String::from(
             "\
 module Foo
@@ -252,7 +252,7 @@ end
     }
 
     #[test]
-    fn test_very_deeply_module_namespaced_constant() {
+    fn very_deeply_module_namespaced_constant() {
         let contents: String = String::from(
             "\
 module Foo
@@ -285,7 +285,7 @@ end
     }
 
     #[test]
-    fn test_mixed_namespaced_constant() {
+    fn mixed_namespaced_constant() {
         let contents: String = String::from(
             "\
 class Foo
@@ -319,7 +319,7 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_compact_style_class_definition_constant() {
+    fn compact_style_class_definition_constant() {
         let contents: String = String::from(
             "\
 class Foo::Bar
@@ -345,7 +345,7 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_compact_style_with_module_constant() {
+    fn compact_style_with_module_constant() {
         let contents: String = String::from(
             "\
 class Foo::Bar
@@ -375,7 +375,7 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_array_of_constant() {
+    fn array_of_constant() {
         let contents: String = String::from("[Foo]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
@@ -398,7 +398,7 @@ end
     }
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_array_of_multiple_constants() {
+    fn array_of_multiple_constants() {
         let contents: String = String::from("[Foo, Bar]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 2);
@@ -438,7 +438,7 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_array_of_nested_constant() {
+    fn array_of_nested_constant() {
         let contents: String = String::from("[Baz::Boo]");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
@@ -462,7 +462,7 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_globally_referenced_constant() {
+    fn globally_referenced_constant() {
         let contents: String = String::from("::Foo");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 1);
@@ -486,14 +486,14 @@ end
 
     #[test]
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
-    fn test_metaprogrammatically_referenced_constant() {
+    fn metaprogrammatically_referenced_constant() {
         let contents: String = String::from("described_class::Foo");
         let references = extract_from_contents(contents);
         assert_eq!(references.len(), 0);
     }
 
     #[test]
-    fn test_ignore_local_constant() {
+    fn ignore_local_constant() {
         let contents: String = String::from(
             "\
 class Foo
@@ -521,7 +521,7 @@ end
     }
 
     #[test]
-    fn test_ignore_local_constant_under_nested_module() {
+    fn ignore_local_constant_under_nested_module() {
         let contents: String = String::from(
             "\
 class Foo
@@ -566,7 +566,7 @@ end
     }
 
     #[test]
-    fn test_super_classes_are_references() {
+    fn super_classes_are_references() {
         let contents: String = String::from(
             "\
 class Foo < Bar
@@ -595,7 +595,7 @@ end
     }
 
     #[test]
-    fn test_compact_nested_classes_are_references() {
+    fn compact_nested_classes_are_references() {
         let contents: String = String::from(
             "\
 class Foo::Bar
@@ -624,7 +624,7 @@ end
     }
 
     #[test]
-    fn test_regular_nested_classes_are_references() {
+    fn regular_nested_classes_are_references() {
         let contents: String = String::from(
             "\
 class Foo
@@ -665,7 +665,7 @@ end
         );
     }
     #[test]
-    fn test_const_assignments_are_references() {
+    fn const_assignments_are_references() {
         let contents: String = String::from(
             "\
 FOO = BAR
@@ -693,7 +693,7 @@ FOO = BAR
     }
 
     #[test]
-    fn test_has_one_association() {
+    fn has_one_association() {
         let contents: String = String::from(
             "\
 class Foo
@@ -723,7 +723,7 @@ end
     }
 
     #[test]
-    fn test_has_one_association_with_class_name() {
+    fn has_one_association_with_class_name() {
         let contents: String = String::from(
             "\
 class Foo
@@ -753,7 +753,7 @@ end
     }
 
     #[test]
-    fn test_has_many_association() {
+    fn has_many_association() {
         let contents: String = String::from(
             "\
 class Foo
@@ -783,7 +783,7 @@ end
     }
 
     #[test]
-    fn test_has_many_association_with_custom_inflection() {
+    fn has_many_association_with_custom_inflection() {
         let contents: String = String::from(
             "\
 class Foo
@@ -812,7 +812,7 @@ end
         );
     }
     #[test]
-    fn test_has_many_association_with_custom_inflection_2() {
+    fn has_many_association_with_custom_inflection_2() {
         let contents: String = String::from(
             "\
 class Foo
@@ -843,7 +843,7 @@ end
 
     #[test]
     #[ignore]
-    fn test_has_many_association_with_class_name_after_block() {
+    fn has_many_association_with_class_name_after_block() {
         let contents: String = String::from(
             "\
 class Foo
@@ -873,7 +873,7 @@ end
     }
 
     #[test]
-    fn test_it_uses_the_namespace_of_inherited_class_when_referencing_inherited_class(
+    fn it_uses_the_namespace_of_inherited_class_when_referencing_inherited_class(
     ) {
         let contents: String = String::from(
             "\
@@ -904,7 +904,7 @@ end
     }
 
     #[test]
-    fn test_it_ignores_locally_defined_nested_constants() {
+    fn it_ignores_locally_defined_nested_constants() {
         let contents: String = String::from(
             "\
 class Foo
@@ -929,8 +929,7 @@ end
     }
 
     #[test]
-    fn test_it_ignores_references_to_subsets_of_locally_defined_nested_constants(
-    ) {
+    fn it_ignores_references_to_subsets_of_locally_defined_nested_constants() {
         let contents: String = String::from(
             "\
 class Foo::Bar
