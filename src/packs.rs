@@ -8,7 +8,7 @@ mod string_helpers;
 
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use parser::ruby::packwerk::extractor::Range;
-pub use parser::ruby::packwerk::extractor::Reference;
+pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
 pub fn greet() {
     println!("Hello! This CLI is under construction.")

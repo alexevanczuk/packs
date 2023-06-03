@@ -22,13 +22,13 @@ pub struct SuperclassReference {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Reference {
+pub struct UnresolvedReference {
     pub name: String,
     pub namespace_path: Vec<String>,
     pub location: Range,
 }
 
-impl Reference {
+impl UnresolvedReference {
     fn possible_fully_qualified_constants(&self) -> Vec<String> {
         if self.name.starts_with("::") {
             return vec![self.name.to_owned()];
@@ -75,7 +75,7 @@ pub struct LocationRange {
 }
 
 struct ReferenceCollector<'a> {
-    pub references: Vec<Reference>,
+    pub references: Vec<UnresolvedReference>,
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
@@ -183,7 +183,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         });
 
         // Packwerk also considers a definition to be a "reference"
-        self.references.push(Reference {
+        self.references.push(UnresolvedReference {
             name: fully_qualified_name,
             namespace_path: self.current_namespaces.to_owned(),
             location,
@@ -255,7 +255,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                         re.replace_all(&unwrapped_name, "Leave").to_string();
                 }
 
-                self.references.push(Reference {
+                self.references.push(UnresolvedReference {
                     name: unwrapped_name,
                     namespace_path: self.current_namespaces.to_owned(),
                     location: loc_to_range(
@@ -329,7 +329,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         });
 
         // Packwerk also considers a definition to be a "reference"
-        self.references.push(Reference {
+        self.references.push(UnresolvedReference {
             name: fully_qualified_name,
             namespace_path: self.current_namespaces.to_owned(),
             location,
@@ -375,7 +375,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                     .collect::<Vec<String>>()
             };
 
-        self.references.push(Reference {
+        self.references.push(UnresolvedReference {
             name,
             namespace_path,
             location: loc_to_range(node.expression_l, &self.line_col_lookup),
@@ -395,7 +395,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
     }
 }
 
-pub(crate) fn get_references(absolute_root: &Path) -> Vec<Reference> {
+pub(crate) fn get_references(absolute_root: &Path) -> Vec<UnresolvedReference> {
     // Later this can come from config
     let pattern = absolute_root.join("packs/**/*.rb");
 
@@ -412,7 +412,7 @@ pub(crate) fn get_references(absolute_root: &Path) -> Vec<Reference> {
         .collect()
 }
 
-pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<Reference> {
+pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
@@ -420,7 +420,9 @@ pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<Reference> {
     extract_from_contents(contents)
 }
 
-pub(crate) fn extract_from_contents(contents: String) -> Vec<Reference> {
+pub(crate) fn extract_from_contents(
+    contents: String,
+) -> Vec<UnresolvedReference> {
     let options = ParserOptions {
         buffer_name: "".to_string(),
         ..Default::default()

@@ -4,13 +4,13 @@ pub(crate) use extractor::get_references;
 mod tests {
     use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents;
     use crate::packs::Range;
-    use crate::packs::Reference;
+    use crate::packs::UnresolvedReference;
 
     #[test]
     fn trivial_case() {
         let contents: String = String::from("Foo");
         assert_eq!(
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range {
@@ -28,7 +28,7 @@ mod tests {
     fn nested_constant() {
         let contents: String = String::from("Foo::Bar");
         assert_eq!(
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("Foo::Bar"),
                 namespace_path: vec![],
                 location: Range {
@@ -46,7 +46,7 @@ mod tests {
     fn deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz");
         assert_eq!(
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("Foo::Bar::Baz"),
                 namespace_path: vec![],
                 location: Range {
@@ -64,7 +64,7 @@ mod tests {
     fn very_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz::Boo");
         assert_eq!(
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("Foo::Bar::Baz::Boo"),
                 namespace_path: vec![],
                 location: Range {
@@ -88,7 +88,7 @@ end
         );
 
         assert_eq!(
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("::Foo"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -113,7 +113,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Bar"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -140,7 +140,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Baz"),
                 namespace_path: vec![String::from("Foo"), String::from("Bar")],
                 location: Range {
@@ -169,7 +169,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Boo"),
                 namespace_path: vec![
                     String::from("Foo"),
@@ -199,7 +199,7 @@ end
 
         assert_eq!(
             vec![
-                Reference {
+                UnresolvedReference {
                     name: String::from("::Foo"),
                     namespace_path: vec![String::from("Foo")],
                     location: Range {
@@ -209,7 +209,7 @@ end
                         end_col: 11
                     }
                 },
-                Reference {
+                UnresolvedReference {
                     name: String::from("Bar"),
                     namespace_path: vec![String::from("Foo")],
                     location: Range {
@@ -237,7 +237,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Baz"),
                 namespace_path: vec![String::from("Foo"), String::from("Bar")],
                 location: Range {
@@ -266,7 +266,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Boo"),
                 namespace_path: vec![
                     String::from("Foo"),
@@ -299,7 +299,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Boo"),
                 namespace_path: vec![
                     String::from("Foo"),
@@ -329,7 +329,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Baz"),
                 namespace_path: vec![String::from("Foo::Bar")],
                 location: Range {
@@ -356,7 +356,7 @@ end
         );
 
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("::Foo::Bar::Baz"),
                 namespace_path: vec![
                     String::from("Foo::Bar"),
@@ -383,7 +383,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range {
@@ -406,7 +406,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range {
@@ -422,7 +422,7 @@ end
             .get(1)
             .expect("There should be a reference at index 1");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Bar"),
                 namespace_path: vec![],
                 location: Range {
@@ -446,7 +446,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Baz::Boo"),
                 namespace_path: vec![],
                 location: Range {
@@ -470,7 +470,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("::Foo"),
                 namespace_path: vec![],
                 location: Range {
@@ -507,7 +507,7 @@ end
 
         assert_eq!(
             extract_from_contents(contents),
-            vec![Reference {
+            vec![UnresolvedReference {
                 name: String::from("::Foo"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -538,7 +538,7 @@ end
         assert_eq!(
             extract_from_contents(contents),
             vec![
-                Reference {
+                UnresolvedReference {
                     name: String::from("::Foo"),
                     namespace_path: vec![String::from("Foo"),],
                     location: Range {
@@ -548,7 +548,7 @@ end
                         end_col: 10
                     }
                 },
-                Reference {
+                UnresolvedReference {
                     name: String::from("::Foo::Baz"),
                     namespace_path: vec![
                         String::from("Foo"),
@@ -580,7 +580,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Bar"),
                 namespace_path: vec![],
                 location: Range {
@@ -609,7 +609,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("::Foo::Bar"),
                 namespace_path: vec![String::from("Foo::Bar")],
                 location: Range {
@@ -634,11 +634,12 @@ end
         ",
         );
 
-        let references: Vec<Reference> = extract_from_contents(contents);
+        let references: Vec<UnresolvedReference> =
+            extract_from_contents(contents);
         assert_eq!(
             references,
             vec![
-                Reference {
+                UnresolvedReference {
                     name: String::from("::Foo"),
                     namespace_path: vec![String::from("Foo")],
                     location: Range {
@@ -648,7 +649,7 @@ end
                         end_col: 10
                     }
                 },
-                Reference {
+                UnresolvedReference {
                     name: String::from("::Foo::Bar"),
                     namespace_path: vec![
                         String::from("Foo"),
@@ -671,14 +672,15 @@ end
 FOO = BAR
 ",
         );
-        let references: Vec<Reference> = extract_from_contents(contents);
+        let references: Vec<UnresolvedReference> =
+            extract_from_contents(contents);
 
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("BAR"),
                 namespace_path: vec![],
                 location: Range {
@@ -708,7 +710,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("SomeUserModel"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -738,7 +740,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("User"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -768,7 +770,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("SomeUserModel"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -798,7 +800,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("MyStatus"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -827,7 +829,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("MyLeave"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -858,7 +860,7 @@ end
             .get(1)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("MyLeave"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
@@ -889,7 +891,7 @@ end
             .get(2)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("Bar"),
                 namespace_path: vec![],
                 location: Range {
@@ -944,7 +946,7 @@ end
             .get(0)
             .expect("There should be a reference at index 0");
         assert_eq!(
-            Reference {
+            UnresolvedReference {
                 name: String::from("::Foo::Bar"),
                 namespace_path: vec![String::from("Foo::Bar")],
                 location: Range {

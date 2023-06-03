@@ -1,5 +1,5 @@
 use crate::packs::parser::extract_from_path;
-use crate::packs::parser::Reference;
+use crate::packs::parser::UnresolvedReference;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{Read, Write};
@@ -51,7 +51,7 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
 }
 
 fn references_to_cache_entry(
-    references: Vec<Reference>,
+    references: Vec<UnresolvedReference>,
     file_contents_digest: String,
     relative_path: String,
 ) -> CacheEntry {
