@@ -35,9 +35,7 @@ pub fn run() {
         .absolute_project_root()
         .expect("Issue getting absolute_project_root!");
     match args.command {
-        Command::Greet => {
-            packs::greet();
-        }
+        Command::Greet => packs::greet(),
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
             parser::ruby::packwerk::get_references(&absolute_root);
