@@ -1,6 +1,5 @@
-use super::cache::write_cache;
-use super::parser;
 use crate::packs;
+use crate::packs::{cache::write_cache, parser};
 use clap::{Parser, Subcommand};
 use glob::glob;
 use rayon::prelude::*;
@@ -43,7 +42,7 @@ pub fn run() {
         }
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
-            parser::get_references(&absolute_root);
+            parser::ruby::packwerk::get_references(&absolute_root);
         }
         Command::GenerateCache { files } => {
             // TODO: This needs to parse include and exclude paths from packwerk.yml

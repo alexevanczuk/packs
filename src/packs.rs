@@ -6,19 +6,17 @@ pub(crate) mod cli;
 pub mod parser;
 mod string_helpers;
 
+// Re-exports: Eventually, these may be part of the public API for packs
+pub use parser::ruby::packwerk::extractor::Range;
+pub use parser::ruby::packwerk::extractor::Reference;
+
 pub fn greet() {
     println!("Hello! This CLI is under construction.")
 }
 
 pub fn list(absolute_root: PathBuf) {
-    let pattern = absolute_root.join("packs/*/package.yml");
-    for entry in
-        glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern")
-    {
-        match entry {
-            Ok(path) => println!("{:?}", path.display()),
-            Err(e) => println!("{:?}", e),
-        }
+    for pack in all(absolute_root) {
+        println!("{}", pack.yml.display())
     }
 }
 
@@ -29,7 +27,7 @@ pub struct Pack {
 }
 
 impl Pack {
-    pub fn from(absolute_root: &PathBuf, yml: PathBuf) -> Pack {
+    pub fn from_path(absolute_root: &PathBuf, yml: PathBuf) -> Pack {
         let mut name = yml
             .strip_prefix(absolute_root)
             .expect("Absolute root is not a prefix to pack YML – should not happen!")
@@ -54,7 +52,7 @@ pub fn all(absolute_root: PathBuf) -> Vec<Pack> {
         glob(pattern.to_str().unwrap()).expect("Failed to read glob pattern")
     {
         match entry {
-            Ok(yml) => packs.push(Pack::from(&absolute_root, yml)),
+            Ok(yml) => packs.push(Pack::from_path(&absolute_root, yml)),
             Err(e) => println!("{:?}", e),
         }
     }

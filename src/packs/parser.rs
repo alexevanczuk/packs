@@ -1,2 +1,5 @@
-mod ruby;
-pub(crate) use ruby::packwerk::extract_from_path;
+pub(crate) mod ruby;
+pub(crate) use ruby::packwerk::extractor::extract_from_path;
+
+// TODO: Move this somewhere else
+pub(crate) use ruby::packwerk::extractor::Reference;
