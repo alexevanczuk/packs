@@ -875,6 +875,36 @@ end
     }
 
     #[test]
+    fn association_with_custom_inflection_3() {
+        let contents: String = String::from(
+            "\
+class Foo
+  has_many :data
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            UnresolvedReference {
+                name: String::from("Datum"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 17
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
     fn has_many_association_with_class_name_after_block() {
         let contents: String = String::from(
             "\

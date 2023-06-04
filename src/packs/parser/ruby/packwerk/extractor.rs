@@ -260,6 +260,12 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                     re.replace_all(&unwrapped_name, "Status").to_string();
                 }
 
+                if unwrapped_name.contains("Daum") {
+                    let re = Regex::new("Daum").unwrap();
+                    unwrapped_name =
+                        re.replace_all(&unwrapped_name, "Datum").to_string();
+                }
+
                 if unwrapped_name.contains("Lefe") {
                     let re = Regex::new("Lefe").unwrap();
                     unwrapped_name =
