@@ -2,6 +2,7 @@ use crate::packs;
 use crate::packs::{cache, parser};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::process::exit;
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -42,6 +43,10 @@ pub fn run() {
         }
         Command::GenerateCache { files } => {
             let configuration = packs::configuration::get(absolute_root);
+            if !configuration.cache_enabled {
+                // TODO: Figure out the idiomatic way to raise tis error
+                panic!("Cache is disabled. Enable it in packwerk.yml to use this command.");
+            }
             cache::write_cache_for_files(files, configuration);
         }
     }
