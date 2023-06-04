@@ -897,7 +897,7 @@ end
                     start_row: 2,
                     start_col: 2,
                     end_row: 2,
-                    end_col: 22
+                    end_col: 72
                 }
             },
             *first_reference,

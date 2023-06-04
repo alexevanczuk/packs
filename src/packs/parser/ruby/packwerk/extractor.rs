@@ -135,22 +135,20 @@ fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     }
 }
 
-fn extract_class_name_from_kwargs(
-    kwargs: &nodes::Kwargs,
-) -> Result<String, ParseError> {
+fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
     for pair_node in kwargs.pairs.iter() {
         if let Node::Pair(pair) = pair_node {
             if let Node::Sym(k) = *pair.key.to_owned() {
                 if k.name.to_string_lossy() == *"class_name" {
                     if let Node::Str(v) = *pair.value.to_owned() {
-                        return Ok(v.value.to_string_lossy());
+                        return Some(v.value.to_string_lossy());
                     }
                 }
             }
         }
     }
 
-    Err(ParseError::Metaprogramming)
+    None
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -219,19 +217,13 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             || node.method_name == *"has_and_belongs_to_many"
         {
             let first_arg: Option<&Node> = node.args.get(0);
-            let second_arg: Option<&Node> = node.args.get(1);
 
             let mut name: Option<String> = None;
-            if let Some(Node::Kwargs(kwargs)) = second_arg {
-                for pair_node in kwargs.pairs.iter() {
-                    if let Node::Pair(pair) = pair_node {
-                        if let Node::Sym(k) = *pair.key.to_owned() {
-                            if k.name.to_string_lossy() == *"class_name" {
-                                if let Node::Str(v) = *pair.value.to_owned() {
-                                    name = Some(v.value.to_string_lossy());
-                                }
-                            }
-                        }
+            for node in node.args.iter() {
+                if let Node::Kwargs(kwargs) = node {
+                    if let Some(found) = extract_class_name_from_kwargs(kwargs)
+                    {
+                        name = Some(found);
                     }
                 }
             }
