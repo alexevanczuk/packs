@@ -162,7 +162,7 @@ fn get_package_paths(
     package_paths
 }
 
-pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
+pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
 
     let raw_config: RawConfiguration =
@@ -197,12 +197,12 @@ pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
             RawConfiguration::default()
         };
 
-    let included_files = get_included_files(&absolute_root, &raw_config);
+    let included_files = get_included_files(absolute_root, &raw_config);
 
     Configuration {
         included_files,
-        absolute_root: absolute_root.clone(),
-        package_paths: get_package_paths(&absolute_root, &raw_config),
+        absolute_root: absolute_root.to_path_buf(),
+        package_paths: get_package_paths(absolute_root, &raw_config),
         cache_enabled: raw_config.cache,
     }
 }
@@ -216,7 +216,7 @@ mod tests {
     #[test]
     fn default_options() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let actual = configuration::get(absolute_root.clone());
+        let actual = configuration::get(&absolute_root);
         assert_eq!(actual.absolute_root, absolute_root);
 
         let expected_included_files = vec![
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_nonempty_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(absolute_root.clone());
+        let configuration = configuration::get(&absolute_root);
         let actual_paths = configuration.intersect_files(vec![
             String::from("packs/foo/app/services/foo.rb"),
             String::from("scripts/my_script.rb"),
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_empty_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(absolute_root.clone());
+        let configuration = configuration::get(&absolute_root);
         let actual_paths = configuration.intersect_files(vec![]);
         let expected_paths = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_directory_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(absolute_root.clone());
+        let configuration = configuration::get(&absolute_root);
         let actual_paths =
             configuration.intersect_files(vec![String::from("packs/bar")]);
         let expected_paths =

@@ -197,7 +197,7 @@ mod tests {
 
         write_cache_for_files(
             vec![String::from("packs/foo/app/services/foo.rb")],
-            configuration::get(PathBuf::from("tests/fixtures/simple_app")),
+            configuration::get(&PathBuf::from("tests/fixtures/simple_app")),
         );
 
         let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e-experimental");

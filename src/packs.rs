@@ -3,6 +3,7 @@ use glob::glob;
 use std::path::PathBuf;
 
 mod cache;
+mod checker;
 pub(crate) mod cli;
 pub mod parser;
 mod string_helpers;

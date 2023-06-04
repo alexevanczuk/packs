@@ -3,6 +3,8 @@ use crate::packs::cache;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+use packs::checker;
+
 #[derive(Subcommand, Debug)]
 // We use snake_case as this is currently the conventon for the Ruby ecosystem,
 // and this is a Ruby tool (for now!)
@@ -45,17 +47,18 @@ pub fn run() {
     let absolute_root = args
         .absolute_project_root()
         .expect("Issue getting absolute_project_root!");
+    let configuration = packs::configuration::get(&absolute_root);
+
     match args.command {
         Command::Greet => packs::greet(),
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
-            panic!("💡 This command is coming soon!")
+            checker::check(configuration);
         }
         Command::Validate => {
             panic!("💡 This command is coming soon!")
         }
         Command::GenerateCache { files } => {
-            let configuration = packs::configuration::get(absolute_root);
             if !configuration.cache_enabled {
                 // TODO: Figure out the idiomatic way to raise tis error
                 panic!("Cache is disabled. Enable it in packwerk.yml to use this command.");
