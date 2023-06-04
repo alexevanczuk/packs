@@ -62,6 +62,7 @@ pub struct Configuration {
     pub included_files: Vec<PathBuf>,
     pub absolute_root: PathBuf,
     pub package_paths: Vec<PathBuf>,
+    pub cache_enabled: bool,
 }
 
 fn get_included_files(
@@ -156,6 +157,7 @@ pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
         included_files: get_included_files(&absolute_root, &raw_config),
         absolute_root: absolute_root.clone(),
         package_paths: get_package_paths(&absolute_root, &raw_config),
+        cache_enabled: raw_config.cache,
     }
 }
 
@@ -187,5 +189,7 @@ mod tests {
                 absolute_root.join("package.yml"),
             ]
         );
+
+        assert!(actual.cache_enabled)
     }
 }
