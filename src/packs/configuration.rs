@@ -12,6 +12,7 @@ impl Configuration {
         let default_exclude_patterns =
             vec![String::from("{bin,node_modules,script,tmp,vendor}/**/*")];
 
+        // Adding a `!` to the beginning of a glob pattern negates it.
         let exclude_patterns =
             default_exclude_patterns.iter().map(|p| format!("!{}", p));
 
@@ -21,8 +22,6 @@ impl Configuration {
         let included_files: Vec<PathBuf> =
             globwalk::GlobWalkerBuilder::from_patterns(
                 absolute_root.clone(),
-                // &["*.{png,jpg,gif}", "!Pictures/*"],
-                // default_include_patterns,
                 &combined_patterns,
             )
             .build()
@@ -31,9 +30,6 @@ impl Configuration {
             .map(|x| x.into_path())
             .sorted()
             .collect();
-
-        // let include = globwalk::glob(default_include_pattern.to_str().unwrap())
-        //     .expect("Failed to read glob pattern");
 
         Configuration {
             included_files,
