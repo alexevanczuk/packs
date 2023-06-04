@@ -12,10 +12,14 @@ enum Command {
     Greet,
     #[clap(about = "List packs based on configuration in packwerk.yml")]
     ListPacks,
+    #[clap(about = "Look for violations in the codebase")]
     Check,
-    GenerateCache {
-        files: Vec<String>,
-    },
+    #[clap(about = "Look for validation errors in the codebase")]
+    Validate,
+    #[clap(
+        about = "Generate a cache to be used by the ruby implementation of packwerk"
+    )]
+    GenerateCache { files: Vec<String> },
 }
 
 /// A CLI to interact with packs
@@ -45,6 +49,9 @@ pub fn run() {
         Command::Greet => packs::greet(),
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
+            panic!("💡 This command is coming soon!")
+        }
+        Command::Validate => {
             panic!("💡 This command is coming soon!")
         }
         Command::GenerateCache { files } => {
