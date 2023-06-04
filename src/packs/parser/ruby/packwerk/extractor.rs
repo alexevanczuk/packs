@@ -135,6 +135,24 @@ fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     }
 }
 
+fn extract_class_name_from_kwargs(
+    kwargs: &nodes::Kwargs,
+) -> Result<String, ParseError> {
+    for pair_node in kwargs.pairs.iter() {
+        if let Node::Pair(pair) = pair_node {
+            if let Node::Sym(k) = *pair.key.to_owned() {
+                if k.name.to_string_lossy() == *"class_name" {
+                    if let Node::Str(v) = *pair.value.to_owned() {
+                        return Ok(v.value.to_string_lossy());
+                    }
+                }
+            }
+        }
+    }
+
+    Err(ParseError::Metaprogramming)
+}
+
 impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_class(&mut self, node: &nodes::Class) {
         // We're not collecting definitions, so no need to visit the class definitioname);
@@ -433,6 +451,7 @@ pub(crate) fn extract_from_contents(
         superclasses: vec![],
     };
 
+    dbg!(&ast);
     collector.visit(&ast);
 
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
