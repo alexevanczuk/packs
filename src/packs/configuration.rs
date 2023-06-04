@@ -28,7 +28,7 @@ impl Configuration {
             .expect("Could not build glob walker")
             .filter_map(Result::ok)
             .map(|x| x.into_path())
-            .sorted()
+            .sorted() // Make output deterministic
             .collect();
 
         Configuration {
