@@ -29,7 +29,7 @@ Dir.chdir("../#{packs_dir}") do
   system('cargo build --release')
 end
 
-command = "time CACHE_VERIFICATION=1 ../#{packs_dir}/target/release/packs generate_cache"
+command = "CACHE_VERIFICATION=1 time ../#{packs_dir}/target/release/packs generate_cache"
 puts "Running: #{command}"
 system(command)
 

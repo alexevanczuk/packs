@@ -237,15 +237,17 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                 });
                 // See https://github.com/whatisinternet/Inflector/pull/87
                 // This can be pulled into a class maybe
-                if unwrapped_name.contains("Statuse") {
-                    let re = Regex::new("Statuse").unwrap();
-                    unwrapped_name =
-                        re.replace_all(&unwrapped_name, "Status").to_string();
-                }
                 if unwrapped_name.contains("Statu") {
-                    let re = Regex::new("Statu$").unwrap();
+                    let re = Regex::new("Statuse$").unwrap();
                     unwrapped_name =
                         re.replace_all(&unwrapped_name, "Status").to_string();
+                    let re = Regex::new("Statu$").unwrap();
+
+                    unwrapped_name =
+                        re.replace_all(&unwrapped_name, "Status").to_string();
+
+                    let re = Regex::new("Statuss").unwrap();
+                    re.replace_all(&unwrapped_name, "Status").to_string();
                 }
 
                 if unwrapped_name.contains("Lefe") {
