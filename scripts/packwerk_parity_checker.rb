@@ -29,7 +29,7 @@ Dir.chdir("../#{packs_dir}") do
   system('cargo build --release')
 end
 
-command = "time ../#{packs_dir}/target/release/packs generate-cache"
+command = "time ../#{packs_dir}/target/release/packs generate_cache"
 puts "Running: #{command}"
 system(command)
 

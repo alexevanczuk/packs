@@ -6,7 +6,7 @@ WIP: Rust implementation of packs for ruby
 
 # Initial Milestone
 
-- [ ] `packs generate_cache`, which can be used to update `tmp/cache/packwerk` for faster `packwerk` output. It should produce the exact same `json` that `packwerk` produces today. 
+- [ ] `packs generate_cache`, which can be used to update `tmp/cache/packwerk` for faster `packwerk` output. It should produce the exact same `json` that `packwerk` produces today.
 Current Progress:
   - Current progress is detected using `scripts/packwerk_parity_checker.rb`
   - Currently, `packs` detects roughly 98% of references in Gusto's monolith
@@ -22,7 +22,7 @@ Remaining Challenges include:
 # Usage
 Deployment is still a WIP, and it's not quite ready for prime time. If you want to try it out to see how well it works on your repo, you can:
 1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-2. Run `packs generate-cache` (see directions below to get binary) 
+2. Run `packs generate_cache` (see directions below to get binary) 
 3. Run `bin/packwerk update` to see how violations change using `packs`.
 
 # Downloading the Binary
