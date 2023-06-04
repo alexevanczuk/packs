@@ -3,6 +3,7 @@ use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -110,11 +111,14 @@ pub(crate) fn write_cache_for_files(
     configuration: Configuration,
 ) {
     let absolute_root = configuration.absolute_root;
-    // TODO: This needs to parse include and exclude paths from packwerk.yml
-    // to generate a more accurate cache. Could just use default packs ones to start?
+
     if !files.is_empty() {
-        files.into_iter().par_bridge().for_each(|file| {
-            let path = PathBuf::from(file);
+        let input_paths =
+            files.iter().map(PathBuf::from).collect::<HashSet<_>>();
+        let included_files =
+            configuration.included_files.intersection(&input_paths);
+
+        included_files.into_iter().par_bridge().for_each(|path| {
             write_cache(absolute_root.as_path(), path.as_path())
         })
     } else {
