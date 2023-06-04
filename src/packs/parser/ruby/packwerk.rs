@@ -875,12 +875,11 @@ end
     }
 
     #[test]
-    #[ignore]
     fn has_many_association_with_class_name_after_block() {
         let contents: String = String::from(
             "\
 class Foo
-  has_one :bar, -> { my_scope }, as: :owner, class_name: 'bar_class'
+  has_one :bar, -> { my_scope }, as: :owner, class_name: 'SpecialClass'
 end
         ",
         );
@@ -892,7 +891,7 @@ end
             .expect("There should be a reference at index 0");
         assert_eq!(
             UnresolvedReference {
-                name: String::from("MyLeave"),
+                name: String::from("SpecialClass"),
                 namespace_path: vec![String::from("Foo")],
                 location: Range {
                     start_row: 2,
