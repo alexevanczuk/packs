@@ -8,25 +8,22 @@ pub struct Configuration {
 }
 impl Configuration {
     fn default(absolute_root: PathBuf) -> Configuration {
-        let default_include_patterns = &["**/*.{rb,rake,erb}"];
+        let default_include_patterns = vec![String::from("**/*.{rb,rake,erb}")];
         let default_exclude_patterns =
-            &["{bin,node_modules,script,tmp,vendor}/**/*"];
+            vec![String::from("{bin,node_modules,script,tmp,vendor}/**/*")];
 
-        let mut patterns = vec![];
-        patterns.extend_from_slice(default_include_patterns);
-        patterns.extend_from_slice(
-            default_exclude_patterns
-                .iter()
-                .map(|pattern| format!("!{}", pattern).as_str())
-                .collect::<&str>()[..],
-        );
+        let exclude_patterns =
+            default_exclude_patterns.iter().map(|p| format!("!{}", p));
+
+        let mut combined_patterns = default_include_patterns;
+        combined_patterns.extend(exclude_patterns);
 
         let included_files: Vec<PathBuf> =
             globwalk::GlobWalkerBuilder::from_patterns(
                 absolute_root.clone(),
                 // &["*.{png,jpg,gif}", "!Pictures/*"],
                 // default_include_patterns,
-                &patterns,
+                &combined_patterns,
             )
             .build()
             .expect("Could not build glob walker")
