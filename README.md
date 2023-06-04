@@ -2,30 +2,49 @@
 ![CI](https://github.com/alexevanczuk/packs/actions/workflows/ci.yml/badge.svg)
 ![Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)
 
-WIP: Rust implementation of packs for ruby
+WIP: Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
 
-# Initial Milestone
-
-- [ ] `packs generate_cache`, which can be used to update `tmp/cache/packwerk` for faster `packwerk` output. It should produce the exact same `json` that `packwerk` produces today. 
-Current Progress:
-  - Current progress is detected using `scripts/packwerk_parity_checker.rb`
-  - Currently, `packs` detects roughly 98% of references in Gusto's monolith
-Remaining Challenges include:
-  - [ ] Parsing ERB
-  - [ ] Parsing Rails associations and rewriting them as constant references using a pluralizer. Initially, non-standard inflections will likely not be supported (although I may support it through hard-coded map in `packwerk.yml`)
-  - [ ] Replicating packwerk's behavior with respect to not recording "local definitions"
-- [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
-- [ ] `packs update`, which can be used to update `deprecated_references.yml`
-- [ ] `packs lsp`, to launch an LSP-server to provide faster feedback
-
+# Features
+- Currently all `packs` can do is generate a cache to be used by the ruby implementation.
 
 # Usage
-Deployment is still a WIP, and it's not quite ready for prime time. If you want to try it out to see how well it works on your repo, you can:
+One simple way to try out `packs` to generate your cache would be to create a bash function which wraps the call to `bin/packwerk`, like so:
+```bash
+# In your ~/.bash_profile or analogous file
+packwerk() {
+    if [ "$1" = "check" ] || [ "$1" = "update" ]; then
+        echo "Calling packs generate_cache with args: ${@:2}"
+        ../packs/target/release/packs generate_cache "${@:2}"
+    fi
+
+    echo "Now calling packwerk with args: $@"
+    bin/packwerk "$@"
+}
+```
+
+You can also modify the `bin/packwerk` executable to call `packs` conditionally, e.g.
+```ruby
+# In bin/packwerk
+packs_executable = `which packs`.chomp
+if !packs_executable.empty?
+  if ARGV.first == 'check' || ARGV.first == 'update'
+    puts "Calling packs generate_cache with args: #{ARGV[1..-1]}"
+    system('packs', 'generate_cache', *ARGV[1..-1])
+  end
+end
+```
+
+# Verification
+As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
+
+To verify:
 1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-2. Run `packs generate-cache` (see directions below to get binary) 
+2. Run `packs generate_cache` (see directions below to get binary) 
 3. Run `bin/packwerk update` to see how violations change using `packs`.
 
 # Downloading the Binary
+Deployment ergonomics are still a WIP.
+
 If you want to try it out:
 - Go to https://github.com/alexevanczuk/packs/releases
 - Download the `packs` asset and run `chmod +x path/to/packs`
@@ -34,11 +53,11 @@ If you want to try it out:
 
 You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
 
+# Deployment Improvements
 In the future, I hope to:
 - Somehow sign the binary so it does not get a warning message
 - Make it executable before download
 - Add directions to download via some other tool, or ship as a native ruby gem extension.
-
 
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!

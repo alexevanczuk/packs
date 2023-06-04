@@ -1,5 +1,5 @@
 pub(crate) mod extractor;
-pub(crate) use extractor::get_references;
+
 #[cfg(test)]
 mod tests {
     use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents;
@@ -813,6 +813,37 @@ end
             *first_reference,
         );
     }
+
+    #[test]
+    fn belongs_to_association_with_custom_inflection() {
+        let contents: String = String::from(
+            "\
+class Foo
+  belongs_to :status
+end
+        ",
+        );
+
+        let references = extract_from_contents(contents);
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            UnresolvedReference {
+                name: String::from("Status"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 21
+                }
+            },
+            *first_reference,
+        );
+    }
+
     #[test]
     fn has_many_association_with_custom_inflection_2() {
         let contents: String = String::from(

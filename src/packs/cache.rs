@@ -1,8 +1,10 @@
 use crate::packs::parser::extract_from_path;
 use crate::packs::parser::UnresolvedReference;
-use glob::glob;
+use crate::packs::Configuration;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -86,7 +88,10 @@ fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
         .expect("Failed to create cache directory");
 
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
-    let file_digest_str = format!("{:x}-experimental", file_digest);
+    let file_digest_str = env::var("CACHE_VERIFICATION")
+        .map(|_| format!("{:x}-experimental", file_digest))
+        .unwrap_or_else(|_| format!("{:x}", file_digest));
+
     let cache_file_path = cache_dir.join(file_digest_str);
     let cache_entry = references_to_cache_entry(
         references,
@@ -106,32 +111,16 @@ fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
 }
 
 pub(crate) fn write_cache_for_files(
-    absolute_root: PathBuf,
     files: Vec<String>,
+    configuration: Configuration,
 ) {
-    // TODO: This needs to parse include and exclude paths from packwerk.yml
-    // to generate a more accurate cache. Could just use default packs ones to start?
-    if !files.is_empty() {
-        files.into_iter().par_bridge().for_each(|file| {
-            let path = PathBuf::from(file);
-            write_cache(absolute_root.as_path(), path.as_path())
-        })
-    } else {
-        let pattern = absolute_root.join("packs/**/*.rb");
-        let paths = glob(pattern.to_str().unwrap())
-            .expect("Failed to read glob pattern");
-        paths.par_bridge().for_each(|path| match path {
-            Ok(path) => {
-                let relative_path =
-                    path.strip_prefix(absolute_root.as_path()).unwrap();
-                write_cache(absolute_root.as_path(), relative_path);
-            }
-            Err(e) => {
-                println!("{:?}", e);
-                panic!("blah");
-            }
-        });
-    }
+    let absolute_root_path = configuration.absolute_root.as_path();
+    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+
+    absolute_paths.par_iter().for_each(|path| {
+        let relative_path = path.strip_prefix(absolute_root_path).unwrap();
+        write_cache(absolute_root_path, relative_path);
+    })
 }
 
 #[cfg(test)]

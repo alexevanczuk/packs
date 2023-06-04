@@ -1,7 +1,19 @@
 # TODO
+- Update `scripts/packwerk_parity_checker.rb` to ensure the exact same set of files are produced (i.e. `include` and `exclude` should be respected)
+- Add benchmarking for `packs generate_cache` against `packwerk` if the same set of files are produced
+- Improve deployment and share current progress
+- Look into `bin/packwerk update`!
 
-# Implementation plan
-## Create Steel Thread
-- Get enough functionality working that `packs update` generates `package_todo.yml` files that can have a similarity score (+1 for violations in common, -1 for each difference), track progress against monolith.
-- Identify easy ways to replicate packwerk behavior without porting over too many idiosyncracies.
-- If there are ways to remove patterns in our codebase (e.g. `module Foo::Bar`) that might cause packs to diverge from packwerk, go for that
+# Initial Milestone
+
+- [ ] `packs generate_cache`, which can be used to update `tmp/cache/packwerk` for faster `packwerk` output. It should produce the exact same `json` that `packwerk` produces today.
+Current Progress:
+  - Current progress is detected using `scripts/packwerk_parity_checker.rb`
+  - Currently, `packs` detects roughly 98% of references in Gusto's monolith
+Remaining Challenges include:
+  - [ ] Parsing ERB
+  - [ ] Parsing Rails associations and rewriting them as constant references using a pluralizer. Initially, non-standard inflections will likely not be supported (although I may support it through hard-coded map in `packwerk.yml`)
+  - [ ] Replicating packwerk's behavior with respect to not recording "local definitions"
+- [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
+- [ ] `packs update`, which can be used to update `deprecated_references.yml`
+- [ ] `packs lsp`, to launch an LSP-server to provide faster feedback

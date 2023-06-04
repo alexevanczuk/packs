@@ -29,7 +29,7 @@ Dir.chdir("../#{packs_dir}") do
   system('cargo build --release')
 end
 
-command = "time ../#{packs_dir}/target/release/packs generate-cache"
+command = "time CACHE_VERIFICATION=1 ../#{packs_dir}/target/release/packs generate_cache"
 puts "Running: #{command}"
 system(command)
 
@@ -60,13 +60,18 @@ class Result < T::Struct
   const :diff, T.untyped
 
   def self.from_file(f)
-    cache_dir = Pathname.new('tmp/cache/packwerk')
     cache_basename = Digest::MD5.hexdigest(f)
+    experimental_cache_basename = "#{cache_basename}-experimental"
+    from_filename_digest(cache_basename)
+  end
+
+  def self.from_filename_digest(cache_basename)
+    cache_dir = Pathname.new('tmp/cache/packwerk')
     experimental_cache_basename = "#{cache_basename}-experimental"
     original = Cache.from(cache_dir.join(cache_basename))
     experimental = Cache.from(cache_dir.join(experimental_cache_basename))
     diff = Hashdiff.diff(original.unresolved_references, experimental.unresolved_references)
-    Result.new(original:, experimental:, diff:, file: f)
+    Result.new(original:, experimental:, diff:, file: cache_basename)
   end
 
   def pretty_print
@@ -103,7 +108,12 @@ class Result < T::Struct
   end
 end
 
-all_files = Dir['packs/**/*.rb']
+all_files = Dir.glob("app/**/*.{rb,rake,erb}")
+all_cache_files = Dir['tmp/cache/packwerk/*']
+all_experimental_cache_files = Dir['tmp/cache/packwerk/*-experimental']
+puts "There are #{all_cache_files.count} files in tmp/cache/packwerk"
+puts "There are #{all_experimental_cache_files.count} experimental files in tmp/cache/packwerk"
+
 # Shuffle can be used to find a simpler error to fix
 all_files.shuffle! if ENV['SHUFFLE']
 

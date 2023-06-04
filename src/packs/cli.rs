@@ -1,13 +1,24 @@
 use crate::packs;
-use crate::packs::{cache, parser};
+use crate::packs::cache;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
+// We use snake_case as this is currently the conventon for the Ruby ecosystem,
+// and this is a Ruby tool (for now!)
+#[clap(rename_all = "snake_case")]
 enum Command {
+    #[clap(about = "Just saying hi")]
     Greet,
+    #[clap(about = "List packs based on configuration in packwerk.yml")]
     ListPacks,
+    #[clap(about = "Look for violations in the codebase")]
     Check,
+    #[clap(about = "Look for validation errors in the codebase")]
+    Validate,
+    #[clap(
+        about = "Generate a cache to be used by the ruby implementation of packwerk"
+    )]
     GenerateCache { files: Vec<String> },
 }
 
@@ -38,10 +49,18 @@ pub fn run() {
         Command::Greet => packs::greet(),
         Command::ListPacks => packs::list(absolute_root),
         Command::Check => {
-            parser::ruby::packwerk::get_references(&absolute_root);
+            panic!("💡 This command is coming soon!")
+        }
+        Command::Validate => {
+            panic!("💡 This command is coming soon!")
         }
         Command::GenerateCache { files } => {
-            cache::write_cache_for_files(absolute_root, files)
+            let configuration = packs::configuration::get(absolute_root);
+            if !configuration.cache_enabled {
+                // TODO: Figure out the idiomatic way to raise tis error
+                panic!("Cache is disabled. Enable it in packwerk.yml to use this command.");
+            }
+            cache::write_cache_for_files(files, configuration);
         }
     }
 }

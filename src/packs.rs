@@ -1,3 +1,4 @@
+mod configuration;
 use glob::glob;
 use std::path::PathBuf;
 
@@ -7,11 +8,12 @@ pub mod parser;
 mod string_helpers;
 
 // Re-exports: Eventually, these may be part of the public API for packs
+pub use configuration::Configuration;
 pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
 pub fn greet() {
-    println!("Hello! This CLI is under construction.")
+    println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
 pub fn list(absolute_root: PathBuf) {
