@@ -115,10 +115,8 @@ pub(crate) fn write_cache_for_files(
     configuration: Configuration,
 ) {
     let absolute_root_path = configuration.absolute_root.as_path();
-    let absolute_paths: HashSet<PathBuf> =
-        configuration.intersect_files(files.clone());
+    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    dbg!(&files);
     absolute_paths.par_iter().for_each(|path| {
         let relative_path = path.strip_prefix(absolute_root_path).unwrap();
         write_cache(absolute_root_path, relative_path);

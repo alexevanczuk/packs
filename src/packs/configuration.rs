@@ -77,11 +77,21 @@ impl Configuration {
             let input_paths = input_files
                 .iter()
                 .map(PathBuf::from)
-                .map(|p| {
+                .flat_map(|p| {
                     if p.is_absolute() {
-                        p
+                        vec![p]
                     } else {
-                        self.absolute_root.join(p)
+                        let absolute_path = self.absolute_root.join(&p);
+                        if absolute_path.is_dir() {
+                            glob::glob(
+                                absolute_path.join("**/*.*").to_str().unwrap(),
+                            )
+                            .expect("Failed to read glob pattern")
+                            .filter_map(Result::ok)
+                            .collect::<Vec<_>>()
+                        } else {
+                            vec![absolute_path]
+                        }
                     }
                 })
                 .collect::<HashSet<_>>();
@@ -256,6 +266,19 @@ mod tests {
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
+        assert_eq!(actual_paths, expected_paths);
+    }
+
+    #[test]
+    fn filtered_absolute_paths_with_directory_input_paths() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let configuration = configuration::get(absolute_root.clone());
+        let actual_paths =
+            configuration.intersect_files(vec![String::from("packs/bar")]);
+        let expected_paths =
+            vec![absolute_root.join("packs/bar/app/services/bar.rb")]
+                .into_iter()
+                .collect::<HashSet<PathBuf>>();
         assert_eq!(actual_paths, expected_paths);
     }
 }
