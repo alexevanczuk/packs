@@ -76,6 +76,10 @@ mod tests {
         let root_yml = absolute_root.join(PathBuf::from("package.yml"));
         let bar_yml =
             absolute_root.join(PathBuf::from("packs/bar/package.yml"));
+
+        let baz_yml =
+            absolute_root.join(PathBuf::from("packs/baz/package.yml"));
+
         expected_packs.push(Pack {
             yml: foo_yml,
             name: String::from("packs/foo"),
@@ -87,6 +91,11 @@ mod tests {
         expected_packs.push(Pack {
             yml: bar_yml,
             name: String::from("packs/bar"),
+        });
+
+        expected_packs.push(Pack {
+            yml: baz_yml,
+            name: String::from("packs/baz"),
         });
 
         let mut actual = all(absolute_root);

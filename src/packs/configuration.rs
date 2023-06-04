@@ -223,6 +223,7 @@ mod tests {
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
+            absolute_root.join("packs/baz/app/services/baz.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -231,6 +232,7 @@ mod tests {
         let expected_package_paths = vec![
             absolute_root.join("packs/foo/package.yml"),
             absolute_root.join("packs/bar/package.yml"),
+            absolute_root.join("packs/baz/package.yml"),
             absolute_root.join("package.yml"),
         ]
         .into_iter()
@@ -268,6 +270,7 @@ mod tests {
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
+            absolute_root.join("packs/baz/app/services/baz.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
