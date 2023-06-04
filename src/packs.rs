@@ -13,7 +13,7 @@ pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
 pub fn greet() {
-    println!("Hello! This CLI is under construction.")
+    println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
 pub fn list(absolute_root: PathBuf) {

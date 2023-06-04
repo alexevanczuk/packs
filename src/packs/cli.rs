@@ -8,10 +8,13 @@ use std::path::PathBuf;
 // and this is a Ruby tool (for now!)
 #[clap(rename_all = "snake_case")]
 enum Command {
+    #[clap(about = "Just saying hi")]
     Greet,
     ListPacks,
     Check,
-    GenerateCache { files: Vec<String> },
+    GenerateCache {
+        files: Vec<String>,
+    },
 }
 
 /// A CLI to interact with packs
