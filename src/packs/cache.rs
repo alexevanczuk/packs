@@ -1,4 +1,4 @@
-use crate::packs::parser::extract_from_path;
+use crate::packs::parser::extract_from_ruby_path;
 use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
 use rayon::prelude::*;
@@ -81,7 +81,7 @@ fn references_to_cache_entry(
 
 fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
     let absolute_path = absolute_root.join(relative_path_to_file);
-    let references = extract_from_path(&absolute_path);
+    let references = extract_from_ruby_path(&absolute_path);
 
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
     std::fs::create_dir_all(&cache_dir)
