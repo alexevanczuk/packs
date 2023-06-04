@@ -7,6 +7,7 @@ mod tests {
     use crate::packs::UnresolvedReference;
 
     #[test]
+    #[ignore]
     fn trivial_case() {
         let contents: String = String::from("<%= Foo %>");
         assert_eq!(

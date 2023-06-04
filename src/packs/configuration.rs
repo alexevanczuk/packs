@@ -59,6 +59,7 @@ fn default_cache_directory() -> String {
     String::from("tmp/cache/packwerk")
 }
 
+#[derive(Default)]
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
     pub absolute_root: PathBuf,
@@ -163,34 +164,38 @@ fn get_package_paths(
 
 pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
     let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
-    let mut file = File::open(absolute_path_to_packwerk_yml.clone())
-        .unwrap_or_else(|e| {
-            panic!(
-                "Could not open packwerk.yml at: {} due to error: {:?}",
-                absolute_path_to_packwerk_yml.display(),
-                e
-            )
-        });
 
-    let mut contents = String::new();
-    std::io::Read::read_to_string(&mut file, &mut contents).unwrap_or_else(
-        |e| {
-            panic!(
-                "Could not read packwerk.yml at: {} due to error: {:?}",
-                absolute_path_to_packwerk_yml.display(),
-                e
-            )
-        },
-    );
+    let raw_config: RawConfiguration =
+        if absolute_path_to_packwerk_yml.exists() {
+            let mut file = File::open(absolute_path_to_packwerk_yml.clone())
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Could not open packwerk.yml at: {} due to error: {:?}",
+                        absolute_path_to_packwerk_yml.display(),
+                        e
+                    )
+                });
 
-    let raw_config: RawConfiguration = serde_yaml::from_str(&contents)
-        .unwrap_or_else(|e| {
-            panic!(
-                "Could not parse packwerk.yml at: {} due to error: {:?}",
-                absolute_path_to_packwerk_yml.display(),
-                e
-            )
-        });
+            let mut contents = String::new();
+            std::io::Read::read_to_string(&mut file, &mut contents)
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Could not read packwerk.yml at: {} due to error: {:?}",
+                        absolute_path_to_packwerk_yml.display(),
+                        e
+                    )
+                });
+
+            serde_yaml::from_str(&contents).unwrap_or_else(|e| {
+                panic!(
+                    "Could not parse packwerk.yml at: {} due to error: {:?}",
+                    absolute_path_to_packwerk_yml.display(),
+                    e
+                )
+            })
+        } else {
+            RawConfiguration::default()
+        };
 
     let included_files = get_included_files(&absolute_root, &raw_config);
 

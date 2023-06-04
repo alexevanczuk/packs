@@ -79,9 +79,12 @@ fn references_to_cache_entry(
     }
 }
 
-fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
+fn write_cache(
+    absolute_root: &Path,
+    relative_path_to_file: &Path,
+    references: Vec<UnresolvedReference>,
+) {
     let absolute_path = absolute_root.join(relative_path_to_file);
-    let references = extract_from_ruby_path(&absolute_path);
 
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
     std::fs::create_dir_all(&cache_dir)
@@ -119,12 +122,16 @@ pub(crate) fn write_cache_for_files(
 
     absolute_paths.par_iter().for_each(|path| {
         let relative_path = path.strip_prefix(absolute_root_path).unwrap();
-        write_cache(absolute_root_path, relative_path);
+        let references = extract_from_ruby_path(path);
+
+        write_cache(absolute_root_path, relative_path, references);
     })
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::packs::configuration;
+
     use super::*;
 
     #[test]
@@ -139,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_cache() {
+    fn test_write_cache_for_files() {
         let expected = CacheEntry {
             file_contents_digest: String::from(
                 // This is the MD5 digest of the contents of "packs/foo/app/services/foo.rb"
@@ -167,9 +174,9 @@ mod tests {
             ],
         };
 
-        write_cache(
-            &PathBuf::from("tests/fixtures/simple_app"),
-            &PathBuf::from("packs/foo/app/services/foo.rb"),
+        write_cache_for_files(
+            vec![String::from("packs/foo/app/services/foo.rb")],
+            configuration::get(PathBuf::from("tests/fixtures/simple_app")),
         );
 
         let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e-experimental");
