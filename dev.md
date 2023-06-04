@@ -3,6 +3,11 @@
 - Add benchmarking for `packs generate_cache` against `packwerk` if the same set of files are produced
 - Improve deployment and share current progress
 - Look into `bin/packwerk update`!
+- Make sure cache works like this:
+  - t(hread)1: Open cache to get cache entry
+  - t2: Get digest of file
+  - join threads and compare digests
+  - if not equal, parse file to get unresolved references
 
 # Initial Milestone
 
