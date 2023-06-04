@@ -110,25 +110,13 @@ pub(crate) fn write_cache_for_files(
     files: Vec<String>,
     configuration: Configuration,
 ) {
-    let absolute_root = configuration.absolute_root;
+    let absolute_root_path = configuration.absolute_root.as_path();
+    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    if !files.is_empty() {
-        let input_paths =
-            files.iter().map(PathBuf::from).collect::<HashSet<_>>();
-        let included_files =
-            configuration.included_files.intersection(&input_paths);
-
-        included_files.into_iter().par_bridge().for_each(|path| {
-            write_cache(absolute_root.as_path(), path.as_path())
-        })
-    } else {
-        let paths = configuration.included_files;
-        paths.par_iter().for_each(|path| {
-            let relative_path =
-                path.strip_prefix(absolute_root.as_path()).unwrap();
-            write_cache(absolute_root.as_path(), relative_path);
-        })
-    }
+    absolute_paths.par_iter().for_each(|path| {
+        let relative_path = path.strip_prefix(absolute_root_path).unwrap();
+        write_cache(absolute_root_path, relative_path);
+    })
 }
 
 #[cfg(test)]

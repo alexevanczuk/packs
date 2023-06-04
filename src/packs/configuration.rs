@@ -66,6 +66,33 @@ pub struct Configuration {
     pub cache_enabled: bool,
 }
 
+impl Configuration {
+    pub(crate) fn intersect_files(
+        &self,
+        input_files: Vec<String>,
+    ) -> HashSet<PathBuf> {
+        let input_paths = input_files
+            .iter()
+            .map(PathBuf::from)
+            .map(|p| {
+                if p.is_absolute() {
+                    p
+                } else {
+                    self.absolute_root.join(p)
+                }
+            })
+            .collect::<HashSet<_>>();
+
+        let intersection = self.included_files.intersection(&input_paths);
+
+        let filtered_included_absolute_paths: HashSet<PathBuf> =
+            intersection.cloned().collect();
+
+        println!("intersection: {:?}", filtered_included_absolute_paths);
+        filtered_included_absolute_paths
+    }
+}
+
 fn get_included_files(
     absolute_root: &Path,
     raw: &RawConfiguration,
@@ -193,5 +220,24 @@ mod tests {
         assert_eq!(actual.package_paths, expected_package_paths);
 
         assert!(actual.cache_enabled)
+    }
+
+    #[test]
+    fn filtered_absolute_paths() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let configuration = configuration::get(absolute_root.clone());
+        let actual_paths = configuration.intersect_files(vec![
+            String::from("packs/foo/app/services/foo.rb"),
+            String::from("scripts/my_script.rb"),
+            String::from("packs/bar/app/services/bar.rb"),
+            String::from("vendor/some_gem/foo.rb"),
+        ]);
+        let expected_paths = vec![
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            absolute_root.join("packs/foo/app/services/foo.rb"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
+        assert_eq!(actual_paths, expected_paths);
     }
 }
