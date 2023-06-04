@@ -242,6 +242,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                     unwrapped_name =
                         re.replace_all(&unwrapped_name, "Status").to_string();
                 }
+                if unwrapped_name.contains("Statu") {
+                    let re = Regex::new("Statu$").unwrap();
+                    unwrapped_name =
+                        re.replace_all(&unwrapped_name, "Status").to_string();
+                }
 
                 if unwrapped_name.contains("Lefe") {
                     let re = Regex::new("Lefe").unwrap();
