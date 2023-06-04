@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::HashSet,
     fs::File,
     path::{Path, PathBuf},
 };
@@ -59,23 +60,23 @@ fn default_cache_directory() -> String {
 }
 
 pub struct Configuration {
-    pub included_files: Vec<PathBuf>,
+    pub included_files: HashSet<PathBuf>,
     pub absolute_root: PathBuf,
-    pub package_paths: Vec<PathBuf>,
+    pub package_paths: HashSet<PathBuf>,
     pub cache_enabled: bool,
 }
 
 fn get_included_files(
     absolute_root: &Path,
     raw: &RawConfiguration,
-) -> Vec<PathBuf> {
+) -> HashSet<PathBuf> {
     // Adding a `!` to the beginning of a glob pattern negates it.
     let exclude_patterns = raw.exclude.iter().map(|p| format!("!{}", p));
 
     let mut combined_patterns = raw.include.clone();
     combined_patterns.extend(exclude_patterns);
 
-    let included_files: Vec<PathBuf> =
+    let included_files: HashSet<PathBuf> =
         globwalk::GlobWalkerBuilder::from_patterns(
             absolute_root,
             &combined_patterns,
@@ -93,7 +94,7 @@ fn get_included_files(
 fn get_package_paths(
     absolute_root: &Path,
     raw: &RawConfiguration,
-) -> Vec<PathBuf> {
+) -> HashSet<PathBuf> {
     let package_yml_paths: Vec<String> = raw
         .package_paths
         .clone()
@@ -101,7 +102,7 @@ fn get_package_paths(
         .map(|p| format!("{}package.yml", p))
         .collect();
 
-    let package_paths: Vec<PathBuf> =
+    let package_paths: HashSet<PathBuf> =
         globwalk::GlobWalkerBuilder::from_patterns(
             absolute_root,
             &package_yml_paths,
@@ -172,23 +173,24 @@ mod tests {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
         let actual = configuration::get(absolute_root.clone());
         assert_eq!(actual.absolute_root, absolute_root);
-        assert_eq!(
-            actual.included_files,
-            vec![
-                absolute_root.join("packs/bar/app/services/bar.rb"),
-                absolute_root.join("packs/foo/app/services/foo.rb"),
-                absolute_root.join("packs/foo/app/views/foo.erb")
-            ]
-        );
 
-        assert_eq!(
-            actual.package_paths,
-            vec![
-                absolute_root.join("packs/foo/package.yml"),
-                absolute_root.join("packs/bar/package.yml"),
-                absolute_root.join("package.yml"),
-            ]
-        );
+        let expected_included_files = vec![
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/views/foo.erb"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
+        assert_eq!(actual.included_files, expected_included_files);
+
+        let expected_package_paths = vec![
+            absolute_root.join("packs/foo/package.yml"),
+            absolute_root.join("packs/bar/package.yml"),
+            absolute_root.join("package.yml"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
+        assert_eq!(actual.package_paths, expected_package_paths);
 
         assert!(actual.cache_enabled)
     }
