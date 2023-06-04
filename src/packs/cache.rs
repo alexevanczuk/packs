@@ -121,8 +121,29 @@ pub(crate) fn write_cache_for_files(
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     absolute_paths.par_iter().for_each(|path| {
+        let ruby_special_files = vec!["Gemfile", "Rakefile"];
+        let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
+
+        // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
+        // These would implement a packs::parser::interface::Parser trait and can
+        // hold the logic for determining if a parser can parse a file.
+        let is_ruby_file = ruby_extensions
+            .into_iter()
+            .any(|ext| path.extension().unwrap() == ext)
+            || ruby_special_files.iter().any(|file| path.ends_with(file));
+
+        let is_erb_file = path.ends_with("erb");
         let relative_path = path.strip_prefix(absolute_root_path).unwrap();
-        let references = extract_from_ruby_path(path);
+
+        let references = if is_ruby_file {
+            extract_from_ruby_path(path)
+        } else if is_erb_file {
+            todo!();
+        } else {
+            // Later, we can perhaps have this error, since in theory the Configuration.intersect
+            // method should make sure we never get any files we can't handle.
+            vec![]
+        };
 
         write_cache(absolute_root_path, relative_path, references);
     })
