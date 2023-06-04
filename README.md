@@ -14,7 +14,7 @@ One simple way to try out `packs` to generate your cache would be to create a ba
 packwerk() {
     if [ "$1" = "check" ] || [ "$1" = "update" ]; then
         echo "Calling packs generate_cache with args: ${@:2}"
-        ../packs/target/release/packs generate_cache "${@:2}"
+        packs generate_cache "${@:2}"
     fi
 
     echo "Now calling packwerk with args: $@"
