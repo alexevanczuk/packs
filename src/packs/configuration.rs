@@ -71,25 +71,26 @@ impl Configuration {
         &self,
         input_files: Vec<String>,
     ) -> HashSet<PathBuf> {
-        let input_paths = input_files
-            .iter()
-            .map(PathBuf::from)
-            .map(|p| {
-                if p.is_absolute() {
-                    p
-                } else {
-                    self.absolute_root.join(p)
-                }
-            })
-            .collect::<HashSet<_>>();
+        if input_files.is_empty() {
+            self.included_files.clone()
+        } else {
+            let input_paths = input_files
+                .iter()
+                .map(PathBuf::from)
+                .map(|p| {
+                    if p.is_absolute() {
+                        p
+                    } else {
+                        self.absolute_root.join(p)
+                    }
+                })
+                .collect::<HashSet<_>>();
 
-        let intersection = self.included_files.intersection(&input_paths);
-
-        let filtered_included_absolute_paths: HashSet<PathBuf> =
-            intersection.cloned().collect();
-
-        println!("intersection: {:?}", filtered_included_absolute_paths);
-        filtered_included_absolute_paths
+            self.included_files
+                .intersection(&input_paths)
+                .cloned()
+                .collect::<HashSet<PathBuf>>()
+        }
     }
 }
 
@@ -181,8 +182,10 @@ pub(crate) fn get(absolute_root: PathBuf) -> Configuration {
             )
         });
 
+    let included_files = get_included_files(&absolute_root, &raw_config);
+
     Configuration {
-        included_files: get_included_files(&absolute_root, &raw_config),
+        included_files,
         absolute_root: absolute_root.clone(),
         package_paths: get_package_paths(&absolute_root, &raw_config),
         cache_enabled: raw_config.cache,
@@ -223,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn filtered_absolute_paths() {
+    fn filtered_absolute_paths_with_nonempty_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
         let configuration = configuration::get(absolute_root.clone());
         let actual_paths = configuration.intersect_files(vec![
@@ -235,6 +238,21 @@ mod tests {
         let expected_paths = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
+        assert_eq!(actual_paths, expected_paths);
+    }
+
+    #[test]
+    fn filtered_absolute_paths_with_empty_input_paths() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let configuration = configuration::get(absolute_root.clone());
+        let actual_paths = configuration.intersect_files(vec![]);
+        let expected_paths = vec![
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/views/foo.erb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();

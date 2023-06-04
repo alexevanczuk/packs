@@ -4,6 +4,7 @@ use crate::packs::Configuration;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -87,7 +88,10 @@ fn write_cache(absolute_root: &Path, relative_path_to_file: &Path) {
         .expect("Failed to create cache directory");
 
     let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
-    let file_digest_str = format!("{:x}-experimental", file_digest);
+    let file_digest_str = env::var("CACHE_VERIFICATION")
+        .map(|_| format!("{:x}-experimental", file_digest))
+        .unwrap_or_else(|_| format!("{:x}", file_digest));
+
     let cache_file_path = cache_dir.join(file_digest_str);
     let cache_entry = references_to_cache_entry(
         references,
@@ -111,8 +115,10 @@ pub(crate) fn write_cache_for_files(
     configuration: Configuration,
 ) {
     let absolute_root_path = configuration.absolute_root.as_path();
-    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+    let absolute_paths: HashSet<PathBuf> =
+        configuration.intersect_files(files.clone());
 
+    dbg!(&files);
     absolute_paths.par_iter().for_each(|path| {
         let relative_path = path.strip_prefix(absolute_root_path).unwrap();
         write_cache(absolute_root_path, relative_path);
