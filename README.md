@@ -8,19 +8,43 @@ WIP: Rust implementation of [packs](https://github.com/rubyatscale/use_packs) an
 - Currently all `packs` can do is generate a cache to be used by the ruby implementation.
 
 # Usage
-Deployment ergonomics are still a WIP.
+One simple way to try out `packs` to generate your cache would be to create a bash function which wraps the call to `bin/packwerk`, like so:
+```bash
+# In your ~/.bash_profile or analogous file
+packwerk() {
+    if [ "$1" = "check" ] || [ "$1" = "update" ]; then
+        echo "Calling packs generate_cache with args: ${@:2}"
+        ../packs/target/release/packs generate_cache "${@:2}"
+    fi
 
-If you want to try it out to see how well it works on your repo, you may want to:
-1. Verify it produces the same results as the ruby implementation (see below). If not, please file an issue!
-2. Download the binary.
-3. Add to your `bin/packwerk`
+    echo "Now calling packwerk with args: $@"
+    bin/packwerk "$@"
+}
+```
+
+You can also modify the `bin/packwerk` executable to call `packs` conditionally, e.g.
+```ruby
+# In bin/packwerk
+packs_executable = `which packs`.chomp
+if !packs_executable.empty?
+  if ARGV.first == 'check' || ARGV.first == 'update'
+    puts "Calling packs generate_cache with args: #{ARGV[1..-1]}"
+    system('packs', 'generate_cache', *ARGV[1..-1])
+  end
+end
+```
 
 # Verification
+As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
+
+To verify:
 1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
 2. Run `packs generate_cache` (see directions below to get binary) 
 3. Run `bin/packwerk update` to see how violations change using `packs`.
 
 # Downloading the Binary
+Deployment ergonomics are still a WIP.
+
 If you want to try it out:
 - Go to https://github.com/alexevanczuk/packs/releases
 - Download the `packs` asset and run `chmod +x path/to/packs`
