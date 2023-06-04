@@ -1,17 +1,11 @@
-use glob::glob;
 use inflector::cases::classcase::to_class_case;
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
-use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use crate::packs::parser::ruby::namespace_calculator;
 
@@ -393,23 +387,6 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
         end_row,
         end_col,
     }
-}
-
-pub(crate) fn get_references(absolute_root: &Path) -> Vec<UnresolvedReference> {
-    // Later this can come from config
-    let pattern = absolute_root.join("packs/**/*.rb");
-
-    glob(pattern.to_str().unwrap())
-        .expect("Failed to read glob pattern")
-        .par_bridge() // Parallel iterator
-        .flat_map(|entry| match entry {
-            Ok(path) => extract_from_path(&path),
-            Err(e) => {
-                println!("{:?}", e);
-                panic!("blah");
-            }
-        })
-        .collect()
 }
 
 pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {

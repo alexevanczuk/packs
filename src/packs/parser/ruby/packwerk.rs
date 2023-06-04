@@ -1,5 +1,5 @@
 pub(crate) mod extractor;
-pub(crate) use extractor::get_references;
+
 #[cfg(test)]
 mod tests {
     use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents;
