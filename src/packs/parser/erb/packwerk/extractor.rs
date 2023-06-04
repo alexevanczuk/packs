@@ -1,3 +1,5 @@
+use tree_sitter::Parser;
+
 use crate::packs::UnresolvedReference;
 use std::{fs, path::PathBuf};
 
@@ -14,5 +16,16 @@ pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
 pub(crate) fn extract_from_contents(
     contents: String,
 ) -> Vec<UnresolvedReference> {
-    todo!();
+    let mut parser = Parser::new();
+    parser
+        .set_language(tree_sitter_embedded_template::language())
+        .expect("Error loading ERB grammar");
+    let parsed = parser.parse(&contents, None);
+
+    if let Some(tree) = parsed {
+        // dbg!(tree.root_node());
+        // Parse the tree to get a list of Ruby constant references??
+        // tree.walk();
+    }
+    vec![]
 }
