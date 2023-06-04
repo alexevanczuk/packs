@@ -443,7 +443,6 @@ pub(crate) fn extract_from_contents(
         superclasses: vec![],
     };
 
-    dbg!(&ast);
     collector.visit(&ast);
 
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
