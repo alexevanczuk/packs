@@ -1,6 +1,8 @@
 use crate::packs::parser::extract_from_ruby_path;
 use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
+use crate::packs::Range;
+use crate::packs::SourceLocation;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -15,10 +17,13 @@ struct CacheEntry {
     unresolved_references: Vec<ReferenceEntry>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
-struct SourceLocation {
-    line: usize,
-    column: usize,
+impl CacheEntry {
+    fn get_unresolved_references(&self) -> Vec<UnresolvedReference> {
+        self.unresolved_references
+            .iter()
+            .map(|r| -> UnresolvedReference { r.to_unresolved_reference() })
+            .collect()
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -27,6 +32,52 @@ struct ReferenceEntry {
     namespace_path: Vec<String>,
     relative_path: String,
     source_location: SourceLocation,
+}
+
+impl ReferenceEntry {
+    fn to_unresolved_reference(&self) -> UnresolvedReference {
+        UnresolvedReference {
+            name: self.constant_name.to_owned(),
+            namespace_path: self.namespace_path.to_owned(),
+            location: Range {
+                start_row: self.source_location.line,
+                start_col: self.source_location.column,
+                // The end row and end col can be improved here but we are limited
+                // because the cache does not store this data.
+                // Instead, we might just return a (resolved) Reference
+                end_row: self.source_location.line,
+                end_col: self.source_location.column + self.constant_name.len(),
+            },
+        }
+    }
+}
+pub fn get_unresolved_references(
+    configuration: &Configuration,
+    path: &PathBuf,
+) -> Vec<UnresolvedReference> {
+    let current_file_contents_digest = file_content_digest(path);
+    let relative_path =
+        path.strip_prefix(&configuration.absolute_root).unwrap();
+
+    let filename_digest =
+        format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
+    let cache_dir = configuration.absolute_root.join("tmp/cache/packwerk");
+    let cache_path = cache_dir.join(filename_digest);
+
+    if cache_path.exists() {
+        let cache = read_json_file(&cache_path).unwrap_or_else(|_| {
+            panic!("Failed to read cache file {:?}", cache_path)
+        });
+        if cache.file_contents_digest == current_file_contents_digest {
+            return cache.get_unresolved_references();
+        }
+    }
+
+    let references = parse_path_for_references(path);
+    // TODO: This work can be done in a new thread;
+    write_cache(&configuration.absolute_root, path, references.clone());
+
+    references
 }
 
 // Used for tests, for now!
@@ -81,9 +132,12 @@ fn references_to_cache_entry(
 
 fn write_cache(
     absolute_root: &Path,
-    relative_path_to_file: &Path,
+    path_to_file_being_cached: &Path,
     references: Vec<UnresolvedReference>,
 ) {
+    let relative_path_to_file = path_to_file_being_cached
+        .strip_prefix(absolute_root)
+        .unwrap();
     let absolute_path = absolute_root.join(relative_path_to_file);
 
     let cache_dir = absolute_root.join("tmp/cache/packwerk");
@@ -113,39 +167,40 @@ fn write_cache(
         .expect("Failed to write cache file");
 }
 
+fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
+    let ruby_special_files = vec!["Gemfile", "Rakefile"];
+    let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
+
+    // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
+    // These would implement a packs::parser::interface::Parser trait and can
+    // hold the logic for determining if a parser can parse a file.
+    let is_ruby_file = ruby_extensions
+        .into_iter()
+        .any(|ext| path.extension().unwrap() == ext)
+        || ruby_special_files.iter().any(|file| path.ends_with(file));
+
+    let is_erb_file = path.ends_with("erb");
+
+    if is_ruby_file {
+        extract_from_ruby_path(path)
+    } else if is_erb_file {
+        todo!();
+    } else {
+        // Later, we can perhaps have this error, since in theory the Configuration.intersect
+        // method should make sure we never get any files we can't handle.
+        vec![]
+    }
+}
 pub(crate) fn write_cache_for_files(
     files: Vec<String>,
     configuration: Configuration,
 ) {
-    let absolute_root_path = configuration.absolute_root.as_path();
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+    let absolute_root_path = configuration.absolute_root;
 
     absolute_paths.par_iter().for_each(|path| {
-        let ruby_special_files = vec!["Gemfile", "Rakefile"];
-        let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
-
-        // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
-        // These would implement a packs::parser::interface::Parser trait and can
-        // hold the logic for determining if a parser can parse a file.
-        let is_ruby_file = ruby_extensions
-            .into_iter()
-            .any(|ext| path.extension().unwrap() == ext)
-            || ruby_special_files.iter().any(|file| path.ends_with(file));
-
-        let is_erb_file = path.ends_with("erb");
-        let relative_path = path.strip_prefix(absolute_root_path).unwrap();
-
-        let references = if is_ruby_file {
-            extract_from_ruby_path(path)
-        } else if is_erb_file {
-            todo!();
-        } else {
-            // Later, we can perhaps have this error, since in theory the Configuration.intersect
-            // method should make sure we never get any files we can't handle.
-            vec![]
-        };
-
-        write_cache(absolute_root_path, relative_path, references);
+        let references = parse_path_for_references(path);
+        write_cache(&absolute_root_path, path, references);
     })
 }
 

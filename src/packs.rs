@@ -1,5 +1,7 @@
 mod configuration;
 use glob::glob;
+use serde::Deserialize;
+use serde::Serialize;
 use std::path::PathBuf;
 
 mod cache;
@@ -9,6 +11,7 @@ pub mod parser;
 mod string_helpers;
 
 // Re-exports: Eventually, these may be part of the public API for packs
+pub use crate::packs::checker::Violation;
 pub use configuration::Configuration;
 pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
@@ -21,6 +24,12 @@ pub fn list(absolute_root: PathBuf) {
     for pack in all(absolute_root) {
         println!("{}", pack.yml.display())
     }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+pub struct SourceLocation {
+    line: usize,
+    column: usize,
 }
 
 #[derive(Debug, PartialEq, Eq, Ord, PartialOrd)] // Implement PartialEq trait

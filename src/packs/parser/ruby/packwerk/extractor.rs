@@ -15,7 +15,7 @@ pub struct SuperclassReference {
     pub namespace_path: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub struct UnresolvedReference {
     pub name: String,
     pub namespace_path: Vec<String>,
