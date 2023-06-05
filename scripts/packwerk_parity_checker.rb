@@ -109,8 +109,9 @@ class Result < T::Struct
 end
 
 all_files = Dir.glob("app/**/*.{rb,rake,erb}")
-all_cache_files = Dir['tmp/cache/packwerk/*']
 all_experimental_cache_files = Dir['tmp/cache/packwerk/*-experimental']
+
+all_cache_files = Dir['tmp/cache/packwerk/*'] - all_experimental_cache_files
 puts "There are #{all_cache_files.count} files in tmp/cache/packwerk"
 puts "There are #{all_experimental_cache_files.count} experimental files in tmp/cache/packwerk"
 
