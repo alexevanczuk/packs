@@ -5,6 +5,7 @@
 WIP: Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
 
 # Features
+- It's entirely built in Rust, so it's really fast, and doesn't require any external dependencies since the binary contains everything that needed to run `packs`!
 - Currently all `packs` can do is generate a cache to be used by the ruby implementation.
 
 # Usage
