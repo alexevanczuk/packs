@@ -228,7 +228,7 @@ mod tests {
                 // This is the MD5 digest of the contents of "packs/foo/app/services/foo.rb"
                 // i.e. in ruby, it's:
                 // Digest::MD5.hexdigest(File.read('tests/fixtures/simple_app/packs/foo/app/services/foo.rb'))
-                "4be8effd7ac57323adcb53d0cf0ce789",
+                "f24fb260c246613675488000115037c0",
             ),
             unresolved_references: vec![
                 ReferenceEntry {
@@ -246,6 +246,14 @@ mod tests {
                         "packs/foo/app/services/foo.rb",
                     ),
                     source_location: SourceLocation { line: 3, column: 4 },
+                },
+                ReferenceEntry {
+                    constant_name: String::from("Baz"),
+                    namespace_path: vec![String::from("Foo")],
+                    relative_path: String::from(
+                        "packs/foo/app/services/foo.rb",
+                    ),
+                    source_location: SourceLocation { line: 7, column: 4 },
                 },
             ],
         };
