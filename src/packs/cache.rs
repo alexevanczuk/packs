@@ -11,6 +11,9 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use super::parser::get_file_type;
+use super::parser::SupportedFileType;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct CacheEntry {
     file_contents_digest: String,
@@ -168,23 +171,12 @@ fn write_cache(
 }
 
 fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
-    let ruby_special_files = vec!["Gemfile", "Rakefile"];
-    let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
-
-    // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
-    // These would implement a packs::parser::interface::Parser trait and can
-    // hold the logic for determining if a parser can parse a file.
-    let is_ruby_file = ruby_extensions
-        .into_iter()
-        .any(|ext| path.extension().unwrap() == ext)
-        || ruby_special_files.iter().any(|file| path.ends_with(file));
-
-    let is_erb_file = path.ends_with("erb");
-
-    if is_ruby_file {
-        extract_from_ruby_path(path)
-    } else if is_erb_file {
-        todo!();
+    let file_type_option = get_file_type(path);
+    if let Some(file_type) = file_type_option {
+        match file_type {
+            SupportedFileType::Ruby => extract_from_ruby_path(path),
+            SupportedFileType::Erb => vec![], // We don't want to panic here but this still needs to be implemented
+        }
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
         // method should make sure we never get any files we can't handle.
