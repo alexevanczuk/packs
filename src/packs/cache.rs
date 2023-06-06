@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use super::parser::get_file_type;
 use super::parser::SupportedFileType;
@@ -79,7 +79,8 @@ pub fn get_unresolved_references(
 
     let references = parse_path_for_references(path);
     // TODO: This work can be done in a new thread;
-    write_cache(&configuration.absolute_root, path, references.clone());
+    let cachable_file = CachableFile::from(configuration, path);
+    write_cache(&cachable_file, references.clone());
 
     references
 }
@@ -111,8 +112,7 @@ pub(crate) fn file_content_digest(file: &PathBuf) -> String {
 
 fn references_to_cache_entry(
     references: Vec<UnresolvedReference>,
-    file_contents_digest: String,
-    relative_path: String,
+    cachable_file: &CachableFile,
 ) -> CacheEntry {
     let unresolved_references: Vec<ReferenceEntry> = references
         .iter()
@@ -120,7 +120,7 @@ fn references_to_cache_entry(
             ReferenceEntry {
                 constant_name: r.name.to_owned(),
                 namespace_path: r.namespace_path.to_owned(),
-                relative_path: relative_path.to_owned(),
+                relative_path: cachable_file.relative_path_string().to_owned(),
                 source_location: SourceLocation {
                     line: r.location.start_row,
                     column: r.location.start_col,
@@ -128,45 +128,79 @@ fn references_to_cache_entry(
             }
         })
         .collect();
+
+    let file_contents_digest = cachable_file.file_contents_digest.to_owned();
+
     CacheEntry {
         file_contents_digest,
         unresolved_references,
     }
 }
 
+struct CachableFile {
+    relative_path: PathBuf,
+    file_contents_digest: String,
+    cache_file_path: PathBuf,
+    cache_entry: Option<CacheEntry>,
+}
+
+impl CachableFile {
+    // Pass in Configuration and get cache_dir from that
+    fn from(configuration: &Configuration, filepath: &PathBuf) -> CachableFile {
+        let relative_path: PathBuf = filepath
+            .strip_prefix(&configuration.absolute_root)
+            .unwrap()
+            .to_path_buf();
+
+        let file_digest = md5::compute(relative_path.to_str().unwrap());
+        let file_digest_str = env::var("CACHE_VERIFICATION")
+            .map(|_| format!("{:x}-experimental", file_digest))
+            .unwrap_or_else(|_| format!("{:x}", file_digest));
+
+        let cache_file_path =
+            configuration.cache_directory.join(file_digest_str);
+
+        let file_contents_digest = file_content_digest(filepath);
+
+        let cache_entry: Option<CacheEntry> = if cache_file_path.exists() {
+            Some(read_json_file(&cache_file_path).unwrap_or_else(|_| {
+                panic!("Failed to read cache file {:?}", cache_file_path)
+            }))
+        } else {
+            None
+        };
+
+        CachableFile {
+            relative_path,
+            file_contents_digest,
+            cache_file_path,
+            cache_entry,
+        }
+    }
+
+    fn relative_path_string(&self) -> &str {
+        self.relative_path.to_str().unwrap()
+    }
+
+    fn cache_is_valid(&self) -> bool {
+        if let Some(cache_entry) = &self.cache_entry {
+            cache_entry.file_contents_digest == self.file_contents_digest
+        } else {
+            false
+        }
+    }
+}
+
 fn write_cache(
-    absolute_root: &Path,
-    path_to_file_being_cached: &Path,
+    cachable_file: &CachableFile,
     references: Vec<UnresolvedReference>,
 ) {
-    let relative_path_to_file = path_to_file_being_cached
-        .strip_prefix(absolute_root)
-        .unwrap();
-    let absolute_path = absolute_root.join(relative_path_to_file);
-
-    let cache_dir = absolute_root.join("tmp/cache/packwerk");
-    std::fs::create_dir_all(&cache_dir)
-        .expect("Failed to create cache directory");
-
-    let file_digest = md5::compute(relative_path_to_file.to_str().unwrap());
-    let file_digest_str = env::var("CACHE_VERIFICATION")
-        .map(|_| format!("{:x}-experimental", file_digest))
-        .unwrap_or_else(|_| format!("{:x}", file_digest));
-
-    let cache_file_path = cache_dir.join(file_digest_str);
-    let cache_entry = references_to_cache_entry(
-        references,
-        file_content_digest(&absolute_path),
-        relative_path_to_file
-            .to_str()
-            .expect("Could not convert cache_file_path to string")
-            .to_string(),
-    );
+    let cache_entry = references_to_cache_entry(references, cachable_file);
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
-    let mut file =
-        File::create(cache_file_path).expect("Failed to create cache file");
+    let mut file = File::create(&cachable_file.cache_file_path)
+        .expect("Failed to create cache file");
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 }
@@ -184,16 +218,26 @@ fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
         vec![]
     }
 }
+
+fn create_cache_dir_idempotently(cache_dir: &PathBuf) {
+    std::fs::create_dir_all(cache_dir)
+        .expect("Failed to create cache directory");
+}
+
 pub(crate) fn write_cache_for_files(
     files: Vec<String>,
     configuration: Configuration,
 ) {
+    create_cache_dir_idempotently(&configuration.cache_directory);
+
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
-    let absolute_root_path = configuration.absolute_root;
 
     absolute_paths.par_iter().for_each(|path| {
-        let references = parse_path_for_references(path);
-        write_cache(&absolute_root_path, path, references);
+        let cachable_file = CachableFile::from(&configuration, path);
+        if !cachable_file.cache_is_valid() {
+            let references = parse_path_for_references(path);
+            write_cache(&cachable_file, references);
+        }
     })
 }
 

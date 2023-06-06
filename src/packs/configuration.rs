@@ -65,6 +65,7 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub package_paths: HashSet<PathBuf>,
     pub cache_enabled: bool,
+    pub cache_directory: PathBuf,
 }
 
 impl Configuration {
@@ -204,6 +205,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         absolute_root: absolute_root.to_path_buf(),
         package_paths: get_package_paths(absolute_root, &raw_config),
         cache_enabled: raw_config.cache,
+        cache_directory: absolute_root.join(raw_config.cache_directory)
     }
 }
 
