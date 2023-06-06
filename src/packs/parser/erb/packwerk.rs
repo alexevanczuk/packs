@@ -58,6 +58,25 @@ mod tests {
     }
 
     #[test]
+    fn erb_with_hyphen_syntax() {
+        let contents: String = String::from(
+            "/
+  <%- Foo %>
+    <%= do_thing() %>
+  <%- end %>
+        ",
+        );
+        assert_eq!(
+            vec![UnresolvedReference {
+                name: String::from("Foo"),
+                namespace_path: vec![],
+                location: Range::default()
+            }],
+            extract_from_contents(contents)
+        );
+    }
+
+    #[test]
     fn complex_multiline_erb() {
         let contents: String = String::from(
             "/
