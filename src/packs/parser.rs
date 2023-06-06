@@ -51,11 +51,23 @@ mod tests {
         )
     }
 
+    fn assert_is_erb(filename: &str) {
+        assert_eq!(
+            SupportedFileType::Erb,
+            get_file_type(Path::new(filename)).expect("Should be supported")
+        )
+    }
+
     #[test]
     fn identifies_ruby_files() {
         assert_is_ruby("foo.rb");
         assert_is_ruby("foo.rake");
         assert_is_ruby("Gemfile");
         assert_is_ruby("my_gem.gemspec");
+    }
+
+    #[test]
+    fn identifies_erb_files() {
+        assert_is_erb("foo.erb");
     }
 }
