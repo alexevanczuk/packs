@@ -370,7 +370,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                 namespace_path: self.current_namespaces.to_owned(),
             })
         }
-        // In packwerk, NodeHelpers.enclosing_namespace_path (erroneously) ignores
+        // In packwerk, NodeHelpers.enclosing_namespace_path ignores
         // namespaces where a superclass OR namespace is the same as the current reference name
         let matching_superclass_option = self
             .superclasses
