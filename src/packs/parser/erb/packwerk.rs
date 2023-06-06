@@ -7,19 +7,13 @@ mod tests {
     use crate::packs::UnresolvedReference;
 
     #[test]
-    #[ignore]
     fn trivial_case() {
         let contents: String = String::from("<%= Foo %>");
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
-                location: Range {
-                    start_row: 1,
-                    start_col: 0,
-                    end_row: 1,
-                    end_col: 4
-                }
+                location: Range::default()
             }],
             extract_from_contents(contents)
         );

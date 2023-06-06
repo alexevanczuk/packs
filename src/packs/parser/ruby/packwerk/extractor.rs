@@ -48,7 +48,9 @@ pub struct Definition {
     pub namespace_path: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone)]
+#[derive(
+    Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone, Default,
+)]
 pub struct Range {
     pub start_row: usize,
     pub start_col: usize,
