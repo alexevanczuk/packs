@@ -16,13 +16,14 @@ pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
 pub(crate) fn extract_from_contents(
     contents: String,
 ) -> Vec<UnresolvedReference> {
-    let regex_pattern = r#"<%=?\s*(.*?)\s*%>"#;
+    let regex_pattern = r#"(?s)<%=?\s*(.*?)\s*%>"#;
     let regex = Regex::new(regex_pattern).unwrap();
 
     let extracted_contents: Vec<&str> = regex
         .captures_iter(&contents)
         .map(|capture| capture.get(1).unwrap().as_str())
         .collect();
+
     let ruby_contents = extracted_contents.join("\n");
     let references = extract_from_ruby_contents(ruby_contents);
     // let references_without_range = references
