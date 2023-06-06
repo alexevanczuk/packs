@@ -8,6 +8,7 @@
   - t2: Get digest of file
   - join threads and compare digests
   - if not equal, parse file to get unresolved references
+- look for additional speed ups for cold cache generation. Consider progress bar.
 
 # Initial Milestone
 

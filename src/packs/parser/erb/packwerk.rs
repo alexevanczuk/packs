@@ -38,6 +38,24 @@ mod tests {
             extract_from_contents(contents)
         );
     }
+    #[test]
+    fn multiline_erb() {
+        let contents: String = String::from(
+            "/
+<%
+    Foo
+%>
+        ",
+        );
+        assert_eq!(
+            vec![UnresolvedReference {
+                name: String::from("Foo"),
+                namespace_path: vec![],
+                location: Range::default()
+            }],
+            extract_from_contents(contents)
+        );
+    }
 
     #[test]
     fn complex_erb() {
