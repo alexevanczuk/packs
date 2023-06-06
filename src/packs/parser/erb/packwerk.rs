@@ -18,4 +18,24 @@ mod tests {
             extract_from_contents(contents)
         );
     }
+
+    #[test]
+    fn multiple_references() {
+        let contents: String = String::from("<%= Foo %><%= Bar %>");
+        assert_eq!(
+            vec![
+                UnresolvedReference {
+                    name: String::from("Foo"),
+                    namespace_path: vec![],
+                    location: Range::default()
+                },
+                UnresolvedReference {
+                    name: String::from("Bar"),
+                    namespace_path: vec![],
+                    location: Range::default()
+                }
+            ],
+            extract_from_contents(contents)
+        );
+    }
 }
