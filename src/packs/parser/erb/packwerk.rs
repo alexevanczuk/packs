@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    fn erb_with_hyphen_syntax() {
+    fn erb_with_leading_hyphen_syntax() {
         let contents: String = String::from(
             "/
   <%- Foo %>
@@ -77,7 +77,7 @@ mod tests {
     }
 
     #[test]
-    fn html_in_erb() {
+    fn erb_with_trailing_hyphen_syntax() {
         let contents: String = String::from(
             "/
 <% Foo %>

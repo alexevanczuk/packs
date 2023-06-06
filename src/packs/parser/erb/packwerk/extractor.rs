@@ -16,7 +16,7 @@ pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
 pub(crate) fn extract_from_contents(
     contents: String,
 ) -> Vec<UnresolvedReference> {
-    let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*%>"#;
+    let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*-?%>"#;
     let regex = Regex::new(regex_pattern).unwrap();
 
     let extracted_contents: Vec<&str> = regex
