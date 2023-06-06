@@ -58,6 +58,29 @@ mod tests {
     }
 
     #[test]
+    fn complex_multiline_erb() {
+        let contents: String = String::from(
+            "/
+<%
+    # Comment
+    # Comment
+    Foo
+    # Comment
+    # Comment
+%>
+        ",
+        );
+        assert_eq!(
+            vec![UnresolvedReference {
+                name: String::from("Foo"),
+                namespace_path: vec![],
+                location: Range::default()
+            }],
+            extract_from_contents(contents)
+        );
+    }
+
+    #[test]
     fn complex_erb() {
         let contents: String = String::from(
             "/
