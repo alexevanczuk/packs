@@ -77,6 +77,32 @@ mod tests {
     }
 
     #[test]
+    fn html_in_erb() {
+        let contents: String = String::from(
+            "/
+<% Foo %>
+<div>
+  <div>
+    <p>
+      <% if condition %>
+      <% else %>
+      <% end -%>
+    </p>
+  </div>
+</div>
+        ",
+        );
+        assert_eq!(
+            vec![UnresolvedReference {
+                name: String::from("Foo"),
+                namespace_path: vec![],
+                location: Range::default()
+            }],
+            extract_from_contents(contents)
+        );
+    }
+
+    #[test]
     fn complex_multiline_erb() {
         let contents: String = String::from(
             "/
