@@ -1,3 +1,4 @@
+use crate::packs::parser::extract_from_erb_path;
 use crate::packs::parser::extract_from_ruby_path;
 use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
@@ -175,7 +176,7 @@ fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
     if let Some(file_type) = file_type_option {
         match file_type {
             SupportedFileType::Ruby => extract_from_ruby_path(path),
-            SupportedFileType::Erb => vec![], // We don't want to panic here but this still needs to be implemented
+            SupportedFileType::Erb => extract_from_erb_path(path),
         }
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect

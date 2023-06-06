@@ -5,7 +5,6 @@ use std::{fs, path::PathBuf};
 
 use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents as extract_from_ruby_contents;
 
-#[allow(dead_code)]
 pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
@@ -14,7 +13,6 @@ pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
     extract_from_contents(contents)
 }
 
-#[allow(unused_variables)]
 pub(crate) fn extract_from_contents(
     contents: String,
 ) -> Vec<UnresolvedReference> {
