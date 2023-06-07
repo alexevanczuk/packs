@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use jwalk::WalkDir;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
@@ -110,37 +111,36 @@ impl Configuration {
     }
 }
 
+fn matches_globs(path: &Path, globs: &[String]) -> bool {
+    globs
+        .iter()
+        .any(|glob| glob_match::glob_match(glob, path.to_str().unwrap()))
+}
+
+// We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
+// specified in the `RawConfiguration`
+// https://docs.rs/jwalk/0.8.1/jwalk/struct.WalkDirGeneric.html#method.process_read_dir
 fn get_included_files(
     absolute_root: &Path,
     raw: &RawConfiguration,
 ) -> HashSet<PathBuf> {
-    // Adding a `!` to the beginning of a glob pattern negates it.
-    let exclude_patterns = raw.exclude.iter().map(|p| format!("!{}", p));
+    let mut included_paths: HashSet<PathBuf> = HashSet::new();
 
-    let mut combined_patterns = raw.include.clone();
-    // combined_patterns.extend(exclude_patterns);
+    for entry in WalkDir::new(absolute_root) {
+        let absolute_path = entry.unwrap().path();
+        let relative_path = absolute_path
+            .strip_prefix(absolute_root)
+            .unwrap()
+            .to_owned();
 
-    let included_files: HashSet<PathBuf> = combined_patterns
-        .iter()
-        .flat_map(|p| {
-            glob::glob(&absolute_root.join(p).to_string_lossy())
-                .expect("Failed to read glob pattern")
-                .filter_map(Result::ok)
-        })
-        .collect();
-    // let included_files: HashSet<PathBuf> =
-    //     globwalk::GlobWalkerBuilder::from_patterns(
-    //         absolute_root,
-    //         &combined_patterns,
-    //     )
-    //     .build()
-    //     .expect("Could not build glob walker")
-    //     .filter_map(Result::ok)
-    //     .map(|x| x.into_path())
-    //     .sorted() // Make output deterministic
-    //     .collect();
+        if matches_globs(&relative_path, &raw.include)
+            && !matches_globs(&relative_path, &raw.exclude)
+        {
+            included_paths.insert(absolute_path);
+        }
+    }
 
-    included_files
+    included_paths
 }
 
 fn get_package_paths(
