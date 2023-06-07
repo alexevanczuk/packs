@@ -16,7 +16,6 @@ clap = { version = "4.2.1", features = ["derive"] } # cli
 clap_derive = "4.2.0" # cli
 glob-match = "0.2.1"
 itertools = "0.10.5" # tools for iterating over iterable things
-error-stack = "0.3.1" # wrapping error contexts for simpler error propagation
 jwalk = "0.8.1"
 path-clean = "1.0.1" # Pathname#cleaname in Ruby
 rayon = "1.7.0" # for parallel iteration
@@ -31,10 +30,6 @@ md5 = "0.7.0"
 serde_json = "1.0.96"
 line-col = "0.2.1"
 Inflector = "0.11.4"
-globwalk = "0.8.1"
-globset = "0.4.10"
-tree-sitter-embedded-template = "0.20.0"
-tree-sitter = "0.20.10"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI
