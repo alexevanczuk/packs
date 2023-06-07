@@ -1,10 +1,13 @@
 use itertools::Itertools;
+use jwalk::WalkDirGeneric;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
     fs::File,
     path::{Path, PathBuf},
 };
+
+use crate::packs::Pack;
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -36,7 +39,11 @@ struct RawConfiguration {
 }
 
 fn default_include() -> Vec<String> {
-    vec![String::from("**/*.{rb,rake,erb}")]
+    vec![
+        String::from("**/*.rb"),
+        String::from("**/*.rake"),
+        String::from("**/*.erb"),
+    ]
 }
 
 fn default_exclude() -> Vec<String> {
@@ -44,7 +51,7 @@ fn default_exclude() -> Vec<String> {
 }
 
 fn default_package_paths() -> Vec<String> {
-    vec![String::from("**/")]
+    vec![String::from("**/*")]
 }
 
 fn default_custom_associations() -> Vec<String> {
@@ -63,7 +70,7 @@ fn default_cache_directory() -> String {
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
     pub absolute_root: PathBuf,
-    pub package_paths: HashSet<PathBuf>,
+    pub packs: Vec<Pack>,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
 }
@@ -106,61 +113,147 @@ impl Configuration {
     }
 }
 
-fn get_included_files(
-    absolute_root: &Path,
-    raw: &RawConfiguration,
-) -> HashSet<PathBuf> {
-    // Adding a `!` to the beginning of a glob pattern negates it.
-    let exclude_patterns = raw.exclude.iter().map(|p| format!("!{}", p));
-
-    let mut combined_patterns = raw.include.clone();
-    combined_patterns.extend(exclude_patterns);
-
-    let included_files: HashSet<PathBuf> =
-        globwalk::GlobWalkerBuilder::from_patterns(
-            absolute_root,
-            &combined_patterns,
-        )
-        .build()
-        .expect("Could not build glob walker")
-        .filter_map(Result::ok)
-        .map(|x| x.into_path())
-        .sorted() // Make output deterministic
-        .collect();
-
-    included_files
+fn matches_globs(path: &Path, globs: &[String]) -> bool {
+    globs
+        .iter()
+        .any(|glob| glob_match::glob_match(glob, path.to_str().unwrap()))
 }
 
-fn get_package_paths(
+// We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
+// specified in the `RawConfiguration`
+// https://docs.rs/jwalk/0.8.1/jwalk/struct.WalkDirGeneric.html#method.process_read_dir
+// We only walk the directory once and pull all of the information we need from it,
+// which is faster than walking the directory multiple times.
+// Likely, we can organize this better by moving each piece of logic into its own function so this function
+// allows for a sort of "visitor pattern" for different things that need to walk the directory.
+fn walk_directory(
     absolute_root: &Path,
     raw: &RawConfiguration,
-) -> HashSet<PathBuf> {
-    let package_yml_paths: Vec<String> = raw
-        .package_paths
-        .clone()
-        .into_iter()
-        .map(|p| format!("{}package.yml", p))
-        .collect();
+) -> (HashSet<PathBuf>, HashSet<Pack>) {
+    let mut included_paths: HashSet<PathBuf> = HashSet::new();
+    let mut included_packs: HashSet<Pack> = HashSet::new();
 
-    let package_paths: HashSet<PathBuf> =
-        globwalk::GlobWalkerBuilder::from_patterns(
-            absolute_root,
-            &package_yml_paths,
-        )
-        .build()
-        .expect("Could not build glob walker")
-        .filter_map(Result::ok)
-        .map(|x| x.into_path())
-        // .sorted() // Make output deterministic
-        .sorted_by(|packa, packb| {
-            Ord::cmp(
-                &packb.to_string_lossy().len(),
-                &packa.to_string_lossy().len(),
+    //
+    // WalkDirGeneric allows you to customize the directory walk, such as skipping directories,
+    // which we do as a performance optimization.
+    //
+    // Specifically – if an exclude glob matches an entire directory, we don't need to continue to
+    // explore it. For example, instead of asking every file in `vendor/bundle/**/` if it should be excluded,
+    // we'll save a lot of time by just skipping the entire directory.
+    //
+    // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
+    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(absolute_root)
+        .process_read_dir(|_depth, _path, _read_dir_state, children| {
+            children.iter_mut().for_each(|dir_entry_result| {
+                if let Ok(dir_entry) = dir_entry_result {
+                    // Can't figure out how to actually match against raw.exclude due to ownership issues
+                    // Hope to learn soon!
+                    // let absolute_path = dir_entry_result.unwrap().path();
+                    // let relative_path = absolute_path
+                    //     .strip_prefix(&*shared_path_clone)
+                    //     .unwrap();
+
+                    // if matches_globs(&relative_path, &raw.exclude) {
+                    //     dir_entry.read_children_path = None;
+                    // }
+
+                    // So instead,
+                    let dirname = dir_entry.path();
+                    // "/Users/alex.evanczuk/workspace/zenpayroll/public/paperclip-test/assets/recruiting/job_applicants/28
+                    // Given a Pathname, check if the last part of the path is one of the following strings
+                    // If so, set read_children_path to None
+                    let excluded_dirs = vec![
+                        "node_modules",
+                        "vendor",
+                        "tmp",
+                        ".git",
+                        "public",
+                        "bin",
+                        "script",
+                        "log",
+                        "frontend",
+                        "sorbet",
+                    ];
+
+                    for excluded_dir in excluded_dirs {
+                        if dirname.ends_with(excluded_dir) {
+                            dir_entry.read_children_path = None;
+                            break;
+                        }
+                    }
+                }
+            });
+        });
+
+    for entry in walk_dir {
+        // I was using this to explore what directories were being walked to potentially
+        // find performance improvements.
+        // use std::io::Write;
+        // // Write the entry out to a log file:
+        // let mut file = std::fs::OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("tmp/pks_log.txt")
+        //     .unwrap();
+        // writeln!(file, "{:?}", entry).unwrap();
+        let absolute_path = entry.unwrap().path();
+
+        if absolute_path.is_dir() {
+            continue;
+        }
+
+        let relative_path = absolute_path
+            .strip_prefix(absolute_root)
+            .unwrap()
+            .to_owned();
+
+        if matches_globs(&relative_path, &raw.include)
+            && !matches_globs(&relative_path, &raw.exclude)
+        {
+            included_paths.insert(absolute_path.clone());
+        }
+
+        let file_name =
+            relative_path.file_name().expect("expected a file_name");
+
+        if file_name.eq_ignore_ascii_case("package.yml")
+            && matches_globs(
+                relative_path.parent().unwrap(),
+                &raw.package_paths,
             )
-        })
-        .collect();
+        {
+            //
+            // Soon I'll be actually deserializing the package.yml file
+            // to grab things like enforce_dependencies.
+            // For now, we just construct the pack.
+            // We should consider if checkers and such can add their own deserialization
+            // behavior to Pack via a trait or something? That would make extension simpler!
+            //
+            // let file = File::open(&absolute_path).unwrap_or_else(|_| {
+            //     panic!("Could not open {}", &absolute_path.display())
+            // });
+            // let deserialized_pack: Option<Pack> = serde_yaml::from_reader(file)
+            //     .unwrap_or_else(|_| {
+            //         panic!("Could not parse {}", &absolute_path.display())
+            //     });
 
-    package_paths
+            let mut name = relative_path
+                .parent()
+                .expect("Expected package to be in a parent directory")
+                .to_str()
+                .expect("Non-unicode characters?")
+                .to_owned();
+            let yml = absolute_path.clone();
+            // Handle the root pack
+            if name == *"" {
+                name = String::from(".")
+            };
+            let pack: Pack = Pack { yml, name };
+            included_packs.insert(pack);
+        }
+    }
+
+    (included_paths, included_packs)
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
@@ -198,14 +291,22 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
             RawConfiguration::default()
         };
 
-    let included_files = get_included_files(absolute_root, &raw_config);
+    let (included_files, unsorted_packs) =
+        walk_directory(absolute_root, &raw_config);
+    let packs = unsorted_packs
+        .into_iter()
+        .sorted_by(|packa, packb| {
+            Ord::cmp(&packb.name.len(), &packa.name.len())
+                .then_with(|| packa.name.cmp(&packb.name))
+        })
+        .collect();
 
     Configuration {
         included_files,
         absolute_root: absolute_root.to_path_buf(),
-        package_paths: get_package_paths(absolute_root, &raw_config),
+        packs,
         cache_enabled: raw_config.cache,
-        cache_directory: absolute_root.join(raw_config.cache_directory)
+        cache_directory: absolute_root.join(raw_config.cache_directory),
     }
 }
 
@@ -231,15 +332,26 @@ mod tests {
         .collect::<HashSet<PathBuf>>();
         assert_eq!(actual.included_files, expected_included_files);
 
-        let expected_package_paths = vec![
-            absolute_root.join("packs/foo/package.yml"),
-            absolute_root.join("packs/bar/package.yml"),
-            absolute_root.join("packs/baz/package.yml"),
-            absolute_root.join("package.yml"),
-        ]
-        .into_iter()
-        .collect::<HashSet<PathBuf>>();
-        assert_eq!(actual.package_paths, expected_package_paths);
+        let expected_packs = vec![
+            Pack {
+                yml: absolute_root.join("packs/bar/package.yml"),
+                name: String::from("packs/bar"),
+            },
+            Pack {
+                yml: absolute_root.join("packs/baz/package.yml"),
+                name: String::from("packs/baz"),
+            },
+            Pack {
+                yml: absolute_root.join("packs/foo/package.yml"),
+                name: String::from("packs/foo"),
+            },
+            Pack {
+                yml: absolute_root.join("package.yml"),
+                name: String::from("."),
+            },
+        ];
+
+        assert_eq!(expected_packs, actual.packs);
 
         assert!(actual.cache_enabled)
     }

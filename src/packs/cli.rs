@@ -47,11 +47,12 @@ pub fn run() {
     let absolute_root = args
         .absolute_project_root()
         .expect("Issue getting absolute_project_root!");
+
     let configuration = packs::configuration::get(&absolute_root);
 
     match args.command {
         Command::Greet => packs::greet(),
-        Command::ListPacks => packs::list(absolute_root),
+        Command::ListPacks => packs::list(configuration),
         Command::Check => {
             checker::check(configuration);
         }
@@ -63,6 +64,7 @@ pub fn run() {
                 // TODO: Figure out the idiomatic way to raise tis error
                 panic!("Cache is disabled. Enable it in packwerk.yml to use this command.");
             }
+
             cache::write_cache_for_files(files, configuration);
         }
     }

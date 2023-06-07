@@ -137,6 +137,7 @@ fn references_to_cache_entry(
     }
 }
 
+#[derive(Debug)]
 struct CachableFile {
     relative_path: PathBuf,
     file_contents_digest: String,
@@ -199,8 +200,14 @@ fn write_cache(
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
-    let mut file = File::create(&cachable_file.cache_file_path)
-        .expect("Failed to create cache file");
+    let mut file =
+        File::create(&cachable_file.cache_file_path).unwrap_or_else(|e| {
+            panic!(
+                "Failed to create cache file {:?}: {}",
+                cachable_file.cache_file_path, e
+            )
+        });
+
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 }
@@ -231,7 +238,6 @@ pub(crate) fn write_cache_for_files(
     create_cache_dir_idempotently(&configuration.cache_directory);
 
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
-
     absolute_paths.par_iter().for_each(|path| {
         let cachable_file = CachableFile::from(&configuration, path);
         if !cachable_file.cache_is_valid() {
