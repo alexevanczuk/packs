@@ -2,8 +2,9 @@ mod configuration;
 use glob::glob;
 use serde::Deserialize;
 use serde::Serialize;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::path::PathBuf;
-
 mod cache;
 mod checker;
 pub(crate) mod cli;
@@ -32,10 +33,18 @@ pub struct SourceLocation {
     column: usize,
 }
 
-#[derive(Debug, PartialEq, Eq, Ord, PartialOrd)] // Implement PartialEq trait
+#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Deserialize)] // Implement PartialEq trait
 pub struct Pack {
     yml: PathBuf,
     name: String,
+}
+
+impl Hash for Pack {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Implement the hash function for your struct fields
+        // Call the appropriate `hash` method on the `Hasher` to hash each field
+        self.name.hash(state);
+    }
 }
 
 impl Pack {
