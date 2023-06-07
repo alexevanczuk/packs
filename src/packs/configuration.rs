@@ -169,7 +169,6 @@ fn walk_directory(
                         ".git",
                         "public",
                         "bin",
-                        "script",
                         "log",
                         "frontend",
                         "sorbet",
