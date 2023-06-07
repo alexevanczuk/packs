@@ -200,8 +200,14 @@ fn write_cache(
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
-    let mut file = File::create(&cachable_file.cache_file_path)
-        .expect("Failed to create cache file");
+    let mut file =
+        File::create(&cachable_file.cache_file_path).unwrap_or_else(|e| {
+            panic!(
+                "Failed to create cache file {:?}: {}",
+                cachable_file.cache_file_path, e
+            )
+        });
+
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
 }
