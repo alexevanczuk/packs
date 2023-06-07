@@ -1,7 +1,8 @@
 use itertools::Itertools;
-use jwalk::WalkDir;
+use jwalk::{WalkDir, WalkDirGeneric};
 use serde::{Deserialize, Serialize};
 use std::{
+    cmp::Ordering,
     collections::HashSet,
     fs::File,
     path::{Path, PathBuf},
@@ -126,7 +127,32 @@ fn get_included_files(
 ) -> HashSet<PathBuf> {
     let mut included_paths: HashSet<PathBuf> = HashSet::new();
 
-    for entry in WalkDir::new(absolute_root) {
+    let second_copy_of_absolute_root = absolute_root.clone();
+    //
+    // WalkDirGeneric allows you to customize the directory walk, such as skipping directories,
+    // which we do as a performance optimization.
+    //
+    // Specifically – if an exclude glob matches an entire directory, we don't need to continue to
+    // explore it. For example, instead of asking every file in `vendor/bundle/**/` if it should be excluded,
+    // we'll save a lot of time by just skipping the entire directory.
+    //
+    // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
+    let walk_dir = WalkDirGeneric::<((usize), (bool))>::new("foo")
+        .process_read_dir(|_depth, _path, _read_dir_state, children| {
+            children.iter_mut().for_each(|dir_entry_result| {
+                if let Ok(dir_entry) = dir_entry_result {
+                    let absolute_path = dir_entry_result.unwrap().path();
+                    let relative_path =
+                        absolute_path.strip_prefix(absolute_root).unwrap();
+
+                    if matches_globs(&relative_path, &raw.exclude) {
+                        dir_entry.read_children_path = None;
+                    }
+                }
+            });
+        });
+
+    for entry in walk_dir {
         let absolute_path = entry.unwrap().path();
         let relative_path = absolute_path
             .strip_prefix(absolute_root)
