@@ -137,6 +137,7 @@ fn references_to_cache_entry(
     }
 }
 
+#[derive(Debug)]
 struct CachableFile {
     relative_path: PathBuf,
     file_contents_digest: String,
@@ -231,7 +232,6 @@ pub(crate) fn write_cache_for_files(
     create_cache_dir_idempotently(&configuration.cache_directory);
 
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
-
     absolute_paths.par_iter().for_each(|path| {
         let cachable_file = CachableFile::from(&configuration, path);
         if !cachable_file.cache_is_valid() {

@@ -36,7 +36,11 @@ struct RawConfiguration {
 }
 
 fn default_include() -> Vec<String> {
-    vec![String::from("**/*.{rb,rake,erb}")]
+    vec![
+        String::from("**/*.rb"),
+        String::from("**/*.rake"),
+        String::from("**/*.erb"),
+    ]
 }
 
 fn default_exclude() -> Vec<String> {
@@ -114,19 +118,27 @@ fn get_included_files(
     let exclude_patterns = raw.exclude.iter().map(|p| format!("!{}", p));
 
     let mut combined_patterns = raw.include.clone();
-    combined_patterns.extend(exclude_patterns);
+    // combined_patterns.extend(exclude_patterns);
 
-    let included_files: HashSet<PathBuf> =
-        globwalk::GlobWalkerBuilder::from_patterns(
-            absolute_root,
-            &combined_patterns,
-        )
-        .build()
-        .expect("Could not build glob walker")
-        .filter_map(Result::ok)
-        .map(|x| x.into_path())
-        .sorted() // Make output deterministic
+    let included_files: HashSet<PathBuf> = combined_patterns
+        .iter()
+        .flat_map(|p| {
+            glob::glob(&absolute_root.join(p).to_string_lossy())
+                .expect("Failed to read glob pattern")
+                .filter_map(Result::ok)
+        })
         .collect();
+    // let included_files: HashSet<PathBuf> =
+    //     globwalk::GlobWalkerBuilder::from_patterns(
+    //         absolute_root,
+    //         &combined_patterns,
+    //     )
+    //     .build()
+    //     .expect("Could not build glob walker")
+    //     .filter_map(Result::ok)
+    //     .map(|x| x.into_path())
+    //     .sorted() // Make output deterministic
+    //     .collect();
 
     included_files
 }
@@ -205,7 +217,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         absolute_root: absolute_root.to_path_buf(),
         package_paths: get_package_paths(absolute_root, &raw_config),
         cache_enabled: raw_config.cache,
-        cache_directory: absolute_root.join(raw_config.cache_directory)
+        cache_directory: absolute_root.join(raw_config.cache_directory),
     }
 }
 
