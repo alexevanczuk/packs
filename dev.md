@@ -10,6 +10,7 @@
   - if not equal, parse file to get unresolved references
 - look for additional speed ups for cold cache generation. Consider progress bar.
 - create two CLIs: `generate_cache_cold` and `generate_cache`. The latter reuses existing caches if the digests match.
+- if files are inputted into generate_cache, we should compare them to include/exclude globs rather than doing the directory walk
 
 # Initial Milestone
 
