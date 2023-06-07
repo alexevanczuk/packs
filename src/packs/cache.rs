@@ -11,6 +11,7 @@ use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use tracing::debug;
 
 use super::parser::get_file_type;
 use super::parser::SupportedFileType;
@@ -238,13 +239,17 @@ pub(crate) fn write_cache_for_files(
     create_cache_dir_idempotently(&configuration.cache_directory);
 
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+    let file_count = absolute_paths.len();
+    debug!("Writing cache for {} files", file_count);
+
     absolute_paths.par_iter().for_each(|path| {
         let cachable_file = CachableFile::from(&configuration, path);
         if !cachable_file.cache_is_valid() {
             let references = parse_path_for_references(path);
             write_cache(&cachable_file, references);
         }
-    })
+    });
+    debug!("Finished writing cache for {} files", file_count);
 }
 
 #[cfg(test)]

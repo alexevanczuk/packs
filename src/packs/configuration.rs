@@ -6,6 +6,7 @@ use std::{
     fs::File,
     path::{Path, PathBuf},
 };
+use tracing::debug;
 
 use crate::packs::Pack;
 
@@ -259,6 +260,7 @@ fn walk_directory(
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
+    debug!("Beginning to read configuration");
     let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
 
     let raw_config: RawConfiguration =
@@ -302,6 +304,8 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
                 .then_with(|| packa.name.cmp(&packb.name))
         })
         .collect();
+
+    debug!("Finished reading configuration");
 
     Configuration {
         included_files,
