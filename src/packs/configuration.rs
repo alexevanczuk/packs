@@ -143,7 +143,13 @@ fn walk_directory(
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
     let walk_dir = WalkDirGeneric::<(usize, bool)>::new(absolute_root)
-        .process_read_dir(|_depth, _path, _read_dir_state, children| {
+        .process_read_dir(|depth, _path, _read_dir_state, children| {
+            // Excluded dirs are top-level only
+            if let Some(depth) = depth {
+                if depth > 2 {
+                    return;
+                }
+            }
             children.iter_mut().for_each(|dir_entry_result| {
                 if let Ok(dir_entry) = dir_entry_result {
                     // Can't figure out how to actually match against raw.exclude due to ownership issues
@@ -157,11 +163,7 @@ fn walk_directory(
                     //     dir_entry.read_children_path = None;
                     // }
 
-                    // So instead,
-                    let dirname = dir_entry.path();
-                    // "/Users/alex.evanczuk/workspace/zenpayroll/public/paperclip-test/assets/recruiting/job_applicants/28
-                    // Given a Pathname, check if the last part of the path is one of the following strings
-                    // If so, set read_children_path to None
+                    // So instead, we'll just hardcode the directories we want to exclude
                     let excluded_dirs = vec![
                         "node_modules",
                         "vendor",
@@ -174,6 +176,7 @@ fn walk_directory(
                         "sorbet",
                     ];
 
+                    let dirname = dir_entry.path();
                     for excluded_dir in excluded_dirs {
                         if dirname.ends_with(excluded_dir) {
                             dir_entry.read_children_path = None;
