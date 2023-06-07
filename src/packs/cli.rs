@@ -52,7 +52,7 @@ pub fn run() {
 
     match args.command {
         Command::Greet => packs::greet(),
-        Command::ListPacks => packs::list(absolute_root),
+        Command::ListPacks => packs::list(configuration),
         Command::Check => {
             checker::check(configuration);
         }
