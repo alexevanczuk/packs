@@ -51,7 +51,7 @@ fn default_exclude() -> Vec<String> {
 }
 
 fn default_package_paths() -> Vec<String> {
-    vec![String::from("**/")]
+    vec![String::from("**/*")]
 }
 
 fn default_custom_associations() -> Vec<String> {
@@ -217,10 +217,10 @@ fn walk_directory(
             relative_path.file_name().expect("expected a file_name");
 
         if file_name.eq_ignore_ascii_case("package.yml")
-        // && matches_globs(
-        //     relative_path.parent().unwrap(),
-        //     &raw.package_paths,
-        // )
+            && matches_globs(
+                relative_path.parent().unwrap(),
+                &raw.package_paths,
+            )
         {
             //
             // Soon I'll be actually deserializing the package.yml file
