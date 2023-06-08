@@ -9,6 +9,8 @@ use crate::packs::cache::get_unresolved_references;
 use super::UnresolvedReference;
 
 pub mod dependency;
+
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
 }
@@ -58,7 +60,7 @@ pub(crate) fn check(configuration: Configuration) {
         .flat_map(|r| {
             checkers
                 .iter()
-                .flat_map(|c| c.check(&r))
+                .flat_map(|c| c.check(&configuration, &r))
                 .collect::<Vec<Violation>>()
         })
         .collect();
