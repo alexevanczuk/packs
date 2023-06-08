@@ -11,7 +11,7 @@
 - look for additional speed ups for cold cache generation. Consider progress bar.
 - create two CLIs: `generate_cache_cold` and `generate_cache`. The latter reuses existing caches if the digests match.
 - if files are inputted into generate_cache, we should compare them to include/exclude globs rather than doing the directory walk
-
+- We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
 # Initial Milestone
 
 - [ ] `packs generate_cache`, which can be used to update `tmp/cache/packwerk` for faster `packwerk` output. It should produce the exact same `json` that `packwerk` produces today.
