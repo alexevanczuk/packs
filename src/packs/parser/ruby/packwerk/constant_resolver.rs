@@ -91,9 +91,22 @@ impl ConstantResolver {
         // ::Boo
         // We need to check each of these possibilities in order, and return the first one that exists
         // If none of them exist, return None
-        // Append "" to namespace_path, because that represents the use of the constant in the global namespace
+
+        // It's pretty common to refer to a name via a global reference, e.g. ::Foo::Bar::Baz::Boo
+        // so we check that first
+        let global_reference =
+            format!("::{}", fully_or_partially_qualified_constant);
+        if let Some(absolute_path) = self
+            .fully_qualified_constant_to_absolute_path_map
+            .get(&global_reference)
+        {
+            return Some(Constant {
+                fully_qualified_name: global_reference,
+                absolute_path_of_definition: absolute_path.clone(),
+            });
+        }
+
         let mut namespace_path = namespace_path;
-        namespace_path.push(String::from(""));
         namespace_path.reverse();
         for _ in 0..namespace_path.len() {
             let candidate_namespace =
@@ -125,10 +138,12 @@ impl ConstantResolver {
 mod tests {
     use std::path::PathBuf;
 
+    use crate::packs::configuration;
+
     use super::*;
 
     #[test]
-    fn trivial() {
+    fn test_file_map() {
         let paths = vec![PathBuf::from(
             "tests/fixtures/simple_app/packs/foo/app/services",
         )];
@@ -150,14 +165,46 @@ mod tests {
             &resolver.fully_qualified_constant_to_absolute_path_map;
 
         assert_eq!(&expected_file_map, actual_file_map);
+    }
+
+    #[test]
+    fn unnested_reference_to_unnested_constant() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .unwrap();
+        let resolver = configuration::get(&absolute_root).constant_resolver;
+
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Foo".to_string(),
-                absolute_path_of_definition: PathBuf::from(
-                    "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
-                )
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo.rb")
             },
             resolver.resolve(String::from("Foo"), vec![]).unwrap()
+        )
+    }
+    #[test]
+    fn nested_reference_to_unnested_constant() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .unwrap();
+        let resolver = configuration::get(&absolute_root).constant_resolver;
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "::Foo".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo.rb")
+            },
+            resolver
+                .resolve(
+                    String::from("Foo"),
+                    vec![
+                        String::from("Foo"),
+                        String::from("Bar"),
+                        String::from("Baz")
+                    ]
+                )
+                .unwrap()
         )
     }
 }
