@@ -254,4 +254,22 @@ mod tests {
                 .unwrap()
         )
     }
+
+    #[test]
+    fn nested_reference_to_global_constant() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .unwrap();
+        let resolver = configuration::get(&absolute_root).constant_resolver;
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "::Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/bar/app/services/bar.rb")
+            },
+            resolver
+                .resolve(String::from("::Bar"), vec![String::from("Foo")])
+                .unwrap()
+        )
+    }
 }
