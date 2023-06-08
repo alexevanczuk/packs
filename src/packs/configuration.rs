@@ -391,6 +391,7 @@ mod tests {
         let expected_included_files = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/services/foo/bar.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
             absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
@@ -472,6 +473,7 @@ mod tests {
         let expected_paths = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/services/foo/bar.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
             absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),

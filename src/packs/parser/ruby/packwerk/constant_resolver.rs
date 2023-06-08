@@ -92,20 +92,20 @@ impl ConstantResolver {
         // We need to check each of these possibilities in order, and return the first one that exists
         // If none of them exist, return None
 
-        // It's pretty common to refer to a name via a global reference, e.g. ::Foo::Bar::Baz::Boo
-        // so we check that first
-        let global_reference =
-            format!("::{}", fully_or_partially_qualified_constant);
-        if let Some(absolute_path) = self
-            .fully_qualified_constant_to_absolute_path_map
-            .get(&global_reference)
-        {
-            return Some(Constant {
-                fully_qualified_name: global_reference,
-                absolute_path_of_definition: absolute_path.clone(),
-            });
+        // If the fully_or_partially_qualified_constant is prefixed with ::, we should skip checking the namespace_path
+        // because it's an absolute reference.
+        if fully_or_partially_qualified_constant.starts_with("::") {
+            let absolute_path = self
+                .fully_qualified_constant_to_absolute_path_map
+                .get(&fully_or_partially_qualified_constant);
+            if let Some(constant) = self.constant_for_fully_qualified_name(
+                fully_or_partially_qualified_constant,
+            ) {
+                return Some(constant);
+            } else {
+                return None;
+            }
         }
-
         let mut namespace_path = namespace_path;
         namespace_path.reverse();
         for _ in 0..namespace_path.len() {
@@ -118,15 +118,37 @@ impl ConstantResolver {
                 candidate_namespace, fully_or_partially_qualified_constant
             );
 
-            if let Some(absolute_path) = self
-                .fully_qualified_constant_to_absolute_path_map
-                .get(&possible_constant)
+            if let Some(constant) =
+                self.constant_for_fully_qualified_name(possible_constant)
             {
-                return Some(Constant {
-                    fully_qualified_name: possible_constant,
-                    absolute_path_of_definition: absolute_path.clone(),
-                });
+                return Some(constant);
             }
+        }
+
+        let global_reference =
+            format!("::{}", fully_or_partially_qualified_constant);
+        if let Some(constant) =
+            self.constant_for_fully_qualified_name(global_reference)
+        {
+            return Some(constant);
+        }
+
+        None
+    }
+
+    fn constant_for_fully_qualified_name(
+        &self,
+        fully_qualified_name: String,
+    ) -> Option<Constant> {
+        if let Some(absolute_path_of_definition) = self
+            .fully_qualified_constant_to_absolute_path_map
+            .get(&fully_qualified_name)
+        {
+            return Some(Constant {
+                fully_qualified_name,
+                absolute_path_of_definition: absolute_path_of_definition
+                    .clone(),
+            });
         }
 
         None
@@ -158,6 +180,13 @@ mod tests {
             "::Foo".to_string(),
             PathBuf::from(
                 "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
+            ),
+        );
+
+        expected_file_map.insert(
+            "::Foo::Bar".to_string(),
+            PathBuf::from(
+                "tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb",
             ),
         );
 
@@ -204,6 +233,24 @@ mod tests {
                         String::from("Baz")
                     ]
                 )
+                .unwrap()
+        )
+    }
+
+    #[test]
+    fn nested_reference_to_nested_constant() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .unwrap();
+        let resolver = configuration::get(&absolute_root).constant_resolver;
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "::Foo::Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo/bar.rb")
+            },
+            resolver
+                .resolve(String::from("Bar"), vec![String::from("Foo")])
                 .unwrap()
         )
     }
