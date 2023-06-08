@@ -38,6 +38,10 @@ struct RawConfiguration {
     // Where you want the cache to be stored
     #[serde(default = "default_cache_directory")]
     cache_directory: String,
+
+    // Autoload paths used to resolve constants
+    #[serde(default)]
+    autoload_paths: Option<Vec<String>>,
 }
 
 fn default_include() -> Vec<String> {
@@ -310,12 +314,12 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     debug!("Finished reading configuration");
 
     let absolute_root = absolute_root.to_path_buf();
-    let autoload_paths = vec![]; // todo!();
+    let autoload_paths = get_autoload_paths(&packs);
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
     let constant_resolver =
-        ConstantResolver::create(&absolute_root, autoload_paths);
+        ConstantResolver::create(&absolute_root, &autoload_paths);
 
     Configuration {
         included_files,
@@ -324,6 +328,40 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         cache_enabled,
         cache_directory,
         constant_resolver,
+    }
+}
+
+fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<String> {
+    let mut autoload_paths: Vec<PathBuf> = Vec::new();
+
+    debug!("Getting autoload paths");
+    for pack in packs {
+        // App paths
+        let app_paths = pack.yml.join("app").join("*");
+        let app_glob_pattern = app_paths.to_str().unwrap();
+        process_glob_pattern(app_glob_pattern, &mut autoload_paths);
+
+        // Concerns paths
+        let concerns_paths = pack.yml.join("app").join("*").join("concerns");
+        let concerns_glob_pattern = concerns_paths.to_str().unwrap();
+
+        process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
+    }
+
+    debug!("Finished getting autoload paths");
+
+    autoload_paths
+        .into_iter()
+        .map(|path| path.to_str().unwrap().to_owned())
+        .collect()
+}
+
+fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
+    for path in glob::glob(pattern)
+        .expect("Failed to read glob pattern")
+        .flatten()
+    {
+        paths.push(path);
     }
 }
 

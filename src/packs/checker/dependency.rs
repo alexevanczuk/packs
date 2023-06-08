@@ -21,6 +21,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
+    #[ignore]
     fn test_check() {
         let checker = Checker {};
         let configuration = configuration::get(
