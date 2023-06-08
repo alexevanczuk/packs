@@ -38,7 +38,7 @@ pub fn for_file(
     absolute_file_path: &Path,
 ) -> String {
     for pack in &configuration.packs {
-        if absolute_file_path.starts_with(&pack.yml) {
+        if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
             return pack.name.clone();
         }
     }
