@@ -114,7 +114,7 @@ impl ConstantResolver {
 
             // Append the fully_or_partially_qualified_constant to the candidate_namespace
             let possible_constant = format!(
-                "{}::{}",
+                "::{}::{}",
                 candidate_namespace, fully_or_partially_qualified_constant
             );
 
