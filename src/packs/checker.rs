@@ -23,6 +23,7 @@ pub struct Reference {
     constant_name: String,
     defining_pack_name: String,
     referencing_pack_name: String,
+    relative_referencing_file: String,
     source_location: SourceLocation,
 }
 impl Reference {
@@ -30,7 +31,7 @@ impl Reference {
     fn from_unresolved_reference(
         configuration: &Configuration,
         unresolved_reference: &UnresolvedReference,
-        refrencing_file_path: &Path,
+        referencing_file_path: &Path,
     ) -> Reference {
         // Here we need to get a ConstantResolver from configuration
         // to figure out what package things are from.
@@ -59,7 +60,7 @@ impl Reference {
         let constant_name = constant_name.clone();
 
         let referencing_pack_name =
-            packs::for_file(configuration, refrencing_file_path);
+            packs::for_file(configuration, referencing_file_path);
 
         let loc = unresolved_reference.location;
         let source_location = SourceLocation {
@@ -67,11 +68,20 @@ impl Reference {
             column: loc.start_col,
         };
 
+        let relative_referencing_file_path = referencing_file_path
+            .strip_prefix(&configuration.absolute_root)
+            .unwrap()
+            .to_path_buf();
+
+        let relative_referencing_file =
+            relative_referencing_file_path.to_str().unwrap().to_string();
+
         Reference {
             constant_name,
             defining_pack_name,
             referencing_pack_name,
             source_location,
+            relative_referencing_file,
         }
     }
 }

@@ -4,12 +4,15 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
+    io::Read,
     path::{Path, PathBuf},
 };
 use tracing::debug;
 
 use crate::packs::parser::ruby::packwerk::constant_resolver::ConstantResolver;
 use crate::packs::Pack;
+
+use crate::packs::DeserializablePack;
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -270,10 +273,20 @@ fn walk_directory(
                 relative_path = PathBuf::from(".");
             };
 
+            let mut yaml_contents = String::new();
+            let mut file =
+                File::open(&yml).expect("Failed to open the YAML file");
+            file.read_to_string(&mut yaml_contents)
+                .expect("Failed to read the YAML file");
+
+            let pack: DeserializablePack = serde_yaml::from_str(&yaml_contents)
+                .expect("Failed to deserialize the YAML");
+
             let pack: Pack = Pack {
                 yml,
                 name,
                 relative_path,
+                dependencies: pack.dependencies,
             };
             included_packs.insert(pack);
         }
@@ -421,21 +434,27 @@ mod tests {
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
                 relative_path: PathBuf::from("packs/bar"),
+                dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
                 relative_path: PathBuf::from("packs/baz"),
+                dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
                 relative_path: PathBuf::from("packs/foo"),
+                dependencies: HashSet::from_iter(vec![String::from(
+                    "packs/baz",
+                )]),
             },
             Pack {
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),
+                dependencies: HashSet::new(),
             },
         ];
 

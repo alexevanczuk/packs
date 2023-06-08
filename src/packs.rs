@@ -1,6 +1,7 @@
 mod configuration;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::path::Path;
@@ -52,11 +53,22 @@ pub struct SourceLocation {
     column: usize,
 }
 
-#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Deserialize, Clone)]
+#[derive(Debug, Deserialize)]
+pub struct DeserializablePack {
+    #[serde(default)]
+    dependencies: HashSet<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 pub struct Pack {
+    #[serde(skip_deserializing)]
     yml: PathBuf,
+    #[serde(skip_deserializing)]
     name: String,
+    #[serde(skip_deserializing)]
     relative_path: PathBuf,
+    #[serde(default)]
+    dependencies: HashSet<String>,
 }
 
 impl Hash for Pack {
