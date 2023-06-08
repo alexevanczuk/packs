@@ -8,6 +8,7 @@ use std::{
 };
 use tracing::debug;
 
+use crate::packs::parser::ruby::packwerk::constant_resolver::ConstantResolver;
 use crate::packs::Pack;
 
 // See: Setting up the configuration file
@@ -73,6 +74,7 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub packs: Vec<Pack>,
     pub cache_enabled: bool,
+    pub cache_directory: PathBuf,
     pub constant_resolver: ConstantResolver,
 }
 
@@ -307,12 +309,21 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     debug!("Finished reading configuration");
 
+    let absolute_root = absolute_root.to_path_buf();
+    let autoload_paths = vec![]; // todo!();
+
+    let cache_directory = absolute_root.join(raw_config.cache_directory);
+    let cache_enabled = raw_config.cache;
+    let constant_resolver =
+        ConstantResolver::create(&absolute_root, autoload_paths);
+
     Configuration {
         included_files,
-        absolute_root: absolute_root.to_path_buf(),
+        absolute_root,
         packs,
-        cache_enabled: raw_config.cache,
-        cache_directory: absolute_root.join(raw_config.cache_directory),
+        cache_enabled,
+        cache_directory,
+        constant_resolver,
     }
 }
 

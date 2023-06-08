@@ -1,18 +1,31 @@
+use crate::packs::Pack;
+use std::path::Path;
+
+#[derive(Default)]
 pub struct ConstantResolver {}
 
+#[allow(unused_variables)]
 impl ConstantResolver {
-    fn create(
-        configuration: Configuration,
+    pub fn create(
+        absolute_root: &Path,
         autoload_paths: Vec<String>,
     ) -> ConstantResolver {
         todo!()
     }
+
+    #[allow(dead_code)]
+    fn get_pack_for(
+        &self,
+        constant: String,
+        namespace_path: Vec<String>,
+    ) -> Pack {
+        todo!()
+    }
 }
 
+#[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-
-    use crate::packs::Configuration;
 
     use super::*;
 
@@ -23,13 +36,10 @@ mod tests {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app")
             .canonicalize()
             .expect("Could not canonicalize path");
-        let config = Configuration {
-            absolute_root
-            ..Configuration::default()
-        };
-        let resolver = ConstantResolver::create(config, paths);
+
+        let resolver = ConstantResolver::create(&absolute_root, paths);
         assert_eq!(
-            resolver.get_pack_for(fully_qualified_constant).name,
+            resolver.get_pack_for(String::from("Foo"), vec![]).name,
             "packs/foo"
         )
     }
