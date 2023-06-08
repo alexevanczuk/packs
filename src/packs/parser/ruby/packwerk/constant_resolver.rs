@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 #[allow(unused_imports)]
 use crate::packs::Pack;
 use std::{
@@ -28,10 +30,43 @@ impl ConstantResolver {
         // 2) For each ruby file, remove the autoloaded portion of the path
         // 3) For the remaining path, remove the .rb extension
         // 4) For the remaining path, split it by "/"
-        // 5) Call inflector::cases::classcase::to_class_case
-        // 5)
+        // 5) Call packs::inflector::to_class_case on each element in the vector
+        // 6) Join the vector with ::
+        // 7) Strip the leading "::" from the string
+        // 8) Add the fully qualified constant name to the map, with the value being the absolute path of the file
+        let mut fully_qualified_constant_to_absolute_path_map: HashMap<
+            String,
+            PathBuf,
+        > = HashMap::new();
+
+        for absolute_autoload_path in &autoload_paths {
+            let mut glob_path = absolute_autoload_path.clone();
+            glob_path.push("**/*.rb");
+
+            let files = glob::glob(glob_path.to_str().unwrap())
+                .expect("Failed to read glob pattern")
+                .filter_map(Result::ok);
+
+            for file in files {
+                let relative_path =
+                    file.strip_prefix(absolute_autoload_path).unwrap();
+
+                let relative_path = relative_path.with_extension("");
+
+                let fully_qualified_constant_name = relative_path
+                    .to_str()
+                    .unwrap()
+                    .split('/')
+                    .map(|s| s.to_string())
+                    .map(|s| crate::packs::inflector_shim::to_class_case(&s))
+                    .join("::");
+
+                fully_qualified_constant_to_absolute_path_map
+                    .insert(fully_qualified_constant_name, file);
+            }
+        }
         ConstantResolver {
-            fully_qualified_constant_to_absolute_path_map: HashMap::new(),
+            fully_qualified_constant_to_absolute_path_map,
             autoload_paths,
         }
     }
@@ -59,8 +94,9 @@ mod tests {
 
     #[test]
     fn trivial() {
-        let paths =
-            vec![PathBuf::from("tests/fixtures/simple_app/app/services")];
+        let paths = vec![PathBuf::from(
+            "tests/fixtures/simple_app/packs/foo/app/services",
+        )];
         let absolute_root = PathBuf::from("tests/fixtures/simple_app")
             .canonicalize()
             .expect("Could not canonicalize path");
@@ -70,7 +106,9 @@ mod tests {
         let mut expected_file_map: HashMap<String, PathBuf> = HashMap::new();
         expected_file_map.insert(
             "Foo".to_string(),
-            PathBuf::from("tests/fixtures/simple_app/app/services"),
+            PathBuf::from(
+                "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
+            ),
         );
 
         let actual_file_map =
