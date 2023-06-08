@@ -37,14 +37,14 @@ pub fn list(configuration: Configuration) {
 pub fn for_file(
     configuration: &Configuration,
     absolute_file_path: &Path,
-) -> String {
+) -> Option<String> {
     for pack in &configuration.packs {
         if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
-            return pack.name.clone();
+            return Some(pack.name.clone());
         }
     }
 
-    configuration.root_pack().name
+    None
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -102,7 +102,7 @@ mod tests {
         .expect("Could not canonicalize path");
 
         assert_eq!(
-            String::from("packs/foo"),
+            Some(String::from("packs/foo")),
             packs::for_file(&configuration, &absolute_file_path)
         )
     }

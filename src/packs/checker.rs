@@ -1,6 +1,6 @@
 use crate::packs::Configuration;
 use rayon::prelude::IntoParallelIterator;
-use rayon::{iter::ParallelBridge, prelude::ParallelIterator};
+use rayon::prelude::ParallelIterator;
 use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
@@ -22,7 +22,10 @@ pub struct Violation {
 pub struct Reference {
     // We may later want to extract out a `Constant` struct
     constant_name: String,
-    defining_pack_name: String,
+    // Sometimes we cannot find the pack that a constant is defined in.
+    // In this case, we return None, and do not include it.
+    defining_pack_name: Option<String>,
+    // We always know where the referencing file is, so we don't need an Option
     referencing_pack_name: String,
     relative_referencing_file: String,
     source_location: SourceLocation,
@@ -48,7 +51,7 @@ impl Reference {
                 &constant.absolute_path_of_definition,
             )
         } else {
-            configuration.root_pack().name
+            None
         };
 
         let constant_name = if let Some(constant) = &maybe_constant {
@@ -61,7 +64,13 @@ impl Reference {
         let constant_name = constant_name.clone();
 
         let referencing_pack_name =
-            packs::for_file(configuration, referencing_file_path);
+            packs::for_file(configuration, referencing_file_path)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "Could not find pack for refrencing file path: {}",
+                        &referencing_file_path.display()
+                    )
+                });
 
         let loc = unresolved_reference.location;
         let source_location = SourceLocation {
@@ -89,10 +98,10 @@ impl Reference {
 
 pub(crate) fn check(
     configuration: Configuration,
+    files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Interecting input files with configuration included files");
-    let absolute_paths: HashSet<PathBuf> =
-        configuration.intersect_files(vec![]);
+    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     // 1) Get the Vec<UnresolvedReferences> for each file in parallel
     // - Need a way for cache to do this, e.g. get_references_with_cache

@@ -15,7 +15,9 @@ impl Checker {
             .get(&reference.referencing_pack_name)
             .unwrap();
 
-        if referencing_pack.name == reference.defining_pack_name {
+        let defining_pack_name = reference.defining_pack_name.clone()?;
+
+        if referencing_pack.name == defining_pack_name {
             return None;
         }
 
@@ -25,16 +27,14 @@ impl Checker {
             .unwrap()
             .dependencies;
 
-        if !referencing_pack_dependencies
-            .contains(&reference.defining_pack_name)
-        {
+        if !referencing_pack_dependencies.contains(&defining_pack_name) {
             let message = format!(
                 // "dependency: packs/foo/app/services/foo.rb:3 references Bar from packs/bar without an explicit dependency in packs/foo/package.yml"
                 "dependency: {}:{} references {} from {} without an explicit dependency in {}/package.yml",
                 reference.relative_referencing_file,
                 reference.source_location.line,
                 reference.constant_name,
-                reference.defining_pack_name,
+                defining_pack_name,
                 reference.referencing_pack_name,
             );
             return Some(Violation { message });
@@ -61,7 +61,7 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack_name: String::from("packs/foo"),
+            defining_pack_name: Some(String::from("packs/foo")),
             referencing_pack_name: String::from("packs/foo"),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
@@ -82,7 +82,7 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack_name: String::from("packs/bar"),
+            defining_pack_name: Some(String::from("packs/bar")),
             referencing_pack_name: String::from("packs/foo"),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",

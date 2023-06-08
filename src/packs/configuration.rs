@@ -124,6 +124,7 @@ impl Configuration {
         }
     }
 
+    #[allow(dead_code)]
     pub fn root_pack(&self) -> Pack {
         self.indexed_packs
             .get(".")
@@ -238,10 +239,10 @@ fn walk_directory(
             relative_path.file_name().expect("expected a file_name");
 
         if file_name.eq_ignore_ascii_case("package.yml")
-            && matches_globs(
+            && (matches_globs(
                 relative_path.parent().unwrap(),
                 &raw.package_paths,
-            )
+            ) || absolute_path.parent().unwrap() == absolute_root)
         {
             //
             // Soon I'll be actually deserializing the package.yml file

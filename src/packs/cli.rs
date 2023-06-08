@@ -15,7 +15,7 @@ enum Command {
     #[clap(about = "List packs based on configuration in packwerk.yml")]
     ListPacks,
     #[clap(about = "Look for violations in the codebase")]
-    Check,
+    Check { files: Vec<String> },
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
     #[clap(
@@ -59,7 +59,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             packs::list(configuration);
             Ok(())
         }
-        Command::Check => checker::check(configuration),
+        Command::Check { files } => checker::check(configuration, files),
         Command::Validate => Err("💡 This command is coming soon!".into()),
         Command::GenerateCache { files } => {
             if !configuration.cache_enabled {
