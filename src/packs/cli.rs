@@ -42,7 +42,7 @@ impl Args {
     }
 }
 
-pub fn run() {
+pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let absolute_root = args
         .absolute_project_root()
@@ -51,21 +51,23 @@ pub fn run() {
     let configuration = packs::configuration::get(&absolute_root);
 
     match args.command {
-        Command::Greet => packs::greet(),
-        Command::ListPacks => packs::list(configuration),
-        Command::Check => {
-            checker::check(configuration);
+        Command::Greet => {
+            packs::greet();
+            Ok(())
         }
-        Command::Validate => {
-            panic!("💡 This command is coming soon!")
+        Command::ListPacks => {
+            packs::list(configuration);
+            Ok(())
         }
+        Command::Check => checker::check(configuration),
+        Command::Validate => Err("💡 This command is coming soon!".into()),
         Command::GenerateCache { files } => {
             if !configuration.cache_enabled {
-                // TODO: Figure out the idiomatic way to raise tis error
-                panic!("Cache is disabled. Enable it in packwerk.yml to use this command.");
+                return Err("Cache is disabled. Enable it in packwerk.yml to use this command.".into());
             }
 
             cache::write_cache_for_files(files, configuration);
+            Ok(())
         }
     }
 }

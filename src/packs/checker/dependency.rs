@@ -39,7 +39,6 @@ impl Checker {
             );
             return Some(Violation { message });
         }
-        // packs::for_file(configuration, &reference.referencing_pack_name);
 
         None
     }

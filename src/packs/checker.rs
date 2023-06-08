@@ -17,7 +17,7 @@ pub struct Violation {
     message: String,
 }
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct Reference {
     // We may later want to extract out a `Constant` struct
     constant_name: String,
@@ -85,7 +85,10 @@ impl Reference {
         }
     }
 }
-pub(crate) fn check(configuration: Configuration) {
+
+pub(crate) fn check(
+    configuration: Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
     let absolute_paths: HashSet<PathBuf> =
         configuration.intersect_files(vec![]);
 
@@ -97,8 +100,8 @@ pub(crate) fn check(configuration: Configuration) {
             .into_par_iter()
             .map(|p| (p.clone(), get_unresolved_references(&configuration, &p)))
             .collect();
-
     let mut references: Vec<Reference> = vec![];
+
     for (absolute_path_of_referring_file, unresolved_refs) in
         unresolved_references
     {
@@ -113,8 +116,7 @@ pub(crate) fn check(configuration: Configuration) {
 
     let checkers = vec![dependency::Checker {}];
     let violations: Vec<Violation> = references
-        .into_iter()
-        .par_bridge()
+        .into_par_iter()
         .flat_map(|r| {
             checkers
                 .iter()
@@ -128,6 +130,9 @@ pub(crate) fn check(configuration: Configuration) {
         for violation in violations {
             println!("{}", violation.message);
         }
-        std::process::exit(1);
+        Err("Violations detected".into())
+    } else {
+        println!("No violations detected");
+        Ok(())
     }
 }
