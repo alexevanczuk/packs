@@ -62,6 +62,10 @@ impl ConstantResolver {
                     .map(|s| crate::packs::inflector_shim::to_class_case(&s))
                     .join("::");
 
+                // Prefix each constant with :: to indicate it's an absolute reference
+                let fully_qualified_constant_name =
+                    format!("::{}", fully_qualified_constant_name);
+
                 fully_qualified_constant_to_absolute_path_map
                     .insert(fully_qualified_constant_name, file);
             }
@@ -87,11 +91,19 @@ impl ConstantResolver {
         // ::Boo
         // We need to check each of these possibilities in order, and return the first one that exists
         // If none of them exist, return None
-        let mut current_namespace_path = namespace_path;
-        current_namespace_path.reverse();
-        for _ in 0..current_namespace_path.len() {
-            let possible_constant =
-                current_namespace_path.clone().into_iter().rev().join("::");
+        // Append "" to namespace_path, because that represents the use of the constant in the global namespace
+        let mut namespace_path = namespace_path;
+        namespace_path.push(String::from(""));
+        namespace_path.reverse();
+        for _ in 0..namespace_path.len() {
+            let candidate_namespace =
+                namespace_path.clone().into_iter().rev().join("::");
+
+            // Append the fully_or_partially_qualified_constant to the candidate_namespace
+            let possible_constant = format!(
+                "{}::{}",
+                candidate_namespace, fully_or_partially_qualified_constant
+            );
 
             if let Some(absolute_path) = self
                 .fully_qualified_constant_to_absolute_path_map
@@ -128,7 +140,7 @@ mod tests {
 
         let mut expected_file_map: HashMap<String, PathBuf> = HashMap::new();
         expected_file_map.insert(
-            "Foo".to_string(),
+            "::Foo".to_string(),
             PathBuf::from(
                 "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
             ),
@@ -140,7 +152,7 @@ mod tests {
         assert_eq!(&expected_file_map, actual_file_map);
         assert_eq!(
             Constant {
-                fully_qualified_name: "Foo".to_string(),
+                fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: PathBuf::from(
                     "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
                 )
