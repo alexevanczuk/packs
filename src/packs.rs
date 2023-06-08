@@ -36,6 +36,7 @@ pub struct SourceLocation {
 pub struct Pack {
     yml: PathBuf,
     name: String,
+    relative_path: PathBuf,
 }
 
 impl Hash for Pack {

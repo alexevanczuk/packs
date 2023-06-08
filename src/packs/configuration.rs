@@ -211,7 +211,7 @@ fn walk_directory(
             continue;
         }
 
-        let relative_path = absolute_path
+        let mut relative_path = absolute_path
             .strip_prefix(absolute_root)
             .unwrap()
             .to_owned();
@@ -253,11 +253,19 @@ fn walk_directory(
                 .expect("Non-unicode characters?")
                 .to_owned();
             let yml = absolute_path.clone();
+            relative_path = relative_path.parent().unwrap().to_owned();
+
             // Handle the root pack
             if name == *"" {
-                name = String::from(".")
+                name = String::from(".");
+                relative_path = PathBuf::from(".");
             };
-            let pack: Pack = Pack { yml, name };
+
+            let pack: Pack = Pack {
+                yml,
+                name,
+                relative_path,
+            };
             included_packs.insert(pack);
         }
     }
@@ -337,12 +345,18 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<String> {
     debug!("Getting autoload paths");
     for pack in packs {
         // App paths
-        let app_paths = pack.yml.join("app").join("*");
+        let app_paths = pack.yml.parent().unwrap().join("app").join("*");
         let app_glob_pattern = app_paths.to_str().unwrap();
         process_glob_pattern(app_glob_pattern, &mut autoload_paths);
 
         // Concerns paths
-        let concerns_paths = pack.yml.join("app").join("*").join("concerns");
+        let concerns_paths = pack
+            .yml
+            .parent()
+            .unwrap()
+            .join("app")
+            .join("*")
+            .join("concerns");
         let concerns_glob_pattern = concerns_paths.to_str().unwrap();
 
         process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
@@ -393,33 +407,35 @@ mod tests {
             Pack {
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
+                relative_path: PathBuf::from("packs/bar"),
             },
             Pack {
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
+                relative_path: PathBuf::from("packs/baz"),
             },
             Pack {
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
+                relative_path: PathBuf::from("packs/foo"),
             },
             Pack {
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
+                relative_path: PathBuf::from("."),
             },
         ];
 
         let mut expected_autoload_paths = vec![
-            String::from("tests/fixtures/simple_app/app"),
             String::from("tests/fixtures/simple_app/app/services"),
-            String::from("tests/fixtures/simple_app/packs/bar/app"),
+            String::from("tests/fixtures/simple_app/packs/bar/app/models"),
             String::from(
                 "tests/fixtures/simple_app/packs/bar/app/models/concerns",
             ),
             String::from("tests/fixtures/simple_app/packs/bar/app/services"),
-            String::from("tests/fixtures/simple_app/packs/baz/app"),
             String::from("tests/fixtures/simple_app/packs/baz/app/services"),
-            String::from("tests/fixtures/simple_app/packs/foo/app"),
             String::from("tests/fixtures/simple_app/packs/foo/app/services"),
+            String::from("tests/fixtures/simple_app/packs/foo/app/views"),
         ];
         expected_autoload_paths.sort();
         let mut actual_autoload_paths =
