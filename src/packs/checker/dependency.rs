@@ -21,6 +21,24 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
+    fn referencing_and_defining_pack_are_identical() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/simple_app")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+        let reference = Reference {
+            constant_name: String::from("::Foo"),
+            defining_pack_name: String::from("packs/Foo"),
+            referencing_pack_name: String::from("packs/foo"),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+        assert_eq!(None, checker.check(&configuration, &reference))
+    }
+
+    #[test]
     #[ignore]
     fn test_check() {
         let checker = Checker {};
