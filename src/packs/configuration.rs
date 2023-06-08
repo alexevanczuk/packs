@@ -2,13 +2,17 @@ use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
+    io::Read,
     path::{Path, PathBuf},
 };
 use tracing::debug;
 
+use crate::packs::parser::ruby::packwerk::constant_resolver::ConstantResolver;
 use crate::packs::Pack;
+
+use crate::packs::DeserializablePack;
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -37,6 +41,10 @@ struct RawConfiguration {
     // Where you want the cache to be stored
     #[serde(default = "default_cache_directory")]
     cache_directory: String,
+
+    // Autoload paths used to resolve constants
+    #[serde(default)]
+    autoload_paths: Option<Vec<String>>,
 }
 
 fn default_include() -> Vec<String> {
@@ -74,6 +82,9 @@ pub struct Configuration {
     pub packs: Vec<Pack>,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
+    pub constant_resolver: ConstantResolver,
+    // TODO: This and `packs` should probably be moved into a struct like `Packs` or `PackSet`
+    pub indexed_packs: HashMap<String, Pack>,
 }
 
 impl Configuration {
@@ -111,6 +122,13 @@ impl Configuration {
                 .cloned()
                 .collect::<HashSet<PathBuf>>()
         }
+    }
+
+    pub fn root_pack(&self) -> Pack {
+        self.indexed_packs
+            .get(".")
+            .expect("Root pack not found")
+            .clone()
     }
 }
 
@@ -205,7 +223,7 @@ fn walk_directory(
             continue;
         }
 
-        let relative_path = absolute_path
+        let mut relative_path = absolute_path
             .strip_prefix(absolute_root)
             .unwrap()
             .to_owned();
@@ -247,11 +265,29 @@ fn walk_directory(
                 .expect("Non-unicode characters?")
                 .to_owned();
             let yml = absolute_path.clone();
+            relative_path = relative_path.parent().unwrap().to_owned();
+
             // Handle the root pack
             if name == *"" {
-                name = String::from(".")
+                name = String::from(".");
+                relative_path = PathBuf::from(".");
             };
-            let pack: Pack = Pack { yml, name };
+
+            let mut yaml_contents = String::new();
+            let mut file =
+                File::open(&yml).expect("Failed to open the YAML file");
+            file.read_to_string(&mut yaml_contents)
+                .expect("Failed to read the YAML file");
+
+            let pack: DeserializablePack = serde_yaml::from_str(&yaml_contents)
+                .expect("Failed to deserialize the YAML");
+
+            let pack: Pack = Pack {
+                yml,
+                name,
+                relative_path,
+                dependencies: pack.dependencies,
+            };
             included_packs.insert(pack);
         }
     }
@@ -307,12 +343,64 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     debug!("Finished reading configuration");
 
+    let absolute_root = absolute_root.to_path_buf();
+    let autoload_paths = get_autoload_paths(&packs);
+
+    let cache_directory = absolute_root.join(raw_config.cache_directory);
+    let cache_enabled = raw_config.cache;
+    let constant_resolver =
+        ConstantResolver::create(&absolute_root, autoload_paths);
+
+    let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
+    for pack in &packs {
+        indexed_packs.insert(pack.name.clone(), pack.clone());
+    }
+
     Configuration {
         included_files,
-        absolute_root: absolute_root.to_path_buf(),
+        absolute_root,
         packs,
-        cache_enabled: raw_config.cache,
-        cache_directory: absolute_root.join(raw_config.cache_directory),
+        cache_enabled,
+        cache_directory,
+        constant_resolver,
+        indexed_packs,
+    }
+}
+
+fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
+    let mut autoload_paths: Vec<PathBuf> = Vec::new();
+
+    debug!("Getting autoload paths");
+    for pack in packs {
+        // App paths
+        let app_paths = pack.yml.parent().unwrap().join("app").join("*");
+        let app_glob_pattern = app_paths.to_str().unwrap();
+        process_glob_pattern(app_glob_pattern, &mut autoload_paths);
+
+        // Concerns paths
+        let concerns_paths = pack
+            .yml
+            .parent()
+            .unwrap()
+            .join("app")
+            .join("*")
+            .join("concerns");
+        let concerns_glob_pattern = concerns_paths.to_str().unwrap();
+
+        process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
+    }
+
+    debug!("Finished getting autoload paths");
+
+    autoload_paths
+}
+
+fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
+    for path in glob::glob(pattern)
+        .expect("Failed to read glob pattern")
+        .flatten()
+    {
+        paths.push(path);
     }
 }
 
@@ -331,8 +419,11 @@ mod tests {
         let expected_included_files = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/services/foo/bar.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+            absolute_root.join("app/services/some_root_class.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -342,21 +433,48 @@ mod tests {
             Pack {
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
+                relative_path: PathBuf::from("packs/bar"),
+                dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
+                relative_path: PathBuf::from("packs/baz"),
+                dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
+                relative_path: PathBuf::from("packs/foo"),
+                dependencies: HashSet::from_iter(vec![String::from(
+                    "packs/baz",
+                )]),
             },
             Pack {
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
+                relative_path: PathBuf::from("."),
+                dependencies: HashSet::new(),
             },
         ];
 
+        let mut expected_autoload_paths = vec![
+            PathBuf::from("tests/fixtures/simple_app/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/models"),
+            PathBuf::from(
+                "tests/fixtures/simple_app/packs/bar/app/models/concerns",
+            ),
+            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/baz/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/views"),
+        ];
+        expected_autoload_paths.sort();
+        let mut actual_autoload_paths =
+            actual.constant_resolver.autoload_paths.clone();
+        actual_autoload_paths.sort();
+
+        assert_eq!(expected_autoload_paths, actual_autoload_paths);
         assert_eq!(expected_packs, actual.packs);
 
         assert!(actual.cache_enabled)
@@ -389,8 +507,11 @@ mod tests {
         let expected_paths = vec![
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
+            absolute_root.join("packs/foo/app/services/foo/bar.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+            absolute_root.join("app/services/some_root_class.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -403,10 +524,12 @@ mod tests {
         let configuration = configuration::get(&absolute_root);
         let actual_paths =
             configuration.intersect_files(vec![String::from("packs/bar")]);
-        let expected_paths =
-            vec![absolute_root.join("packs/bar/app/services/bar.rb")]
-                .into_iter()
-                .collect::<HashSet<PathBuf>>();
+        let expected_paths = vec![
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
         assert_eq!(actual_paths, expected_paths);
     }
 }

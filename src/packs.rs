@@ -1,12 +1,15 @@
 mod configuration;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::path::Path;
 use std::path::PathBuf;
 mod cache;
 mod checker;
 pub(crate) mod cli;
+mod inflector_shim;
 pub mod parser;
 mod string_helpers;
 
@@ -26,16 +29,46 @@ pub fn list(configuration: Configuration) {
     }
 }
 
+// Implement for_file, which accepts the config and absolute file path.
+// We can call configuration.packs, which is sorted, to find the pack with the longest
+// name that is a subpath of the input absolute file path.
+// If we find a pack, return it. Otherwise, return the root pack.
+// Add lifetime specifier to configuration::Configuration
+pub fn for_file(
+    configuration: &Configuration,
+    absolute_file_path: &Path,
+) -> String {
+    for pack in &configuration.packs {
+        if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
+            return pack.name.clone();
+        }
+    }
+
+    configuration.root_pack().name
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct SourceLocation {
     line: usize,
     column: usize,
 }
 
-#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Deserialize)] // Implement PartialEq trait
+#[derive(Debug, Deserialize)]
+pub struct DeserializablePack {
+    #[serde(default)]
+    dependencies: HashSet<String>,
+}
+
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 pub struct Pack {
+    #[serde(skip_deserializing)]
     yml: PathBuf,
+    #[serde(skip_deserializing)]
     name: String,
+    #[serde(skip_deserializing)]
+    relative_path: PathBuf,
+    #[serde(default)]
+    dependencies: HashSet<String>,
 }
 
 impl Hash for Pack {
@@ -43,5 +76,34 @@ impl Hash for Pack {
         // Implement the hash function for your struct fields
         // Call the appropriate `hash` method on the `Hasher` to hash each field
         self.name.hash(state);
+    }
+}
+
+// Add a test that packs::for_file(config, absolute_file_path) returns the correct pack
+#[cfg(test)]
+mod tests {
+    use crate::packs;
+
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_for_file() {
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/simple_app")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+        let absolute_file_path = PathBuf::from(
+            "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
+        )
+        .canonicalize()
+        .expect("Could not canonicalize path");
+
+        assert_eq!(
+            String::from("packs/foo"),
+            packs::for_file(&configuration, &absolute_file_path)
+        )
     }
 }

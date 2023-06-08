@@ -63,3 +63,9 @@ In the future, I hope to:
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
+
+# Not yet supported:
+- custom associations
+- custom inflections
+- custom load paths
+- zeitwerk default namespaces
