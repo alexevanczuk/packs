@@ -2,7 +2,7 @@ use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     path::{Path, PathBuf},
 };
@@ -80,6 +80,8 @@ pub struct Configuration {
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
     pub constant_resolver: ConstantResolver,
+    // TODO: This and `packs` should probably be moved into a struct like `Packs` or `PackSet`
+    pub indexed_packs: HashMap<String, Pack>,
 }
 
 impl Configuration {
@@ -117,6 +119,13 @@ impl Configuration {
                 .cloned()
                 .collect::<HashSet<PathBuf>>()
         }
+    }
+
+    pub fn root_pack(&self) -> Pack {
+        self.indexed_packs
+            .get(".")
+            .expect("Root pack not found")
+            .clone()
     }
 }
 
@@ -329,6 +338,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let constant_resolver =
         ConstantResolver::create(&absolute_root, autoload_paths);
 
+    let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
+    for pack in &packs {
+        indexed_packs.insert(pack.name.clone(), pack.clone());
+    }
+
     Configuration {
         included_files,
         absolute_root,
@@ -336,6 +350,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         cache_enabled,
         cache_directory,
         constant_resolver,
+        indexed_packs,
     }
 }
 

@@ -15,6 +15,7 @@ pub struct SuperclassReference {
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
+// TODO: Move this to a more appropriate place
 pub struct UnresolvedReference {
     pub name: String,
     pub namespace_path: Vec<String>,

@@ -76,11 +76,10 @@ impl ConstantResolver {
         }
     }
 
-    #[allow(dead_code)]
-    fn resolve(
+    pub fn resolve(
         &self,
-        fully_or_partially_qualified_constant: String,
-        namespace_path: Vec<String>,
+        fully_or_partially_qualified_constant: &String,
+        namespace_path: &[String],
     ) -> Option<Constant> {
         // Example for namespace_path: ['Foo', 'Bar', 'Baz']
         // If the fully_or_partially_qualified_constant is 'Boo',
@@ -97,7 +96,7 @@ impl ConstantResolver {
         if fully_or_partially_qualified_constant.starts_with("::") {
             let absolute_path = self
                 .fully_qualified_constant_to_absolute_path_map
-                .get(&fully_or_partially_qualified_constant);
+                .get(fully_or_partially_qualified_constant);
             if let Some(constant) = self.constant_for_fully_qualified_name(
                 fully_or_partially_qualified_constant,
             ) {
@@ -106,7 +105,7 @@ impl ConstantResolver {
                 return None;
             }
         }
-        let mut namespace_path = namespace_path;
+        let mut namespace_path = namespace_path.to_owned();
         namespace_path.reverse();
         for _ in 0..namespace_path.len() {
             let candidate_namespace =
@@ -119,7 +118,7 @@ impl ConstantResolver {
             );
 
             if let Some(constant) =
-                self.constant_for_fully_qualified_name(possible_constant)
+                self.constant_for_fully_qualified_name(&possible_constant)
             {
                 return Some(constant);
             }
@@ -128,7 +127,7 @@ impl ConstantResolver {
         let global_reference =
             format!("::{}", fully_or_partially_qualified_constant);
         if let Some(constant) =
-            self.constant_for_fully_qualified_name(global_reference)
+            self.constant_for_fully_qualified_name(&global_reference)
         {
             return Some(constant);
         }
@@ -138,14 +137,14 @@ impl ConstantResolver {
 
     fn constant_for_fully_qualified_name(
         &self,
-        fully_qualified_name: String,
+        fully_qualified_name: &String,
     ) -> Option<Constant> {
         if let Some(absolute_path_of_definition) = self
             .fully_qualified_constant_to_absolute_path_map
-            .get(&fully_qualified_name)
+            .get(fully_qualified_name)
         {
             return Some(Constant {
-                fully_qualified_name,
+                fully_qualified_name: fully_qualified_name.clone(),
                 absolute_path_of_definition: absolute_path_of_definition
                     .clone(),
             });
@@ -209,7 +208,7 @@ mod tests {
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb")
             },
-            resolver.resolve(String::from("Foo"), vec![]).unwrap()
+            resolver.resolve(&String::from("Foo"), &[]).unwrap()
         )
     }
     #[test]
@@ -226,8 +225,8 @@ mod tests {
             },
             resolver
                 .resolve(
-                    String::from("Foo"),
-                    vec![
+                    &String::from("Foo"),
+                    &[
                         String::from("Foo"),
                         String::from("Bar"),
                         String::from("Baz")
@@ -250,7 +249,7 @@ mod tests {
                     .join("packs/foo/app/services/foo/bar.rb")
             },
             resolver
-                .resolve(String::from("Bar"), vec![String::from("Foo")])
+                .resolve(&String::from("Bar"), &[String::from("Foo")])
                 .unwrap()
         )
     }
@@ -268,7 +267,7 @@ mod tests {
                     .join("packs/bar/app/services/bar.rb")
             },
             resolver
-                .resolve(String::from("::Bar"), vec![String::from("Foo")])
+                .resolve(&String::from("::Bar"), &[String::from("Foo")])
                 .unwrap()
         )
     }
