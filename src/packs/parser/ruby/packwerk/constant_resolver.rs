@@ -15,6 +15,7 @@ pub struct ConstantResolver {
     pub(crate) autoload_paths: Vec<PathBuf>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Constant {
     pub fully_qualified_name: String,
     pub absolute_path_of_definition: PathBuf,
@@ -74,14 +75,36 @@ impl ConstantResolver {
     #[allow(dead_code)]
     fn resolve(
         &self,
-        constant: String,
+        fully_or_partially_qualified_constant: String,
         namespace_path: Vec<String>,
-    ) -> Constant {
-        // TODO!
-        Constant {
-            fully_qualified_name: String::from(""),
-            absolute_path_of_definition: PathBuf::from(""),
+    ) -> Option<Constant> {
+        // Example for namespace_path: ['Foo', 'Bar', 'Baz']
+        // If the fully_or_partially_qualified_constant is 'Boo',
+        // it could refer to any of the following:
+        // ::Foo::Bar::Baz::Boo
+        // ::Foo::Bar::Boo
+        // ::Foo::Boo
+        // ::Boo
+        // We need to check each of these possibilities in order, and return the first one that exists
+        // If none of them exist, return None
+        let mut current_namespace_path = namespace_path;
+        current_namespace_path.reverse();
+        for _ in 0..current_namespace_path.len() {
+            let possible_constant =
+                current_namespace_path.clone().into_iter().rev().join("::");
+
+            if let Some(absolute_path) = self
+                .fully_qualified_constant_to_absolute_path_map
+                .get(&possible_constant)
+            {
+                return Some(Constant {
+                    fully_qualified_name: possible_constant,
+                    absolute_path_of_definition: absolute_path.clone(),
+                });
+            }
         }
+
+        None
     }
 }
 
@@ -112,14 +135,17 @@ mod tests {
         );
 
         let actual_file_map =
-            resolver.fully_qualified_constant_to_absolute_path_map;
+            &resolver.fully_qualified_constant_to_absolute_path_map;
 
-        assert_eq!(expected_file_map, actual_file_map);
-        // assert_eq!(
-        //     resolver.resolve(String::from("Foo"), vec![]),
-        //     PathBuf::from(
-        //         "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
-        //     )
-        // )
+        assert_eq!(&expected_file_map, actual_file_map);
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "Foo".to_string(),
+                absolute_path_of_definition: PathBuf::from(
+                    "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
+                )
+            },
+            resolver.resolve(String::from("Foo"), vec![]).unwrap()
+        )
     }
 }
