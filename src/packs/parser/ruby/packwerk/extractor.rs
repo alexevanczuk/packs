@@ -1,9 +1,8 @@
-use inflector::cases::classcase::to_class_case;
+use crate::packs::inflector_shim::to_class_case;
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::PathBuf};
 
@@ -241,38 +240,12 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             // });
             // Later we should probably handle these cases!
             if name.is_some() {
-                let mut unwrapped_name = name.unwrap_or_else(|| {
+                let unwrapped_name = name.unwrap_or_else(|| {
                     panic!(
                         "Could not find class name for association {:?}",
                         &node,
                     )
                 });
-                // See https://github.com/whatisinternet/Inflector/pull/87
-                // This can be pulled into a class maybe
-                if unwrapped_name.contains("Statu") {
-                    let re = Regex::new("Statuse$").unwrap();
-                    unwrapped_name =
-                        re.replace_all(&unwrapped_name, "Status").to_string();
-                    let re = Regex::new("Statu$").unwrap();
-
-                    unwrapped_name =
-                        re.replace_all(&unwrapped_name, "Status").to_string();
-
-                    let re = Regex::new("Statuss").unwrap();
-                    re.replace_all(&unwrapped_name, "Status").to_string();
-                }
-
-                if unwrapped_name.contains("Daum") {
-                    let re = Regex::new("Daum").unwrap();
-                    unwrapped_name =
-                        re.replace_all(&unwrapped_name, "Datum").to_string();
-                }
-
-                if unwrapped_name.contains("Lefe") {
-                    let re = Regex::new("Lefe").unwrap();
-                    unwrapped_name =
-                        re.replace_all(&unwrapped_name, "Leave").to_string();
-                }
 
                 self.references.push(UnresolvedReference {
                     name: unwrapped_name,

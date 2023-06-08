@@ -7,6 +7,7 @@ use std::path::PathBuf;
 mod cache;
 mod checker;
 pub(crate) mod cli;
+mod inflector_shim;
 pub mod parser;
 mod string_helpers;
 

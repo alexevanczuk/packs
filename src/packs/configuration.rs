@@ -339,7 +339,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     }
 }
 
-fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<String> {
+fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
     let mut autoload_paths: Vec<PathBuf> = Vec::new();
 
     debug!("Getting autoload paths");
@@ -365,9 +365,6 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<String> {
     debug!("Finished getting autoload paths");
 
     autoload_paths
-        .into_iter()
-        .map(|path| path.to_str().unwrap().to_owned())
-        .collect()
 }
 
 fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
@@ -427,15 +424,15 @@ mod tests {
         ];
 
         let mut expected_autoload_paths = vec![
-            String::from("tests/fixtures/simple_app/app/services"),
-            String::from("tests/fixtures/simple_app/packs/bar/app/models"),
-            String::from(
+            PathBuf::from("tests/fixtures/simple_app/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/models"),
+            PathBuf::from(
                 "tests/fixtures/simple_app/packs/bar/app/models/concerns",
             ),
-            String::from("tests/fixtures/simple_app/packs/bar/app/services"),
-            String::from("tests/fixtures/simple_app/packs/baz/app/services"),
-            String::from("tests/fixtures/simple_app/packs/foo/app/services"),
-            String::from("tests/fixtures/simple_app/packs/foo/app/views"),
+            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/baz/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/services"),
+            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/views"),
         ];
         expected_autoload_paths.sort();
         let mut actual_autoload_paths =

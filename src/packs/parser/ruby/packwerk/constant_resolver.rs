@@ -8,9 +8,9 @@ use std::{
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct ConstantResolver {
-    file_map: HashMap<String, String>,
+    fully_qualified_constant_to_absolute_path_map: HashMap<String, PathBuf>,
     // Just for testing
-    pub(crate) autoload_paths: Vec<String>,
+    pub(crate) autoload_paths: Vec<PathBuf>,
 }
 
 pub struct Constant {
@@ -21,10 +21,17 @@ pub struct Constant {
 impl ConstantResolver {
     pub fn create(
         absolute_root: &Path,
-        autoload_paths: Vec<String>,
+        autoload_paths: Vec<PathBuf>,
     ) -> ConstantResolver {
+        // For each autoload path, do the following:
+        // 1) Glob for the ruby files
+        // 2) For each ruby file, remove the autoloaded portion of the path
+        // 3) For the remaining path, remove the .rb extension
+        // 4) For the remaining path, split it by "/"
+        // 5) Call inflector::cases::classcase::to_class_case
+        // 5)
         ConstantResolver {
-            file_map: HashMap::new(),
+            fully_qualified_constant_to_absolute_path_map: HashMap::new(),
             autoload_paths,
         }
     }
@@ -50,20 +57,31 @@ mod tests {
 
     use super::*;
 
-    // #[test]
-    // fn trivial() {
-    //     let paths =
-    //         vec!["app/services/".to_string(), "app/models/".to_string()];
-    //     let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-    //         .canonicalize()
-    //         .expect("Could not canonicalize path");
+    #[test]
+    fn trivial() {
+        let paths =
+            vec![PathBuf::from("tests/fixtures/simple_app/app/services")];
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .expect("Could not canonicalize path");
 
-    //     let resolver = ConstantResolver::create(&absolute_root, paths);
-    //     assert_eq!(
-    //         resolver.resolve(String::from("Foo"), vec![]),
-    //         PathBuf::from(
-    //             "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
-    //         )
-    //     )
-    // }
+        let resolver = ConstantResolver::create(&absolute_root, paths);
+
+        let mut expected_file_map: HashMap<String, PathBuf> = HashMap::new();
+        expected_file_map.insert(
+            "Foo".to_string(),
+            PathBuf::from("tests/fixtures/simple_app/app/services"),
+        );
+
+        let actual_file_map =
+            resolver.fully_qualified_constant_to_absolute_path_map;
+
+        assert_eq!(expected_file_map, actual_file_map);
+        // assert_eq!(
+        //     resolver.resolve(String::from("Foo"), vec![]),
+        //     PathBuf::from(
+        //         "tests/fixtures/simple_app/packs/foo/app/services/foo.rb"
+        //     )
+        // )
+    }
 }
