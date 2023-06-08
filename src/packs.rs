@@ -7,6 +7,7 @@ use std::path::PathBuf;
 mod cache;
 mod checker;
 pub(crate) mod cli;
+use parser::ruby::packwerk::constant_resolver;
 pub mod parser;
 mod string_helpers;
 

@@ -1,4 +1,4 @@
-struct ConstantResolver {}
+pub struct ConstantResolver {}
 
 impl ConstantResolver {
     fn create(
