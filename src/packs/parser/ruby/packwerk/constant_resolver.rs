@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use tracing::debug;
 
 #[allow(unused_imports)]
 use crate::packs::Pack;
@@ -40,6 +41,8 @@ impl ConstantResolver {
             PathBuf,
         > = HashMap::new();
 
+        debug!("Building constant resolver");
+
         for absolute_autoload_path in &autoload_paths {
             let mut glob_path = absolute_autoload_path.clone();
             glob_path.push("**/*.rb");
@@ -70,6 +73,8 @@ impl ConstantResolver {
                     .insert(fully_qualified_constant_name, file);
             }
         }
+
+        debug!("Finished building constant resolver");
         ConstantResolver {
             fully_qualified_constant_to_absolute_path_map,
             autoload_paths,

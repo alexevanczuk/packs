@@ -3,6 +3,7 @@ use rayon::prelude::IntoParallelIterator;
 use rayon::{iter::ParallelBridge, prelude::ParallelIterator};
 use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
+use tracing::debug;
 
 use crate::packs;
 use crate::packs::cache::get_unresolved_references;
@@ -89,12 +90,14 @@ impl Reference {
 pub(crate) fn check(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> =
         configuration.intersect_files(vec![]);
 
     // 1) Get the Vec<UnresolvedReferences> for each file in parallel
     // - Need a way for cache to do this, e.g. get_references_with_cache
     // 2) Turn those into a Vec<Reference>
+    debug!("Getting unresolved references (using cache if possible)");
     let unresolved_references: Vec<(PathBuf, Vec<UnresolvedReference>)> =
         absolute_paths
             .into_par_iter()
@@ -102,6 +105,7 @@ pub(crate) fn check(
             .collect();
     let mut references: Vec<Reference> = vec![];
 
+    debug!("Turning unresolved references into fully qualified references");
     for (absolute_path_of_referring_file, unresolved_refs) in
         unresolved_references
     {
@@ -114,6 +118,7 @@ pub(crate) fn check(
         }
     }
 
+    debug!("Running checkers on resolved references");
     let checkers = vec![dependency::Checker {}];
     let violations: Vec<Violation> = references
         .into_par_iter()
@@ -124,6 +129,7 @@ pub(crate) fn check(
                 .collect::<Vec<Violation>>()
         })
         .collect();
+    debug!("Finished running checkers");
 
     if !violations.is_empty() {
         println!("{} violation(s) detected:", violations.len());
