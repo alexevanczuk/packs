@@ -73,7 +73,7 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub packs: Vec<Pack>,
     pub cache_enabled: bool,
-    pub cache_directory: PathBuf,
+    pub constant_resolver: ConstantResolver,
 }
 
 impl Configuration {
