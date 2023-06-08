@@ -9,6 +9,8 @@ use std::{
 #[derive(Default)]
 pub struct ConstantResolver {
     file_map: HashMap<String, String>,
+    // Just for testing
+    pub(crate) autoload_paths: Vec<String>,
 }
 
 pub struct Constant {
@@ -19,10 +21,11 @@ pub struct Constant {
 impl ConstantResolver {
     pub fn create(
         absolute_root: &Path,
-        autoload_paths: &[String],
+        autoload_paths: Vec<String>,
     ) -> ConstantResolver {
         ConstantResolver {
             file_map: HashMap::new(),
+            autoload_paths,
         }
     }
 

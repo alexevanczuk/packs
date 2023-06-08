@@ -319,7 +319,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
     let constant_resolver =
-        ConstantResolver::create(&absolute_root, &autoload_paths);
+        ConstantResolver::create(&absolute_root, autoload_paths);
 
     Configuration {
         included_files,
@@ -382,6 +382,8 @@ mod tests {
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+            absolute_root.join("app/services/some_root_class.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -406,6 +408,25 @@ mod tests {
             },
         ];
 
+        let mut expected_autoload_paths = vec![
+            String::from("tests/fixtures/simple_app/app"),
+            String::from("tests/fixtures/simple_app/app/services"),
+            String::from("tests/fixtures/simple_app/packs/bar/app"),
+            String::from(
+                "tests/fixtures/simple_app/packs/bar/app/models/concerns",
+            ),
+            String::from("tests/fixtures/simple_app/packs/bar/app/services"),
+            String::from("tests/fixtures/simple_app/packs/baz/app"),
+            String::from("tests/fixtures/simple_app/packs/baz/app/services"),
+            String::from("tests/fixtures/simple_app/packs/foo/app"),
+            String::from("tests/fixtures/simple_app/packs/foo/app/services"),
+        ];
+        expected_autoload_paths.sort();
+        let mut actual_autoload_paths =
+            actual.constant_resolver.autoload_paths.clone();
+        actual_autoload_paths.sort();
+
+        assert_eq!(expected_autoload_paths, actual_autoload_paths);
         assert_eq!(expected_packs, actual.packs);
 
         assert!(actual.cache_enabled)
@@ -440,6 +461,8 @@ mod tests {
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/views/foo.erb"),
             absolute_root.join("packs/baz/app/services/baz.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+            absolute_root.join("app/services/some_root_class.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -452,10 +475,12 @@ mod tests {
         let configuration = configuration::get(&absolute_root);
         let actual_paths =
             configuration.intersect_files(vec![String::from("packs/bar")]);
-        let expected_paths =
-            vec![absolute_root.join("packs/bar/app/services/bar.rb")]
-                .into_iter()
-                .collect::<HashSet<PathBuf>>();
+        let expected_paths = vec![
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+        ]
+        .into_iter()
+        .collect::<HashSet<PathBuf>>();
         assert_eq!(actual_paths, expected_paths);
     }
 }
