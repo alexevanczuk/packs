@@ -81,7 +81,6 @@ impl Hash for Pack {
     }
 }
 
-// Add a test that packs::for_file(config, absolute_file_path) returns the correct pack
 #[cfg(test)]
 mod tests {
     use crate::packs;
