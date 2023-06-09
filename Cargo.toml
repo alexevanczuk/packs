@@ -7,6 +7,12 @@ edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for documentation!"
 license = "MIT"
 
+[profile.release]
+# This runs all of the optimizations, but doesn't strip debug symbols,
+# such as the name of the methods
+# This meaningfully increases the size of the binary
+debug = true
+
 [[bin]]
 name = "packs"
 path = "src/main.rs"
