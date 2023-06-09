@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
+use rayon::prelude::ParallelBridge;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -244,21 +245,6 @@ fn walk_directory(
                 &raw.package_paths,
             ) || absolute_path.parent().unwrap() == absolute_root)
         {
-            //
-            // Soon I'll be actually deserializing the package.yml file
-            // to grab things like enforce_dependencies.
-            // For now, we just construct the pack.
-            // We should consider if checkers and such can add their own deserialization
-            // behavior to Pack via a trait or something? That would make extension simpler!
-            //
-            // let file = File::open(&absolute_path).unwrap_or_else(|_| {
-            //     panic!("Could not open {}", &absolute_path.display())
-            // });
-            // let deserialized_pack: Option<Pack> = serde_yaml::from_reader(file)
-            //     .unwrap_or_else(|_| {
-            //         panic!("Could not parse {}", &absolute_path.display())
-            //     });
-
             let mut name = relative_path
                 .parent()
                 .expect("Expected package to be in a parent directory")
@@ -332,8 +318,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
             RawConfiguration::default()
         };
 
+    debug!("Beginning directory walk");
     let (included_files, unsorted_packs) =
         walk_directory(absolute_root, &raw_config);
+    debug!("Finished directory walk");
     let packs = unsorted_packs
         .into_iter()
         .sorted_by(|packa, packb| {

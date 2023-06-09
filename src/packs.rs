@@ -68,6 +68,8 @@ pub struct Pack {
     #[serde(skip_deserializing)]
     relative_path: PathBuf,
     #[serde(default)]
+    // I want to see if checkers and such can add their own deserialization
+    // behavior to Pack via a trait or something? That would make extension simpler!
     dependencies: HashSet<String>,
 }
 
