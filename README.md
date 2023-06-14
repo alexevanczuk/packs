@@ -40,7 +40,7 @@ As `packs` is still a work-in-progress, it's possible it will not produce the sa
 
 To verify:
 1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-2. Run `packs generate_cache` (see directions below to get binary) 
+2. Run `packs generate_cache` (see directions below to get binary)
 3. Run `bin/packwerk update` to see how violations change using `packs`.
 
 # Downloading the Binary
@@ -69,3 +69,12 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 - custom inflections
 - custom load paths
 - zeitwerk default namespaces
+
+# Profiling
+I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
+
+Specifically, this command which merges similar code paths to see where most of the time is spent:
+```
+sudo cargo flamegraph --release --reverse -- --project-root=../zenpayroll generate_cache
+```
+For more, see: https://nnethercote.github.io/perf-book/profiling.html
