@@ -12,6 +12,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
+use std::thread;
 use tracing::debug;
 
 use super::parser::get_file_type;
@@ -249,7 +250,8 @@ pub(crate) fn write_cache_for_files(
         );
         if !cachable_file.cache_is_valid() {
             let references = parse_path_for_references(path);
-            write_cache(&cachable_file, references);
+            // Write the cache in a new thread:
+            thread::spawn(move || write_cache(&cachable_file, references));
         }
     });
     debug!("Finished writing cache for {} files", file_count);
