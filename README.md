@@ -78,3 +78,9 @@ Specifically, this command which merges similar code paths to see where most of 
 sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../zenpayroll generate_cache
 ```
 For more, see: https://nnethercote.github.io/perf-book/profiling.html
+
+# Local Development
+## Running the CLI in release mode against a target app
+```
+RUST_LOG=debug time cargo run --profile=release -- --project-root=../your_app generate_cache
+```
