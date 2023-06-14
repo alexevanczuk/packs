@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
-
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},

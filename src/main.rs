@@ -1,5 +1,4 @@
-mod packs;
-use packs::cli;
+use packs::packs::cli;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     install_logger();

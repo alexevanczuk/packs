@@ -1,9 +1,8 @@
 use crate::packs;
 use crate::packs::cache;
+use crate::packs::checker;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-
-use packs::checker;
 
 #[derive(Subcommand, Debug)]
 // We use snake_case as this is currently the conventon for the Ruby ecosystem,
