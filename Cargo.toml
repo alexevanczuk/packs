@@ -17,6 +17,11 @@ debug = true
 name = "packs"
 path = "src/main.rs"
 
+[lib]
+name = "packs"
+path = "src/lib.rs"
+# crate-type = ["cdylib"]
+
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] } # cli
 clap_derive = "4.2.0" # cli
@@ -26,7 +31,7 @@ jwalk = "0.8.1"
 path-clean = "1.0.1" # Pathname#cleaname in Ruby
 rayon = "1.7.0" # for parallel iteration
 regex = "1.7.3"
-serde = { version = "1.0.159", features = ["derive"] } # de(serialization)
+serde = { version = "~1", features = ["derive"] } # de(serialization)
 serde_yaml = "0.9.19"
 tracing = "0.1.37" # observability tooling, may not be necessary!
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
@@ -36,6 +41,7 @@ md5 = "0.7.0"
 serde_json = "1.0.96"
 line-col = "0.2.1"
 cruet = "0.13.3"
+serde_magnus = "0.2.2"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI

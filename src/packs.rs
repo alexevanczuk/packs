@@ -1,4 +1,6 @@
 mod configuration;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -6,9 +8,10 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::path::Path;
 use std::path::PathBuf;
+use tracing::debug;
 mod cache;
 mod checker;
-pub(crate) mod cli;
+pub mod cli;
 mod inflector_shim;
 pub mod package_todo;
 pub mod parser;
@@ -46,6 +49,41 @@ pub fn for_file(
     }
 
     None
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProcessedFile {
+    pub absolute_path: PathBuf,
+    pub unresolved_references: Vec<UnresolvedReference>,
+}
+
+pub fn get_unresolved_references(
+    absolute_root: &PathBuf,
+    cache_dir: &Path,
+    relative_files: Vec<String>,
+) -> Vec<ProcessedFile> {
+    debug!(
+        "Calling get_unresolved_references with {} files",
+        relative_files.len()
+    );
+    let ret = relative_files
+        .into_par_iter()
+        .map(|relative_path| {
+            let absolute_path = absolute_root.join(relative_path);
+            let unresolved_references = cache::get_unresolved_references(
+                absolute_root,
+                cache_dir,
+                &absolute_path,
+            );
+            ProcessedFile {
+                absolute_path,
+                unresolved_references,
+            }
+        })
+        .collect();
+    // dbg!(&ret);
+    debug!("Finished get_unresolved_references");
+    ret
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]

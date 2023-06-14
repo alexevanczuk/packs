@@ -110,7 +110,16 @@ pub(crate) fn check(
     let unresolved_references: Vec<(PathBuf, Vec<UnresolvedReference>)> =
         absolute_paths
             .into_par_iter()
-            .map(|p| (p.clone(), get_unresolved_references(&configuration, &p)))
+            .map(|p| {
+                (
+                    p.clone(),
+                    get_unresolved_references(
+                        &configuration.absolute_root,
+                        &configuration.cache_directory,
+                        &p,
+                    ),
+                )
+            })
             .collect();
     let mut references: Vec<Reference> = vec![];
 

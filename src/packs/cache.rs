@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
+use std::path::Path;
 use std::path::PathBuf;
 use tracing::debug;
 
@@ -57,16 +58,15 @@ impl ReferenceEntry {
     }
 }
 pub fn get_unresolved_references(
-    configuration: &Configuration,
+    absolute_root: &PathBuf,
+    cache_dir: &Path,
     path: &PathBuf,
 ) -> Vec<UnresolvedReference> {
     let current_file_contents_digest = file_content_digest(path);
-    let relative_path =
-        path.strip_prefix(&configuration.absolute_root).unwrap();
+    let relative_path = path.strip_prefix(absolute_root).unwrap();
 
     let filename_digest =
         format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
-    let cache_dir = configuration.absolute_root.join("tmp/cache/packwerk");
     let cache_path = cache_dir.join(filename_digest);
 
     if cache_path.exists() {
@@ -80,7 +80,7 @@ pub fn get_unresolved_references(
 
     let references = parse_path_for_references(path);
     // TODO: This work can be done in a new thread;
-    let cachable_file = CachableFile::from(configuration, path);
+    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
     write_cache(&cachable_file, references.clone());
 
     references
@@ -148,19 +148,20 @@ struct CachableFile {
 
 impl CachableFile {
     // Pass in Configuration and get cache_dir from that
-    fn from(configuration: &Configuration, filepath: &PathBuf) -> CachableFile {
-        let relative_path: PathBuf = filepath
-            .strip_prefix(&configuration.absolute_root)
-            .unwrap()
-            .to_path_buf();
+    fn from(
+        absolute_root: &PathBuf,
+        cache_directory: &Path,
+        filepath: &PathBuf,
+    ) -> CachableFile {
+        let relative_path: PathBuf =
+            filepath.strip_prefix(absolute_root).unwrap().to_path_buf();
 
         let file_digest = md5::compute(relative_path.to_str().unwrap());
         let file_digest_str = env::var("CACHE_VERIFICATION")
             .map(|_| format!("{:x}-experimental", file_digest))
             .unwrap_or_else(|_| format!("{:x}", file_digest));
 
-        let cache_file_path =
-            configuration.cache_directory.join(file_digest_str);
+        let cache_file_path = cache_directory.join(file_digest_str);
 
         let file_contents_digest = file_content_digest(filepath);
 
@@ -243,7 +244,11 @@ pub(crate) fn write_cache_for_files(
     debug!("Writing cache for {} files", file_count);
 
     absolute_paths.par_iter().for_each(|path| {
-        let cachable_file = CachableFile::from(&configuration, path);
+        let cachable_file = CachableFile::from(
+            &configuration.absolute_root,
+            &configuration.cache_directory,
+            path,
+        );
         if !cachable_file.cache_is_valid() {
             let references = parse_path_for_references(path);
             write_cache(&cachable_file, references);
