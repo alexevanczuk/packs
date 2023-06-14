@@ -70,16 +70,11 @@ pub fn process_file(
         .into_par_iter()
         .map(|relative_path| {
             let absolute_path = absolute_root.join(relative_path);
-            let unresolved_references =
-                parser::get_unresolved_references_with_cache(
-                    absolute_root,
-                    cache_dir,
-                    &absolute_path,
-                );
-            ProcessedFile {
-                absolute_path,
-                unresolved_references,
-            }
+            parser::process_file_with_cache(
+                absolute_root,
+                cache_dir,
+                &absolute_path,
+            )
         })
         .collect();
     // dbg!(&ret);

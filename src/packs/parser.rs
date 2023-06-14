@@ -10,6 +10,8 @@ use crate::packs::cache::{
     file_content_digest, read_json_file, write_cache, CachableFile,
 };
 
+use super::ProcessedFile;
+
 #[derive(PartialEq, Debug)]
 pub enum SupportedFileType {
     Ruby,
@@ -32,11 +34,11 @@ pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
 
 // TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
 // cache related activities within the implementation of the trait
-pub fn get_unresolved_references_with_cache(
+pub fn process_file_with_cache(
     absolute_root: &PathBuf,
     cache_dir: &Path,
     path: &PathBuf,
-) -> Vec<UnresolvedReference> {
+) -> ProcessedFile {
     let current_file_contents_digest = file_content_digest(path);
     let relative_path = path.strip_prefix(absolute_root).unwrap();
 
@@ -44,21 +46,27 @@ pub fn get_unresolved_references_with_cache(
         format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
     let cache_path = cache_dir.join(filename_digest);
 
-    if cache_path.exists() {
+    let references = if cache_path.exists() {
         let cache = read_json_file(&cache_path).unwrap_or_else(|_| {
             panic!("Failed to read cache file {:?}", cache_path)
         });
         if cache.file_contents_digest == current_file_contents_digest {
-            return cache.get_unresolved_references();
+            cache.get_unresolved_references()
+        } else {
+            get_unresolved_references(path)
         }
-    }
+    } else {
+        get_unresolved_references(path)
+    };
 
-    let references = get_unresolved_references(path);
-    // TODO: This work can be done in a new thread;
+    // TODO: This work can be done in a new thread:
     let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
     write_cache(&cachable_file, references.clone());
 
-    references
+    ProcessedFile {
+        absolute_path: path.to_owned(),
+        unresolved_references: references,
+    }
 }
 
 fn get_file_type(path: &Path) -> Option<SupportedFileType> {

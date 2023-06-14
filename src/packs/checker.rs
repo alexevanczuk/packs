@@ -1,5 +1,6 @@
-use crate::packs::parser::get_unresolved_references_with_cache;
+use crate::packs::parser::process_file_with_cache;
 use crate::packs::Configuration;
+use crate::packs::ProcessedFile;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
@@ -107,28 +108,24 @@ pub(crate) fn check(
     // - Need a way for cache to do this, e.g. get_references_with_cache
     // 2) Turn those into a Vec<Reference>
     debug!("Getting unresolved references (using cache if possible)");
-    let unresolved_references: Vec<(PathBuf, Vec<UnresolvedReference>)> =
-        absolute_paths
-            .into_par_iter()
-            .map(|p| {
-                (
-                    p.clone(),
-                    get_unresolved_references_with_cache(
-                        &configuration.absolute_root,
-                        &configuration.cache_directory,
-                        &p,
-                    ),
-                )
-            })
-            .collect();
+    let processed_files: Vec<ProcessedFile> = absolute_paths
+        .into_par_iter()
+        .map(|p| {
+            process_file_with_cache(
+                &configuration.absolute_root,
+                &configuration.cache_directory,
+                &p,
+            )
+        })
+        .collect();
     let mut references: Vec<Reference> = vec![];
 
     debug!("Turning unresolved references into fully qualified references");
     // This is not yet in parallel
-    for (absolute_path_of_referring_file, unresolved_refs) in
-        unresolved_references
-    {
-        for unresolved_ref in unresolved_refs {
+    for processed_file in processed_files {
+        for unresolved_ref in processed_file.unresolved_references {
+            let absolute_path_of_referring_file =
+                processed_file.absolute_path.clone();
             references.push(Reference::from_unresolved_reference(
                 &configuration,
                 &unresolved_ref,
