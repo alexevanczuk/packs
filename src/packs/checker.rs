@@ -115,6 +115,7 @@ pub(crate) fn check(
     let mut references: Vec<Reference> = vec![];
 
     debug!("Turning unresolved references into fully qualified references");
+    // This is not yet in parallel
     for (absolute_path_of_referring_file, unresolved_refs) in
         unresolved_references
     {

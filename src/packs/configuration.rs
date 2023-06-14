@@ -7,6 +7,7 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use tracing::debug;
 
@@ -153,6 +154,20 @@ fn walk_directory(
 ) -> (HashSet<PathBuf>, HashSet<Pack>) {
     let mut included_paths: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
+    // Create this vector outside of the closure to avoid reallocating it
+    let excluded_dirs = vec![
+        "node_modules",
+        "vendor",
+        "tmp",
+        ".git",
+        "public",
+        "bin",
+        "log",
+        "frontend",
+        "sorbet",
+    ];
+
+    let excluded_dirs_ref = Arc::new(excluded_dirs);
 
     //
     // WalkDirGeneric allows you to customize the directory walk, such as skipping directories,
@@ -164,7 +179,12 @@ fn walk_directory(
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
     let walk_dir = WalkDirGeneric::<(usize, bool)>::new(absolute_root)
-        .process_read_dir(|depth, _path, _read_dir_state, children| {
+        .process_read_dir(move |depth, _path, _read_dir_state, children| {
+            // We need to let the compiler know that we are using a reference and not the value itself.
+            // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
+            // (with an increase to the reference count).
+            let cloned_excluded_dirs = excluded_dirs_ref.clone();
+
             // Excluded dirs are top-level only
             if let Some(depth) = depth {
                 if depth > 2 {
@@ -177,28 +197,16 @@ fn walk_directory(
                     // Hope to learn soon!
                     // let absolute_path = dir_entry_result.unwrap().path();
                     // let relative_path = absolute_path
-                    //     .strip_prefix(&*shared_path_clone)
+                    //     .strip_prefix(&absolute_root)
                     //     .unwrap();
 
                     // if matches_globs(&relative_path, &raw.exclude) {
                     //     dir_entry.read_children_path = None;
                     // }
 
-                    // So instead, we'll just hardcode the directories we want to exclude
-                    let excluded_dirs = vec![
-                        "node_modules",
-                        "vendor",
-                        "tmp",
-                        ".git",
-                        "public",
-                        "bin",
-                        "log",
-                        "frontend",
-                        "sorbet",
-                    ];
-
+                    // So instead, we'll just use the hardcoded directories we want to exclude
                     let dirname = dir_entry.path();
-                    for excluded_dir in excluded_dirs {
+                    for excluded_dir in cloned_excluded_dirs.iter() {
                         if dirname.ends_with(excluded_dir) {
                             dir_entry.read_children_path = None;
                             break;
