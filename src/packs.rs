@@ -70,7 +70,7 @@ pub fn get_unresolved_references(
         .into_par_iter()
         .map(|relative_path| {
             let absolute_path = absolute_root.join(relative_path);
-            let unresolved_references = cache::get_unresolved_references(
+            let unresolved_references = parser::get_unresolved_references(
                 absolute_root,
                 cache_dir,
                 &absolute_path,

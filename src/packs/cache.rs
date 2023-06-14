@@ -1,5 +1,4 @@
-use crate::packs::parser::extract_from_erb_path;
-use crate::packs::parser::extract_from_ruby_path;
+use crate::packs::parser::parse_path_for_references;
 use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
 use crate::packs::Range;
@@ -15,17 +14,14 @@ use std::path::PathBuf;
 use std::thread;
 use tracing::debug;
 
-use super::parser::get_file_type;
-use super::parser::SupportedFileType;
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct CacheEntry {
-    file_contents_digest: String,
-    unresolved_references: Vec<ReferenceEntry>,
+pub struct CacheEntry {
+    pub file_contents_digest: String,
+    pub unresolved_references: Vec<ReferenceEntry>,
 }
 
 impl CacheEntry {
-    fn get_unresolved_references(&self) -> Vec<UnresolvedReference> {
+    pub fn get_unresolved_references(&self) -> Vec<UnresolvedReference> {
         self.unresolved_references
             .iter()
             .map(|r| -> UnresolvedReference { r.to_unresolved_reference() })
@@ -34,7 +30,7 @@ impl CacheEntry {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-struct ReferenceEntry {
+pub struct ReferenceEntry {
     constant_name: String,
     namespace_path: Vec<String>,
     relative_path: String,
@@ -58,36 +54,8 @@ impl ReferenceEntry {
         }
     }
 }
-pub fn get_unresolved_references(
-    absolute_root: &PathBuf,
-    cache_dir: &Path,
-    path: &PathBuf,
-) -> Vec<UnresolvedReference> {
-    let current_file_contents_digest = file_content_digest(path);
-    let relative_path = path.strip_prefix(absolute_root).unwrap();
 
-    let filename_digest =
-        format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
-    let cache_path = cache_dir.join(filename_digest);
-
-    if cache_path.exists() {
-        let cache = read_json_file(&cache_path).unwrap_or_else(|_| {
-            panic!("Failed to read cache file {:?}", cache_path)
-        });
-        if cache.file_contents_digest == current_file_contents_digest {
-            return cache.get_unresolved_references();
-        }
-    }
-
-    let references = parse_path_for_references(path);
-    // TODO: This work can be done in a new thread;
-    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
-    write_cache(&cachable_file, references.clone());
-
-    references
-}
-
-fn read_json_file(
+pub fn read_json_file(
     path: &PathBuf,
 ) -> Result<CacheEntry, Box<dyn std::error::Error>> {
     let file = std::fs::File::open(path)?;
@@ -138,7 +106,7 @@ fn references_to_cache_entry(
 }
 
 #[derive(Debug)]
-struct CachableFile {
+pub struct CachableFile {
     relative_path: PathBuf,
     file_contents_digest: String,
     cache_file_path: PathBuf,
@@ -147,7 +115,7 @@ struct CachableFile {
 
 impl CachableFile {
     // Pass in Configuration and get cache_dir from that
-    fn from(
+    pub fn from(
         absolute_root: &PathBuf,
         cache_directory: &Path,
         filepath: &PathBuf,
@@ -193,7 +161,7 @@ impl CachableFile {
     }
 }
 
-fn write_cache(
+pub fn write_cache(
     cachable_file: &CachableFile,
     references: Vec<UnresolvedReference>,
 ) {
@@ -211,20 +179,6 @@ fn write_cache(
 
     file.write_all(cache_data.as_bytes())
         .expect("Failed to write cache file");
-}
-
-fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
-    let file_type_option = get_file_type(path);
-    if let Some(file_type) = file_type_option {
-        match file_type {
-            SupportedFileType::Ruby => extract_from_ruby_path(path),
-            SupportedFileType::Erb => extract_from_erb_path(path),
-        }
-    } else {
-        // Later, we can perhaps have this error, since in theory the Configuration.intersect
-        // method should make sure we never get any files we can't handle.
-        vec![]
-    }
 }
 
 fn create_cache_dir_idempotently(cache_dir: &PathBuf) {

@@ -1,5 +1,5 @@
 pub(crate) mod ruby;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
 pub(crate) mod erb;
@@ -8,10 +8,59 @@ pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_p
 // TODO: Move this somewhere else
 pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
 
+use crate::packs::cache::{
+    file_content_digest, read_json_file, write_cache, CachableFile,
+};
+
 #[derive(PartialEq, Debug)]
 pub enum SupportedFileType {
     Ruby,
     Erb,
+}
+
+pub fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
+    let file_type_option = get_file_type(path);
+    if let Some(file_type) = file_type_option {
+        match file_type {
+            SupportedFileType::Ruby => extract_from_ruby_path(path),
+            SupportedFileType::Erb => extract_from_erb_path(path),
+        }
+    } else {
+        // Later, we can perhaps have this error, since in theory the Configuration.intersect
+        // method should make sure we never get any files we can't handle.
+        vec![]
+    }
+}
+
+// TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
+// cache related activities within the implementation of the trait
+pub fn get_unresolved_references(
+    absolute_root: &PathBuf,
+    cache_dir: &Path,
+    path: &PathBuf,
+) -> Vec<UnresolvedReference> {
+    let current_file_contents_digest = file_content_digest(path);
+    let relative_path = path.strip_prefix(absolute_root).unwrap();
+
+    let filename_digest =
+        format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
+    let cache_path = cache_dir.join(filename_digest);
+
+    if cache_path.exists() {
+        let cache = read_json_file(&cache_path).unwrap_or_else(|_| {
+            panic!("Failed to read cache file {:?}", cache_path)
+        });
+        if cache.file_contents_digest == current_file_contents_digest {
+            return cache.get_unresolved_references();
+        }
+    }
+
+    let references = parse_path_for_references(path);
+    // TODO: This work can be done in a new thread;
+    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
+    write_cache(&cachable_file, references.clone());
+
+    references
 }
 
 pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {

@@ -1,3 +1,4 @@
+use crate::packs::parser::get_unresolved_references;
 use crate::packs::Configuration;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
@@ -6,7 +7,6 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use crate::packs;
-use crate::packs::cache::get_unresolved_references;
 use crate::packs::SourceLocation;
 
 use super::UnresolvedReference;
