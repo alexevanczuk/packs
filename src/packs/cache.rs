@@ -86,8 +86,6 @@ pub fn get_unresolved_references(
     references
 }
 
-// Used for tests, for now!
-#[allow(dead_code)]
 fn read_json_file(
     path: &PathBuf,
 ) -> Result<CacheEntry, Box<dyn std::error::Error>> {
