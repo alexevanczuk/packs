@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use jwalk::WalkDirGeneric;
-use rayon::prelude::ParallelBridge;
+
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
