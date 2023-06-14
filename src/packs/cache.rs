@@ -1,4 +1,4 @@
-use crate::packs::parser::parse_path_for_references;
+use crate::packs::parser::get_unresolved_references;
 use crate::packs::parser::UnresolvedReference;
 use crate::packs::Configuration;
 use crate::packs::Range;
@@ -203,7 +203,7 @@ pub(crate) fn write_cache_for_files(
             path,
         );
         if !cachable_file.cache_is_valid() {
-            let references = parse_path_for_references(path);
+            let references = get_unresolved_references(path);
             // Write the cache in a new thread:
             thread::spawn(move || write_cache(&cachable_file, references));
         }

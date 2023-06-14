@@ -16,7 +16,7 @@ pub enum SupportedFileType {
     Erb,
 }
 
-pub fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
+pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
@@ -32,7 +32,7 @@ pub fn parse_path_for_references(path: &PathBuf) -> Vec<UnresolvedReference> {
 
 // TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
 // cache related activities within the implementation of the trait
-pub fn get_unresolved_references(
+pub fn get_unresolved_references_with_cache(
     absolute_root: &PathBuf,
     cache_dir: &Path,
     path: &PathBuf,
@@ -53,7 +53,7 @@ pub fn get_unresolved_references(
         }
     }
 
-    let references = parse_path_for_references(path);
+    let references = get_unresolved_references(path);
     // TODO: This work can be done in a new thread;
     let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
     write_cache(&cachable_file, references.clone());
@@ -61,7 +61,7 @@ pub fn get_unresolved_references(
     references
 }
 
-pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
+fn get_file_type(path: &Path) -> Option<SupportedFileType> {
     let ruby_special_files = vec!["Gemfile", "Rakefile"];
     let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
 

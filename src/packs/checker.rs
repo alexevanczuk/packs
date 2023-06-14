@@ -1,4 +1,4 @@
-use crate::packs::parser::get_unresolved_references;
+use crate::packs::parser::get_unresolved_references_with_cache;
 use crate::packs::Configuration;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
@@ -113,7 +113,7 @@ pub(crate) fn check(
             .map(|p| {
                 (
                     p.clone(),
-                    get_unresolved_references(
+                    get_unresolved_references_with_cache(
                         &configuration.absolute_root,
                         &configuration.cache_directory,
                         &p,
