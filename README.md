@@ -75,6 +75,6 @@ I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegra
 
 Specifically, this command which merges similar code paths to see where most of the time is spent:
 ```
-sudo cargo flamegraph --release --reverse -- --project-root=../zenpayroll generate_cache
+sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../zenpayroll generate_cache
 ```
 For more, see: https://nnethercote.github.io/perf-book/profiling.html
