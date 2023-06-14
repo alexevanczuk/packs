@@ -116,17 +116,17 @@ pub(crate) fn check(
 
     debug!("Turning unresolved references into fully qualified references");
     // This is not yet in parallel
-    // for (absolute_path_of_referring_file, unresolved_refs) in
-    //     unresolved_references
-    // {
-    //     for unresolved_ref in unresolved_refs {
-    //         references.push(Reference::from_unresolved_reference(
-    //             &configuration,
-    //             &unresolved_ref,
-    //             &absolute_path_of_referring_file,
-    //         ));
-    //     }
-    // }
+    for (absolute_path_of_referring_file, unresolved_refs) in
+        unresolved_references
+    {
+        for unresolved_ref in unresolved_refs {
+            references.push(Reference::from_unresolved_reference(
+                &configuration,
+                &unresolved_ref,
+                &absolute_path_of_referring_file,
+            ));
+        }
+    }
 
     debug!("Running checkers on resolved references");
     let checkers = vec![dependency::Checker {}];

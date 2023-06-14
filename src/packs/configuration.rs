@@ -178,7 +178,7 @@ fn walk_directory(
     // we'll save a lot of time by just skipping the entire directory.
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
-    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(dir_to_walk)
+    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(absolute_root)
         .process_read_dir(move |depth, _path, _read_dir_state, children| {
             // We need to let the compiler know that we are using a reference and not the value itself.
             // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
