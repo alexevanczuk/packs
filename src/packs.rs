@@ -10,6 +10,7 @@ mod cache;
 mod checker;
 pub(crate) mod cli;
 mod inflector_shim;
+pub mod package_todo;
 pub mod parser;
 mod string_helpers;
 
