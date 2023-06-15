@@ -14,15 +14,15 @@ impl Checker {
             .pack_set
             .for_pack(&reference.referencing_pack_name);
 
-        let defining_pack_name = reference.defining_pack_name.as_ref().unwrap();
+        let defining_pack_name = reference.defining_pack_name.clone()?;
 
-        if &referencing_pack.name == defining_pack_name {
+        if referencing_pack.name == defining_pack_name {
             return None;
         }
 
         let referencing_pack_dependencies = &referencing_pack.dependencies;
 
-        if !referencing_pack_dependencies.contains(defining_pack_name) {
+        if !referencing_pack_dependencies.contains(&defining_pack_name) {
             let message = format!(
                 // "dependency: packs/foo/app/services/foo.rb:3 references Bar from packs/bar without an explicit dependency in packs/foo/package.yml"
                 "dependency: {}:{} references {} from {} without an explicit dependency in {}/package.yml",
