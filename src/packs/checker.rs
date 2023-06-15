@@ -1,3 +1,4 @@
+use crate::packs::cache::create_cache_dir_idempotently;
 use crate::packs::parser::process_file_with_cache;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
@@ -98,6 +99,9 @@ pub(crate) fn check(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: Write a test that if this isn't here, it fails gracefully
+    create_cache_dir_idempotently(&configuration.cache_directory);
+
     debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 

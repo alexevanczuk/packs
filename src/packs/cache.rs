@@ -189,7 +189,7 @@ pub fn write_cache(
         .expect("Failed to write cache file");
 }
 
-fn create_cache_dir_idempotently(cache_dir: &PathBuf) {
+pub fn create_cache_dir_idempotently(cache_dir: &PathBuf) {
     std::fs::create_dir_all(cache_dir)
         .expect("Failed to create cache directory");
 }
