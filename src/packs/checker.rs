@@ -165,15 +165,21 @@ pub(crate) fn check(
         .collect();
     debug!("Finished running checkers");
 
-    if !violations.is_empty() {
+    let recorded_violations = configuration.pack_set.all_violations;
+
+    let unrecorded_violations = violations
+        .iter()
+        .filter(|v| !recorded_violations.contains(&v.identifier))
+        .collect::<Vec<&Violation>>();
+
+    if !unrecorded_violations.is_empty() {
         println!("{} violation(s) detected:", violations.len());
-        // We need to compare against package_todo.yml files first...
-        // for violation in violations {
-        //     println!("{}", violation.message);
-        // }
+        for violation in violations {
+            println!("{}", violation.message);
+        }
         Err("Violations detected".into())
     } else {
-        println!("No violations detected");
+        println!("No violations detected!");
         Ok(())
     }
 }

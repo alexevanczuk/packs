@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 
-use super::{Pack, Violation};
+use super::{checker::ViolationIdentifier, Pack};
 
 #[derive(Default, Debug)]
 pub struct PackSet {
@@ -18,7 +18,7 @@ pub struct PackSet {
     // more info in these Violations to aggregate them into package_todo.yml files.
     // We will also likely want to have an optimization that only rewrites the files
     // that have different violations.
-    pub all_violations: Vec<Violation>,
+    pub all_violations: HashSet<ViolationIdentifier>,
 }
 
 impl PackSet {
@@ -31,17 +31,19 @@ impl PackSet {
             })
             .collect();
         let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
-        // let mut all_violations = Vec::new();
+        let mut all_violations = HashSet::new();
         for pack in &packs {
             indexed_packs.insert(pack.name.clone(), pack.clone());
-            // all_violations
+            for violation_identifier in pack.all_violations() {
+                all_violations.insert(violation_identifier);
+            }
         }
 
         PackSet {
             indexed_packs,
             packs,
             for_file_cache: chashmap::CHashMap::new(),
-            all_violations: Vec::new(),
+            all_violations,
         }
     }
 
