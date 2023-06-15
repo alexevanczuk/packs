@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rayon::prelude::{ParallelBridge, ParallelIterator};
 use tracing::debug;
 
 #[allow(unused_imports)]
@@ -23,7 +24,7 @@ pub struct Constant {
 }
 
 fn inferred_constant_from_file(
-    absolute_path: &PathBuf,
+    absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
 ) -> Constant {
     let relative_path =
@@ -44,8 +45,8 @@ fn inferred_constant_from_file(
         format!("::{}", fully_qualified_constant_name);
 
     Constant {
-        fully_qualified_name: fully_qualified_constant_name.clone(),
-        absolute_path_of_definition: absolute_path.clone(),
+        fully_qualified_name: fully_qualified_constant_name,
+        absolute_path_of_definition: absolute_path.to_path_buf(),
     }
 }
 #[allow(unused_variables)]
@@ -70,20 +71,34 @@ impl ConstantResolver {
 
         debug!("Building constant resolver");
 
-        for absolute_autoload_path in &autoload_paths {
-            let mut glob_path = absolute_autoload_path.clone();
-            glob_path.push("**/*.rb");
+        let constants: Vec<Constant> = autoload_paths
+            .iter()
+            .par_bridge()
+            .flat_map(|absolute_autoload_path| {
+                let mut glob_path = absolute_autoload_path.clone();
+                glob_path.push("**/*.rb");
 
-            let files = glob::glob(glob_path.to_str().unwrap())
-                .expect("Failed to read glob pattern")
-                .filter_map(Result::ok);
+                let files = glob::glob(glob_path.to_str().unwrap())
+                    .expect("Failed to read glob pattern")
+                    .filter_map(Result::ok);
 
-            for file in files {
-                let constant =
-                    inferred_constant_from_file(&file, absolute_autoload_path);
-                fully_qualified_constant_to_constant_map
-                    .insert(constant.fully_qualified_name.clone(), constant);
-            }
+                files
+                    .map(|file| {
+                        inferred_constant_from_file(
+                            &file,
+                            absolute_autoload_path,
+                        )
+                    })
+                    .collect::<Vec<Constant>>()
+            })
+            .collect();
+
+        for constant in constants {
+            let fully_qualified_constant_name =
+                constant.fully_qualified_name.clone();
+
+            fully_qualified_constant_to_constant_map
+                .insert(fully_qualified_constant_name, constant);
         }
 
         debug!("Finished building constant resolver");
