@@ -152,7 +152,7 @@ impl CachableFile {
         self.relative_path.to_str().unwrap()
     }
 
-    fn cache_is_valid(&self) -> bool {
+    pub fn cache_is_valid(&self) -> bool {
         if let Some(cache_entry) = &self.cache_entry {
             cache_entry.file_contents_digest == self.file_contents_digest
         } else {

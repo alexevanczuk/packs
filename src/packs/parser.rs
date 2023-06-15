@@ -1,5 +1,8 @@
 pub(crate) mod ruby;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    thread,
+};
 
 pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
 pub(crate) mod erb;
@@ -59,9 +62,14 @@ pub fn process_file_with_cache(
         get_unresolved_references(path)
     };
 
-    // TODO: This work can be done in a new thread:
     let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
-    write_cache(&cachable_file, references.clone());
+
+    let cloned_references = references.clone();
+    thread::spawn(move || {
+        if !cachable_file.cache_is_valid() {
+            write_cache(&cachable_file, cloned_references);
+        }
+    });
 
     ProcessedFile {
         absolute_path: path.to_owned(),
