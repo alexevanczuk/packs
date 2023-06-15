@@ -43,6 +43,3 @@ impl PackSet {
         None
     }
 }
-
-// // TODO: This and `packs` should probably be moved into a struct like `Packs` or `PackSet`
-// pub indexed_packs: HashMap<String, Pack>,
