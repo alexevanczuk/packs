@@ -35,19 +35,6 @@ pub fn list(configuration: Configuration) {
     }
 }
 
-pub fn for_file(
-    configuration: &Configuration,
-    absolute_file_path: &Path,
-) -> Option<String> {
-    for pack in &configuration.pack_set.packs {
-        if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
-            return Some(pack.name.clone());
-        }
-    }
-
-    None
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
@@ -115,8 +102,6 @@ impl Hash for Pack {
 
 #[cfg(test)]
 mod tests {
-    use crate::packs;
-
     use super::*;
     use std::path::PathBuf;
 
@@ -136,7 +121,7 @@ mod tests {
 
         assert_eq!(
             Some(String::from("packs/foo")),
-            packs::for_file(&configuration, &absolute_file_path)
+            configuration.pack_set.for_file(&absolute_file_path)
         )
     }
 }

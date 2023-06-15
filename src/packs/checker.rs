@@ -1,14 +1,12 @@
 use crate::packs::parser::process_file_with_cache;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
+use crate::packs::SourceLocation;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
-
-use crate::packs;
-use crate::packs::SourceLocation;
 
 use super::UnresolvedReference;
 
@@ -47,10 +45,9 @@ impl Reference {
         );
 
         let defining_pack_name = if let Some(constant) = &maybe_constant {
-            packs::for_file(
-                configuration,
-                &constant.absolute_path_of_definition,
-            )
+            configuration
+                .pack_set
+                .for_file(&constant.absolute_path_of_definition)
         } else {
             None
         };
@@ -64,14 +61,15 @@ impl Reference {
 
         let constant_name = constant_name.clone();
 
-        let referencing_pack_name =
-            packs::for_file(configuration, referencing_file_path)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Could not find pack for refrencing file path: {}",
-                        &referencing_file_path.display()
-                    )
-                });
+        let referencing_pack_name = configuration
+            .pack_set
+            .for_file(referencing_file_path)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Could not find pack for refrencing file path: {}",
+                    &referencing_file_path.display()
+                )
+            });
 
         let loc = unresolved_reference.location.clone();
         let source_location = SourceLocation {

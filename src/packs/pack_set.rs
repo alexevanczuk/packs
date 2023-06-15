@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use itertools::Itertools;
 
@@ -28,6 +31,16 @@ impl PackSet {
             indexed_packs,
             packs,
         }
+    }
+
+    pub fn for_file(&self, absolute_file_path: &Path) -> Option<String> {
+        for pack in &self.packs {
+            if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
+                return Some(pack.name.clone());
+            }
+        }
+
+        None
     }
 }
 
