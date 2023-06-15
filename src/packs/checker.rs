@@ -73,7 +73,7 @@ impl Reference {
                     )
                 });
 
-        let loc = unresolved_reference.location;
+        let loc = unresolved_reference.location.clone();
         let source_location = SourceLocation {
             line: loc.start_row,
             column: loc.start_col,

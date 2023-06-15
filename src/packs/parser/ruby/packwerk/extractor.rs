@@ -48,9 +48,7 @@ pub struct Definition {
     pub namespace_path: Vec<String>,
 }
 
-#[derive(
-    Debug, PartialEq, Copy, Eq, Serialize, Deserialize, Clone, Default,
-)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Default)]
 pub struct Range {
     pub start_row: usize,
     pub start_col: usize,
@@ -445,7 +443,7 @@ pub(crate) fn extract_from_contents(
             // the definition location for ::Foo or ::Foo::Bar
             if !definition_to_location_map.contains_key(combined) {
                 definition_to_location_map
-                    .insert(combined.to_owned(), d.location);
+                    .insert(combined.to_owned(), d.location.clone());
             }
         }
     }
