@@ -9,9 +9,7 @@ pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
 pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
 
-use crate::packs::cache::{
-    file_content_digest, read_json_file, write_cache, CachableFile,
-};
+use crate::packs::cache::{write_cache, CachableFile};
 
 use super::ProcessedFile;
 
@@ -42,34 +40,20 @@ pub fn process_file_with_cache(
     cache_dir: &Path,
     path: &PathBuf,
 ) -> ProcessedFile {
-    let current_file_contents_digest = file_content_digest(path);
-    let relative_path = path.strip_prefix(absolute_root).unwrap();
-
-    let filename_digest =
-        format!("{:?}", md5::compute(relative_path.to_str().unwrap()));
-    let cache_path = cache_dir.join(filename_digest);
-
-    let references = if cache_path.exists() {
-        let cache = read_json_file(&cache_path).unwrap_or_else(|_| {
-            panic!("Failed to read cache file {:?}", cache_path)
-        });
-        if cache.file_contents_digest == current_file_contents_digest {
-            cache.get_unresolved_references()
-        } else {
-            get_unresolved_references(path)
-        }
-    } else {
-        get_unresolved_references(path)
-    };
-
     let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
+    let references = cachable_file
+        .cache_entry_if_valid()
+        .map(|entry| entry.get_unresolved_references())
+        .or_else(|| {
+            let uncached_references = get_unresolved_references(path);
+            let cloned_references = uncached_references.clone();
+            thread::spawn(move || {
+                write_cache(&cachable_file, cloned_references);
+            });
 
-    let cloned_references = references.clone();
-    thread::spawn(move || {
-        if !cachable_file.cache_is_valid() {
-            write_cache(&cachable_file, cloned_references);
-        }
-    });
+            Some(uncached_references)
+        })
+        .unwrap();
 
     ProcessedFile {
         absolute_path: path.to_owned(),

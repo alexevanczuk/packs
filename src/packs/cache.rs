@@ -152,6 +152,14 @@ impl CachableFile {
         self.relative_path.to_str().unwrap()
     }
 
+    pub fn cache_entry_if_valid(&self) -> Option<&CacheEntry> {
+        if self.cache_is_valid() {
+            self.cache_entry.as_ref()
+        } else {
+            None
+        }
+    }
+
     pub fn cache_is_valid(&self) -> bool {
         if let Some(cache_entry) = &self.cache_entry {
             cache_entry.file_contents_digest == self.file_contents_digest
