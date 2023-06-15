@@ -153,9 +153,10 @@ pub(crate) fn check(
 
     if !violations.is_empty() {
         println!("{} violation(s) detected:", violations.len());
-        for violation in violations {
-            println!("{}", violation.message);
-        }
+        // We need to compare against package_todo.yml files first...
+        // for violation in violations {
+        //     println!("{}", violation.message);
+        // }
         Err("Violations detected".into())
     } else {
         println!("No violations detected");
