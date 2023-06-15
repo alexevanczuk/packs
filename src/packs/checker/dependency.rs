@@ -12,9 +12,7 @@ impl Checker {
     ) -> Option<Violation> {
         let referencing_pack = configuration
             .pack_set
-            .indexed_packs
-            .get(&reference.referencing_pack_name)
-            .unwrap();
+            .for_pack(&reference.referencing_pack_name);
 
         let defining_pack_name = reference.defining_pack_name.clone()?;
 
@@ -22,12 +20,7 @@ impl Checker {
             return None;
         }
 
-        let referencing_pack_dependencies = &configuration
-            .pack_set
-            .indexed_packs
-            .get(&reference.referencing_pack_name)
-            .unwrap()
-            .dependencies;
+        let referencing_pack_dependencies = &referencing_pack.dependencies;
 
         if !referencing_pack_dependencies.contains(&defining_pack_name) {
             let message = format!(

@@ -123,15 +123,6 @@ impl Configuration {
                 .collect::<HashSet<PathBuf>>()
         }
     }
-
-    #[allow(dead_code)]
-    pub fn root_pack(&self) -> Pack {
-        self.pack_set
-            .indexed_packs
-            .get(".")
-            .expect("Root pack not found")
-            .clone()
-    }
 }
 
 fn matches_globs(path: &Path, globs: &[String]) -> bool {

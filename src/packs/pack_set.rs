@@ -9,8 +9,8 @@ use super::Pack;
 
 #[derive(Default)]
 pub struct PackSet {
-    pub indexed_packs: HashMap<String, Pack>,
     pub packs: Vec<Pack>,
+    indexed_packs: HashMap<String, Pack>,
 }
 
 impl PackSet {
@@ -41,5 +41,9 @@ impl PackSet {
         }
 
         None
+    }
+
+    pub fn for_pack(&self, pack_name: &str) -> &Pack {
+        self.indexed_packs.get(pack_name).unwrap()
     }
 }
