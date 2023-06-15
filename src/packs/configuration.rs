@@ -1,8 +1,7 @@
-use itertools::Itertools;
 use jwalk::WalkDirGeneric;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
@@ -14,6 +13,8 @@ use crate::packs::parser::ruby::packwerk::constant_resolver::ConstantResolver;
 use crate::packs::Pack;
 
 use crate::packs::DeserializablePack;
+
+use super::PackSet;
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -80,12 +81,10 @@ fn default_cache_directory() -> String {
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
     pub absolute_root: PathBuf,
-    pub packs: Vec<Pack>,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
     pub constant_resolver: ConstantResolver,
-    // TODO: This and `packs` should probably be moved into a struct like `Packs` or `PackSet`
-    pub indexed_packs: HashMap<String, Pack>,
+    pub pack_set: PackSet,
 }
 
 impl Configuration {
@@ -127,7 +126,8 @@ impl Configuration {
 
     #[allow(dead_code)]
     pub fn root_pack(&self) -> Pack {
-        self.indexed_packs
+        self.pack_set
+            .indexed_packs
             .get(".")
             .expect("Root pack not found")
             .clone()
@@ -290,7 +290,7 @@ fn walk_directory(
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
-    debug!("Beginning to read configuration");
+    debug!("Beginning to build configuration");
     let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
 
     let raw_config: RawConfiguration =
@@ -329,37 +329,26 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let (included_files, unsorted_packs) =
         walk_directory(absolute_root, &raw_config);
     debug!("Finished directory walk");
-    let packs = unsorted_packs
-        .into_iter()
-        .sorted_by(|packa, packb| {
-            Ord::cmp(&packb.name.len(), &packa.name.len())
-                .then_with(|| packa.name.cmp(&packb.name))
-        })
-        .collect();
-
-    debug!("Finished reading configuration");
 
     let absolute_root = absolute_root.to_path_buf();
-    let autoload_paths = get_autoload_paths(&packs);
+    let pack_set = PackSet::build(unsorted_packs);
+
+    let autoload_paths = get_autoload_paths(&pack_set.packs);
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
     let constant_resolver =
         ConstantResolver::create(&absolute_root, autoload_paths);
 
-    let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
-    for pack in &packs {
-        indexed_packs.insert(pack.name.clone(), pack.clone());
-    }
+    debug!("Finished building configuration");
 
     Configuration {
         included_files,
         absolute_root,
-        packs,
         cache_enabled,
         cache_directory,
         constant_resolver,
-        indexed_packs,
+        pack_set,
     }
 }
 
@@ -471,7 +460,7 @@ mod tests {
         actual_autoload_paths.sort();
 
         assert_eq!(expected_autoload_paths, actual_autoload_paths);
-        assert_eq!(expected_packs, actual.packs);
+        assert_eq!(expected_packs, actual.pack_set.packs);
 
         assert!(actual.cache_enabled)
     }

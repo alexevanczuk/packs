@@ -11,6 +11,7 @@ impl Checker {
         reference: &Reference,
     ) -> Option<Violation> {
         let referencing_pack = configuration
+            .pack_set
             .indexed_packs
             .get(&reference.referencing_pack_name)
             .unwrap();
@@ -22,6 +23,7 @@ impl Checker {
         }
 
         let referencing_pack_dependencies = &configuration
+            .pack_set
             .indexed_packs
             .get(&reference.referencing_pack_name)
             .unwrap()

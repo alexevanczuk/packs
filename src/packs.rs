@@ -13,12 +13,14 @@ mod cache;
 mod checker;
 pub mod cli;
 mod inflector_shim;
+mod pack_set;
 pub mod package_todo;
 pub mod parser;
 mod string_helpers;
 
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use crate::packs::checker::Violation;
+pub use crate::packs::pack_set::PackSet;
 pub use configuration::Configuration;
 pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
@@ -28,7 +30,7 @@ pub fn greet() {
 }
 
 pub fn list(configuration: Configuration) {
-    for pack in configuration.packs {
+    for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())
     }
 }
@@ -37,7 +39,7 @@ pub fn for_file(
     configuration: &Configuration,
     absolute_file_path: &Path,
 ) -> Option<String> {
-    for pack in &configuration.packs {
+    for pack in &configuration.pack_set.packs {
         if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
             return Some(pack.name.clone());
         }
