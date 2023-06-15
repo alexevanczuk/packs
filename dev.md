@@ -1,4 +1,6 @@
 # TODO
+- Create new cache implementation that creates one large file and only uses cache when no files are inputted
+- Convert existing cache to be `PackwerkCompatibleCache`. 
 - Update `scripts/packwerk_parity_checker.rb` to ensure the exact same set of files are produced (i.e. `include` and `exclude` should be respected)
 - Add benchmarking for `packs generate_cache` against `packwerk` if the same set of files are produced
 - Improve deployment and share current progress

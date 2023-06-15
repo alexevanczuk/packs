@@ -179,10 +179,8 @@ pub(crate) fn check(
             println!("{}", violation.message);
         }
 
-        let error_message =
-            format!("{} violation(s) detected:", unrecorded_violations.len());
-
-        Err(error_message.into())
+        println!("{} violation(s) detected:", unrecorded_violations.len());
+        Err("Packwerk check failed".into())
     } else {
         println!("No violations detected!");
         Ok(())

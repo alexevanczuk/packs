@@ -123,14 +123,9 @@ impl ConstantResolver {
         // We need to check each of these possibilities in order, and return the first one that exists
         // If none of them exist, return None
 
-        // dbg!(&self.fully_qualified_constant_to_constant_map);
-
         // If the fully_or_partially_qualified_constant is prefixed with ::, we should skip checking the namespace_path
         // because it's an absolute reference.
         if fully_or_partially_qualified_constant.starts_with("::") {
-            // let absolute_path = self
-            //     .fully_qualified_constant_to_absolute_path_map
-            //     .get(fully_or_partially_qualified_constant);
             if let Some(constant) = self.constant_for_fully_qualified_name(
                 fully_or_partially_qualified_constant,
             ) {
