@@ -159,6 +159,8 @@ fn walk_directory(
 
     let excluded_dirs_ref = Arc::new(excluded_dirs);
 
+    // TODO: Pull directory walker into separate module. Allow it to be called with implementations of a trait
+    // so separate concerns can each be in their own place.
     //
     // WalkDirGeneric allows you to customize the directory walk, such as skipping directories,
     // which we do as a performance optimization.

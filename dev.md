@@ -1,6 +1,10 @@
 # TODO
 - Create new cache implementation that creates one large file and only uses cache when no files are inputted
-- Convert existing cache to be `PackwerkCompatibleCache`. 
+- Convert existing cache to be `PackwerkCompatibleCache`.
+- We end up looking at a lot more references than necessary because we record class and superclass definitions each as their own reference.
+  - See tests in `src/packs/parser/ruby/packwerk.rs` for examples.
+  - If intead we did *not* consider these references, we'd save a lot of time resolving constants and running checkers.
+  - A second parser implementation could do this and be specified in packwerk.yml perhaps?
 - Update `scripts/packwerk_parity_checker.rb` to ensure the exact same set of files are produced (i.e. `include` and `exclude` should be respected)
 - Add benchmarking for `packs generate_cache` against `packwerk` if the same set of files are produced
 - Improve deployment and share current progress
