@@ -30,7 +30,6 @@ pub struct Reference {
     source_location: SourceLocation,
 }
 impl Reference {
-    #[allow(unused_variables)]
     fn from_unresolved_reference(
         configuration: &Configuration,
         unresolved_reference: &UnresolvedReference,
