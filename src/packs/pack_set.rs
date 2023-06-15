@@ -12,6 +12,7 @@ pub struct PackSet {
     pub packs: Vec<Pack>,
     indexed_packs: HashMap<String, Pack>,
     for_file_cache: chashmap::CHashMap<PathBuf, Option<String>>,
+    
 }
 
 impl PackSet {

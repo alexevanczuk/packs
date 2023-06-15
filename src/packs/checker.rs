@@ -16,6 +16,8 @@ pub mod dependency;
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
+    violation_type: String,
+    file: String
 }
 
 #[derive(Debug)]
