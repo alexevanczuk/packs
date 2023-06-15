@@ -12,9 +12,9 @@ use tracing::debug;
 use crate::packs::parser::ruby::packwerk::constant_resolver::ConstantResolver;
 use crate::packs::Pack;
 
-use crate::packs::DeserializablePack;
+use crate::packs::RawPack;
 
-use super::PackSet;
+use super::{PackSet, PackageTodo};
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -237,6 +237,7 @@ fn walk_directory(
         let file_name =
             relative_path.file_name().expect("expected a file_name");
 
+        // TODO: Move this whole case statement into some function within Pack
         if file_name.eq_ignore_ascii_case("package.yml")
             && (matches_globs(
                 relative_path.parent().unwrap(),
@@ -264,14 +265,31 @@ fn walk_directory(
             file.read_to_string(&mut yaml_contents)
                 .expect("Failed to read the YAML file");
 
-            let pack: DeserializablePack = serde_yaml::from_str(&yaml_contents)
+            let raw_pack: RawPack = serde_yaml::from_str(&yaml_contents)
                 .expect("Failed to deserialize the YAML");
 
+            let absolute_path_to_package_todo =
+                absolute_path.parent().unwrap().join("package_todo.yml");
+
+            let package_todo: PackageTodo =
+                if absolute_path_to_package_todo.exists() {
+                    let mut package_todo_contents = String::new();
+                    let mut file = File::open(&absolute_path_to_package_todo)
+                        .expect("Failed to open the package_todo.yml file");
+                    file.read_to_string(&mut package_todo_contents)
+                        .expect("Could not read the package_todo.yml file");
+                    serde_yaml::from_str(&package_todo_contents).unwrap()
+                } else {
+                    PackageTodo::default()
+                };
+
+            let dependencies = raw_pack.dependencies;
             let pack: Pack = Pack {
                 yml,
                 name,
                 relative_path,
-                dependencies: pack.dependencies,
+                dependencies,
+                package_todo,
             };
             included_packs.insert(pack);
         }
@@ -411,12 +429,14 @@ mod tests {
                 name: String::from("packs/bar"),
                 relative_path: PathBuf::from("packs/bar"),
                 dependencies: HashSet::new(),
+                package_todo: PackageTodo::default(),
             },
             Pack {
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
                 relative_path: PathBuf::from("packs/baz"),
                 dependencies: HashSet::new(),
+                package_todo: PackageTodo::default(),
             },
             Pack {
                 yml: absolute_root.join("packs/foo/package.yml"),
@@ -425,12 +445,14 @@ mod tests {
                 dependencies: HashSet::from_iter(vec![String::from(
                     "packs/baz",
                 )]),
+                package_todo: PackageTodo::default(),
             },
             Pack {
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),
                 dependencies: HashSet::new(),
+                package_todo: PackageTodo::default(),
             },
         ];
 

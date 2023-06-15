@@ -1,14 +1,14 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Eq, Deserialize, Default, Clone)]
 struct ViolationGroup {
     violations: Vec<String>,
     files: Vec<String>,
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
-struct PackageTodo {
+#[derive(PartialEq, Eq, Debug, Deserialize, Default, Clone)]
+pub struct PackageTodo {
     #[serde(flatten)]
     violations_by_pack: HashMap<String, HashMap<String, ViolationGroup>>,
 }

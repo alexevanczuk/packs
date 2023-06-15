@@ -22,6 +22,7 @@ mod string_helpers;
 pub use crate::packs::checker::Violation;
 pub use crate::packs::pack_set::PackSet;
 pub use configuration::Configuration;
+pub use package_todo::PackageTodo;
 pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
@@ -73,7 +74,7 @@ pub struct SourceLocation {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DeserializablePack {
+pub struct RawPack {
     #[serde(default)]
     dependencies: HashSet<String>,
 }
@@ -90,6 +91,7 @@ pub struct Pack {
     // I want to see if checkers and such can add their own deserialization
     // behavior to Pack via a trait or something? That would make extension simpler!
     dependencies: HashSet<String>,
+    package_todo: PackageTodo,
 }
 
 impl Hash for Pack {

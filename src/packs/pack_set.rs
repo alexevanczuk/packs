@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 use super::Pack;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct PackSet {
     pub packs: Vec<Pack>,
     indexed_packs: HashMap<String, Pack>,
