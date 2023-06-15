@@ -14,10 +14,18 @@ use super::UnresolvedReference;
 pub mod dependency;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
+pub struct ViolationIdentifier {
+    pub violation_type: String,
+    pub file: String,
+    pub constant_name: String,
+    pub referencing_pack_name: String,
+    pub defining_pack_name: String,
+}
+
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
-    violation_type: String,
-    file: String
+    identifier: ViolationIdentifier,
 }
 
 #[derive(Debug)]

@@ -2,15 +2,17 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(PartialEq, Debug, Eq, Deserialize, Default, Clone)]
-struct ViolationGroup {
-    violations: Vec<String>,
-    files: Vec<String>,
+pub struct ViolationGroup {
+    // Use serde rename to parse the key as violations
+    #[serde(rename = "violations")]
+    pub violation_types: Vec<String>,
+    pub files: Vec<String>,
 }
 
 #[derive(PartialEq, Eq, Debug, Deserialize, Default, Clone)]
 pub struct PackageTodo {
     #[serde(flatten)]
-    violations_by_pack: HashMap<String, HashMap<String, ViolationGroup>>,
+    pub violations_by_pack: HashMap<String, HashMap<String, ViolationGroup>>,
 }
 
 #[cfg(test)]
@@ -52,14 +54,14 @@ mod tests {
         bar_violations.insert(
             String::from("::Bar"),
             ViolationGroup {
-                violations: vec![String::from("dependency")],
+                violation_types: vec![String::from("dependency")],
                 files: vec![String::from("packs/foo/app/services/foo.rb")],
             },
         );
         bar_violations.insert(
             String::from("::Baz"),
             ViolationGroup {
-                violations: vec![
+                violation_types: vec![
                     String::from("dependency"),
                     String::from("privacy"),
                 ],

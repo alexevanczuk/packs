@@ -1,6 +1,8 @@
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
 
+use super::ViolationIdentifier;
+
 pub struct Checker {}
 
 #[allow(unused_variables)]
@@ -34,10 +36,17 @@ impl Checker {
             );
             let violation_type = String::from("dependency");
             let file = reference.relative_referencing_file.clone();
-            return Some(Violation {
-                message,
+            let identifier = ViolationIdentifier {
                 violation_type,
                 file,
+                constant_name: reference.constant_name.clone(),
+                referencing_pack_name: reference.referencing_pack_name.clone(),
+                defining_pack_name,
+            };
+
+            return Some(Violation {
+                message,
+                identifier,
             });
         }
 
@@ -90,10 +99,16 @@ mod tests {
             ),
             source_location: SourceLocation { line: 3, column: 1 },
         };
+
         let expected_violation = Violation {
             message: String::from("dependency: packs/foo/app/services/foo.rb:3 references ::Bar from packs/bar without an explicit dependency in packs/foo/package.yml"),
-            violation_type: String::from("dependency"),
-            file: String::from("packs/foo/app/services/foo.rb"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("dependency"),
+                file: String::from("packs/foo/app/services/foo.rb"),
+                constant_name: String::from("::Bar"),
+                referencing_pack_name: String::from("packs/foo"),
+                defining_pack_name: String::from("packs/bar"),
+            },
         };
         assert_eq!(
             expected_violation,

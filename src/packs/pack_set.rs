@@ -5,14 +5,20 @@ use std::{
 
 use itertools::Itertools;
 
-use super::Pack;
+use super::{Pack, Violation};
 
 #[derive(Default, Debug)]
 pub struct PackSet {
     pub packs: Vec<Pack>,
     indexed_packs: HashMap<String, Pack>,
     for_file_cache: chashmap::CHashMap<PathBuf, Option<String>>,
-    
+    // For now, we keep track of all violations so that we can diff them and only
+    // present the ones that are not recorded.
+    // Eventually, we'll need to rewrite these to disk, in which case we'll need
+    // more info in these Violations to aggregate them into package_todo.yml files.
+    // We will also likely want to have an optimization that only rewrites the files
+    // that have different violations.
+    pub all_violations: Vec<Violation>,
 }
 
 impl PackSet {
@@ -25,14 +31,17 @@ impl PackSet {
             })
             .collect();
         let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
+        // let mut all_violations = Vec::new();
         for pack in &packs {
             indexed_packs.insert(pack.name.clone(), pack.clone());
+            // all_violations
         }
 
         PackSet {
             indexed_packs,
             packs,
             for_file_cache: chashmap::CHashMap::new(),
+            all_violations: Vec::new(),
         }
     }
 

@@ -26,6 +26,8 @@ pub use package_todo::PackageTodo;
 pub use parser::ruby::packwerk::extractor::Range;
 pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
+use self::checker::ViolationIdentifier;
+
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
@@ -99,6 +101,31 @@ impl Hash for Pack {
         // Implement the hash function for your struct fields
         // Call the appropriate `hash` method on the `Hasher` to hash each field
         self.name.hash(state);
+    }
+}
+
+impl Pack {
+    pub fn all_violations(&self) -> Vec<ViolationIdentifier> {
+        let mut violations = Vec::new();
+        let violations_by_pack = &self.package_todo.violations_by_pack;
+        for (defining_pack_name, violation_groups) in violations_by_pack {
+            for (constant_name, violation_group) in violation_groups {
+                for violation_type in &violation_group.violation_types {
+                    for file in &violation_group.files {
+                        let identifier = ViolationIdentifier {
+                            violation_type: violation_type.clone(),
+                            file: file.clone(),
+                            constant_name: constant_name.clone(),
+                            referencing_pack_name: self.name.clone(),
+                            defining_pack_name: defining_pack_name.clone(),
+                        };
+
+                        violations.push(identifier);
+                    }
+                }
+            }
+        }
+        violations
     }
 }
 
