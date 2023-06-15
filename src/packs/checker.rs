@@ -118,21 +118,28 @@ pub(crate) fn check(
             )
         })
         .collect();
-    let mut references: Vec<Reference> = vec![];
 
     debug!("Turning unresolved references into fully qualified references");
-    // This is not yet in parallel
-    for processed_file in processed_files {
-        for unresolved_ref in processed_file.unresolved_references {
-            let absolute_path_of_referring_file =
-                processed_file.absolute_path.clone();
-            references.push(Reference::from_unresolved_reference(
-                &configuration,
-                &unresolved_ref,
-                &absolute_path_of_referring_file,
-            ));
-        }
-    }
+    let references: Vec<Reference> = processed_files
+        .into_par_iter()
+        .flat_map(|processed_file| {
+            let references: Vec<Reference> = processed_file
+                .unresolved_references
+                .iter()
+                .map(|unresolved_ref| {
+                    let absolute_path_of_referring_file =
+                        processed_file.absolute_path.clone();
+                    Reference::from_unresolved_reference(
+                        &configuration,
+                        unresolved_ref,
+                        &absolute_path_of_referring_file,
+                    )
+                })
+                .collect::<Vec<Reference>>();
+
+            references
+        })
+        .collect();
 
     debug!("Running checkers on resolved references");
     let checkers = vec![dependency::Checker {}];
