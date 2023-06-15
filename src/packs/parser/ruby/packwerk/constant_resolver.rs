@@ -21,6 +21,33 @@ pub struct Constant {
     pub fully_qualified_name: String,
     pub absolute_path_of_definition: PathBuf,
 }
+
+fn inferred_constant_from_file(
+    absolute_path: &PathBuf,
+    absolute_autoload_path: &PathBuf,
+) -> Constant {
+    let relative_path =
+        absolute_path.strip_prefix(absolute_autoload_path).unwrap();
+
+    let relative_path = relative_path.with_extension("");
+
+    let fully_qualified_constant_name = relative_path
+        .to_str()
+        .unwrap()
+        .split('/')
+        .map(|s| s.to_string())
+        .map(|s| crate::packs::inflector_shim::to_class_case(&s))
+        .join("::");
+
+    // Prefix each constant with :: to indicate it's an absolute reference
+    let fully_qualified_constant_name =
+        format!("::{}", fully_qualified_constant_name);
+
+    Constant {
+        fully_qualified_name: fully_qualified_constant_name.clone(),
+        absolute_path_of_definition: absolute_path.clone(),
+    }
+}
 #[allow(unused_variables)]
 impl ConstantResolver {
     pub fn create(
@@ -52,29 +79,10 @@ impl ConstantResolver {
                 .filter_map(Result::ok);
 
             for file in files {
-                let relative_path =
-                    file.strip_prefix(absolute_autoload_path).unwrap();
-
-                let relative_path = relative_path.with_extension("");
-
-                let fully_qualified_constant_name = relative_path
-                    .to_str()
-                    .unwrap()
-                    .split('/')
-                    .map(|s| s.to_string())
-                    .map(|s| crate::packs::inflector_shim::to_class_case(&s))
-                    .join("::");
-
-                // Prefix each constant with :: to indicate it's an absolute reference
-                let fully_qualified_constant_name =
-                    format!("::{}", fully_qualified_constant_name);
-
-                let constant = Constant {
-                    fully_qualified_name: fully_qualified_constant_name.clone(),
-                    absolute_path_of_definition: file.clone(),
-                };
+                let constant =
+                    inferred_constant_from_file(&file, absolute_autoload_path);
                 fully_qualified_constant_to_constant_map
-                    .insert(fully_qualified_constant_name, constant);
+                    .insert(constant.fully_qualified_name.clone(), constant);
             }
         }
 
