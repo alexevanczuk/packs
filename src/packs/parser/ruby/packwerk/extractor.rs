@@ -230,7 +230,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
             if let Some(Node::Sym(d)) = first_arg {
                 if name.is_none() {
-                    name = Some(to_class_case(&d.name.to_string_lossy()));
+                    // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
+                    // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
+                    name = Some(to_class_case(&d.name.to_string_lossy(), true));
                 }
             }
 

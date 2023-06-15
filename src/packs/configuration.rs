@@ -284,12 +284,15 @@ fn walk_directory(
                 };
 
             let dependencies = raw_pack.dependencies;
+            let ignored_dependencies = raw_pack.ignored_dependencies;
+
             let pack: Pack = Pack {
                 yml,
                 name,
                 relative_path,
                 dependencies,
                 package_todo,
+                ignored_dependencies,
             };
             included_packs.insert(pack);
         }
@@ -430,6 +433,7 @@ mod tests {
                 relative_path: PathBuf::from("packs/bar"),
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
+                ignored_dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/baz/package.yml"),
@@ -437,6 +441,7 @@ mod tests {
                 relative_path: PathBuf::from("packs/baz"),
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
+                ignored_dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("packs/foo/package.yml"),
@@ -446,6 +451,7 @@ mod tests {
                     "packs/baz",
                 )]),
                 package_todo: PackageTodo::default(),
+                ignored_dependencies: HashSet::new(),
             },
             Pack {
                 yml: absolute_root.join("package.yml"),
@@ -453,6 +459,7 @@ mod tests {
                 relative_path: PathBuf::from("."),
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
+                ignored_dependencies: HashSet::new(),
             },
         ];
 

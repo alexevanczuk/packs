@@ -105,6 +105,7 @@ impl Reference {
     }
 }
 
+// TODO: Break this function up into smaller functions
 pub(crate) fn check(
     configuration: Configuration,
     files: Vec<String>,
@@ -115,9 +116,6 @@ pub(crate) fn check(
     debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    // 1) Get the Vec<UnresolvedReferences> for each file in parallel
-    // - Need a way for cache to do this, e.g. get_references_with_cache
-    // 2) Turn those into a Vec<Reference>
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = absolute_paths
         .into_par_iter()
@@ -151,6 +149,7 @@ pub(crate) fn check(
             references
         })
         .collect();
+    debug!("Finished turning unresolved references into fully qualified references");
 
     debug!("Running checkers on resolved references");
     let checkers = vec![dependency::Checker {}];
@@ -167,17 +166,23 @@ pub(crate) fn check(
 
     let recorded_violations = configuration.pack_set.all_violations;
 
+    debug!("Filtering out recorded violations");
     let unrecorded_violations = violations
         .iter()
         .filter(|v| !recorded_violations.contains(&v.identifier))
         .collect::<Vec<&Violation>>();
 
+    debug!("Finished filtering out recorded violations");
+
     if !unrecorded_violations.is_empty() {
-        println!("{} violation(s) detected:", violations.len());
-        for violation in violations {
+        for violation in unrecorded_violations.iter() {
             println!("{}", violation.message);
         }
-        Err("Violations detected".into())
+
+        let error_message =
+            format!("{} violation(s) detected:", unrecorded_violations.len());
+
+        Err(error_message.into())
     } else {
         println!("No violations detected!");
         Ok(())

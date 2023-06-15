@@ -1,12 +1,30 @@
 // use cruet::cases::classcase::to_class_case as buggy_to_class_case;
-use cruet::Inflector;
+use cruet::{
+    case::{to_case_camel_like, CamelOptions},
+    Inflector,
+};
 use regex::Regex;
 
 // See https://github.com/whatisinternet/Inflector/pull/87
 // Note that as of the PR that adds this comment, we are now using https://github.com/chrislearn/cruet,
 // a more supported fork of the Inflector library
-pub fn to_class_case(s: &str) -> String {
-    let mut class_name = s.to_class_case();
+pub fn to_class_case(s: &str, should_singularize: bool) -> String {
+    let options = CamelOptions {
+        new_word: true,
+        last_char: ' ',
+        first_word: false,
+        injectable_char: ' ',
+        has_seperator: false,
+        inverted: false,
+    };
+
+    let mut class_name = if should_singularize {
+        s.to_class_case()
+    } else {
+        to_case_camel_like(s, options)
+    };
+
+    // let mut class_name = s.to_class_case();
     if class_name.contains("Statu") {
         let re = Regex::new("Statuse$").unwrap();
         class_name = re.replace_all(&class_name, "Status").to_string();

@@ -5,6 +5,7 @@ use super::ViolationIdentifier;
 
 pub struct Checker {}
 
+// TODO: Add test for ignored_dependencies
 #[allow(unused_variables)]
 impl Checker {
     pub fn check(
@@ -12,6 +13,7 @@ impl Checker {
         configuration: &Configuration,
         reference: &Reference,
     ) -> Option<Violation> {
+        // TODO: Refrence should have everything we need – should not need to pass in Configuration
         let referencing_pack = configuration
             .pack_set
             .for_pack(&reference.referencing_pack_name);
@@ -24,7 +26,12 @@ impl Checker {
 
         let referencing_pack_dependencies = &referencing_pack.dependencies;
 
-        if !referencing_pack_dependencies.contains(&defining_pack_name) {
+        let ignored_dependency = referencing_pack
+            .ignored_dependencies
+            .contains(&defining_pack_name);
+        if !referencing_pack_dependencies.contains(&defining_pack_name)
+            && !ignored_dependency
+        {
             let message = format!(
                 // "dependency: packs/foo/app/services/foo.rb:3 references Bar from packs/bar without an explicit dependency in packs/foo/package.yml"
                 "dependency: {}:{} references {} from {} without an explicit dependency in {}/package.yml",

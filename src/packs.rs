@@ -79,6 +79,8 @@ pub struct SourceLocation {
 pub struct RawPack {
     #[serde(default)]
     dependencies: HashSet<String>,
+    #[serde(default)]
+    ignored_dependencies: HashSet<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
@@ -93,6 +95,7 @@ pub struct Pack {
     // I want to see if checkers and such can add their own deserialization
     // behavior to Pack via a trait or something? That would make extension simpler!
     dependencies: HashSet<String>,
+    ignored_dependencies: HashSet<String>,
     package_todo: PackageTodo,
 }
 

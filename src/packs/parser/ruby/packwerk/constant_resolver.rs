@@ -37,7 +37,7 @@ fn inferred_constant_from_file(
         .unwrap()
         .split('/')
         .map(|s| s.to_string())
-        .map(|s| crate::packs::inflector_shim::to_class_case(&s))
+        .map(|s| crate::packs::inflector_shim::to_class_case(&s, false))
         .join("::");
 
     // Prefix each constant with :: to indicate it's an absolute reference
@@ -123,6 +123,8 @@ impl ConstantResolver {
         // We need to check each of these possibilities in order, and return the first one that exists
         // If none of them exist, return None
 
+        // dbg!(&self.fully_qualified_constant_to_constant_map);
+
         // If the fully_or_partially_qualified_constant is prefixed with ::, we should skip checking the namespace_path
         // because it's an absolute reference.
         if fully_or_partially_qualified_constant.starts_with("::") {
@@ -137,17 +139,29 @@ impl ConstantResolver {
                 return None;
             }
         }
-        let mut namespace_path = namespace_path.to_owned();
-        namespace_path.reverse();
-        for _ in 0..namespace_path.len() {
-            let candidate_namespace =
-                namespace_path.clone().into_iter().rev().join("::");
+        let namespace_path = namespace_path.to_owned();
+        for i in (0..=namespace_path.len()).rev() {
+            let intermediate_namespace: Vec<String> =
+                namespace_path.clone().into_iter().take(i).collect();
+            let candidate_namespace = intermediate_namespace.join("::");
 
-            // Append the fully_or_partially_qualified_constant to the candidate_namespace
-            let possible_constant = format!(
-                "::{}::{}",
-                candidate_namespace, fully_or_partially_qualified_constant
-            );
+            let possible_constant = if !intermediate_namespace.is_empty() {
+                // Append the fully_or_partially_qualified_constant to the candidate_namespace
+                format!(
+                    "::{}::{}",
+                    candidate_namespace, fully_or_partially_qualified_constant
+                )
+            } else {
+                // If the intermediate_namespace is empty, we don't need to append anything.
+                // If we did, we'd end up checking ::::SomeConstant
+                // TODO: Write a test that fails when this is removed.
+                // The test needs to have a constant Foo that is defined in the root namespace (::)
+                // and another constant Foo that is defined in a Bar.
+                // The test should verify when we resolve Foo in the context of Bar, we get Bar::Foo,
+                // not ::Foo.
+                // The test should fail when we only use the first branch of this conditional.
+                fully_or_partially_qualified_constant.to_owned()
+            };
 
             if let Some(constant) =
                 self.constant_for_fully_qualified_name(&possible_constant)
