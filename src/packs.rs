@@ -33,11 +33,6 @@ pub fn list(configuration: Configuration) {
     }
 }
 
-// Implement for_file, which accepts the config and absolute file path.
-// We can call configuration.packs, which is sorted, to find the pack with the longest
-// name that is a subpath of the input absolute file path.
-// If we find a pack, return it. Otherwise, return the root pack.
-// Add lifetime specifier to configuration::Configuration
 pub fn for_file(
     configuration: &Configuration,
     absolute_file_path: &Path,
