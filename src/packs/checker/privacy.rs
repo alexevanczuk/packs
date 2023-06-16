@@ -4,8 +4,6 @@ use crate::packs::Violation;
 
 pub struct Checker {}
 
-// TODO: Add test for ignored_dependencies
-// Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
         let referencing_pack = reference.referencing_pack.clone();
@@ -17,7 +15,7 @@ impl CheckerInterface for Checker {
             return None;
         }
 
-        let referencing_pack_dependencies = &referencing_pack.dependencies;
+        // let constant_is_public = reference.;
 
         let ignored_dependency = referencing_pack
             .ignored_dependencies

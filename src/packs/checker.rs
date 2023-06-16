@@ -45,9 +45,6 @@ impl<'a> Reference<'a> {
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
-        // Here we need to get a ConstantResolver from configuration
-        // to figure out what package things are from.
-        // We also need to implement Packs for_file.
         let maybe_constant = configuration.constant_resolver.resolve(
             &unresolved_reference.name,
             &unresolved_reference.namespace_path,
