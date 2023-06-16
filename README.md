@@ -10,31 +10,7 @@ WIP Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and
 - Currently, `packs` implements `check`, with `update` coming soon.
 
 # Usage
-One simple way to try out `packs` to generate your cache would be to create a bash function which wraps the call to `bin/packwerk`, like so:
-```bash
-# In your ~/.bash_profile or analogous file
-packwerk() {
-    if [ "$1" = "check" ] || [ "$1" = "update" ]; then
-        echo "Calling packs generate_cache with args: ${@:2}"
-        packs generate_cache "${@:2}"
-    fi
-
-    echo "Now calling packwerk with args: $@"
-    bin/packwerk "$@"
-}
-```
-
-You can also modify the `bin/packwerk` executable to call `packs` conditionally, e.g.
-```ruby
-# In bin/packwerk
-packs_executable = `which packs`.chomp
-if !packs_executable.empty?
-  if ARGV.first == 'check' || ARGV.first == 'update'
-    puts "Calling packs generate_cache with args: #{ARGV[1..-1]}"
-    system('packs', 'generate_cache', *ARGV[1..-1])
-  end
-end
-```
+Once installed and added to your `$PATH`, just call `packs` to see the CLI help message.
 
 # Verification
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
@@ -69,10 +45,12 @@ Me too! This is my first Rust project, so I'd love to have feedback, advice, and
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
 
 # Not yet supported:
+- privacy checker or other checkers
 - custom associations
 - custom inflections
 - custom load paths
 - zeitwerk default namespaces
+- extensible plugin system
 
 # Benchmarks
 ## Cold Cache, without Spring
