@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use tracing::debug;
 mod cache;
-mod checker;
+pub(crate) mod checker;
 pub mod cli;
 mod inflector_shim;
 mod pack_set;

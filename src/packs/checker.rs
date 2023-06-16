@@ -107,6 +107,10 @@ impl<'a> Reference<'a> {
     }
 }
 
+pub(crate) trait CheckerInterface {
+    fn check(&self, reference: &Reference) -> Option<Violation>;
+}
+
 // TODO: Break this function up into smaller functions
 pub(crate) fn check(
     configuration: Configuration,
@@ -196,7 +200,8 @@ fn get_all_violations(
     debug!("Finished turning unresolved references into fully qualified references");
 
     debug!("Running checkers on resolved references");
-    let checkers = vec![dependency::Checker {}];
+    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> =
+        vec![Box::new(dependency::Checker {})];
     let violations: Vec<Violation> = references
         .into_par_iter()
         .flat_map(|r| {

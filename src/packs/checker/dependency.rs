@@ -1,13 +1,12 @@
+use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::Violation;
-
-use super::ViolationIdentifier;
 
 pub struct Checker {}
 
 // TODO: Add test for ignored_dependencies
-impl Checker {
-    pub fn check(&self, reference: &Reference) -> Option<Violation> {
+impl CheckerInterface for Checker {
+    fn check(&self, reference: &Reference) -> Option<Violation> {
         // TODO: Refrence should have econstant_nameerything we need – should not need to pass in Configuration
         let referencing_pack = reference.referencing_pack.clone();
 
