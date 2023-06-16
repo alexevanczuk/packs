@@ -5,6 +5,7 @@ use crate::packs::Violation;
 pub struct Checker {}
 
 // TODO: Add test for ignored_dependencies
+// Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
         // TODO: Refrence should have econstant_nameerything we need – should not need to pass in Configuration
