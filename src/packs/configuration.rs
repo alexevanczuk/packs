@@ -287,7 +287,7 @@ fn walk_directory(
 
             let dependencies = raw_pack.dependencies;
             let ignored_dependencies = raw_pack.ignored_dependencies;
-
+            let enforce_dependencies = raw_pack.enforce_dependencies;
             let pack: Pack = Pack {
                 yml,
                 name,
@@ -295,6 +295,7 @@ fn walk_directory(
                 dependencies,
                 package_todo,
                 ignored_dependencies,
+                enforce_dependencies,
             };
             included_packs.insert(pack);
         }
@@ -430,6 +431,8 @@ mod tests {
 
         let expected_packs = vec![
             Pack {
+                enforce_dependencies: false,
+
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
                 relative_path: PathBuf::from("packs/bar"),
@@ -438,6 +441,8 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
+                enforce_dependencies: false,
+
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
                 relative_path: PathBuf::from("packs/baz"),
@@ -446,6 +451,8 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
+                enforce_dependencies: true,
+
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
                 relative_path: PathBuf::from("packs/foo"),
@@ -456,6 +463,7 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
+                enforce_dependencies: false,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),

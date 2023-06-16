@@ -81,6 +81,8 @@ pub struct RawPack {
     dependencies: HashSet<String>,
     #[serde(default)]
     ignored_dependencies: HashSet<String>,
+    #[serde(default)]
+    enforce_dependencies: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
@@ -97,6 +99,7 @@ pub struct Pack {
     dependencies: HashSet<String>,
     ignored_dependencies: HashSet<String>,
     package_todo: PackageTodo,
+    enforce_dependencies: bool,
 }
 
 impl Hash for Pack {
