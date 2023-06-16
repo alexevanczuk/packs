@@ -7,9 +7,11 @@ use crate::packs::SourceLocation;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
+use std::sync::Arc;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
+use super::Pack;
 use super::UnresolvedReference;
 
 pub mod dependency;
@@ -30,23 +32,19 @@ pub struct Violation {
 }
 
 #[derive(Debug)]
-pub struct Reference {
-    // We may later want to extract out a `Constant` struct
+pub struct Reference<'a> {
     constant_name: String,
-    // Sometimes we cannot find the pack that a constant is defined in.
-    // In this case, we return None, and do not include it.
     defining_pack_name: Option<String>,
-    // We always know where the referencing file is, so we don't need an Option
-    referencing_pack_name: String,
+    referencing_pack: Arc<&'a Pack>,
     relative_referencing_file: String,
     source_location: SourceLocation,
 }
-impl Reference {
+impl<'a> Reference<'a> {
     fn from_unresolved_reference(
-        configuration: &Configuration,
+        configuration: &'a Configuration,
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
-    ) -> Reference {
+    ) -> Reference<'a> {
         // Here we need to get a ConstantResolver from configuration
         // to figure out what package things are from.
         // We also need to implement Packs for_file.
@@ -77,10 +75,13 @@ impl Reference {
             .for_file(referencing_file_path)
             .unwrap_or_else(|| {
                 panic!(
-                    "Could not find pack for refrencing file path: {}",
+                    "Could not find pack for referencing file path: {}",
                     &referencing_file_path.display()
                 )
             });
+
+        let referencing_pack =
+            Arc::new(configuration.pack_set.for_pack(&referencing_pack_name));
 
         let loc = unresolved_reference.location.clone();
         let source_location = SourceLocation {
@@ -99,9 +100,9 @@ impl Reference {
         Reference {
             constant_name,
             defining_pack_name,
-            referencing_pack_name,
-            source_location,
+            referencing_pack,
             relative_referencing_file,
+            source_location,
         }
     }
 }
@@ -201,7 +202,7 @@ fn get_all_violations(
         .flat_map(|r| {
             checkers
                 .iter()
-                .flat_map(|c| c.check(&configuration, &r))
+                .flat_map(|c| c.check(&r))
                 .collect::<Vec<Violation>>()
         })
         .collect();

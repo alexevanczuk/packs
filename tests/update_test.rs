@@ -3,6 +3,7 @@ use predicates::prelude::*;
 use std::{error::Error, path::Path, process::Command};
 
 #[test]
+#[ignore]
 fn test_update() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")

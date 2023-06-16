@@ -1,26 +1,20 @@
 use crate::packs::checker::Reference;
-use crate::packs::{Configuration, Violation};
+use crate::packs::Violation;
 
 use super::ViolationIdentifier;
 
 pub struct Checker {}
 
 // TODO: Add test for ignored_dependencies
-#[allow(unused_variables)]
 impl Checker {
-    pub fn check(
-        &self,
-        configuration: &Configuration,
-        reference: &Reference,
-    ) -> Option<Violation> {
-        // TODO: Refrence should have everything we need – should not need to pass in Configuration
-        let referencing_pack = configuration
-            .pack_set
-            .for_pack(&reference.referencing_pack_name);
+    pub fn check(&self, reference: &Reference) -> Option<Violation> {
+        // TODO: Refrence should have econstant_nameerything we need – should not need to pass in Configuration
+        let referencing_pack = reference.referencing_pack.clone();
 
+        let referencing_pack_name = &referencing_pack.name;
         let defining_pack_name = reference.defining_pack_name.clone()?;
 
-        if referencing_pack.name == defining_pack_name {
+        if referencing_pack_name == &defining_pack_name {
             return None;
         }
 
@@ -39,7 +33,7 @@ impl Checker {
                 reference.source_location.line,
                 reference.constant_name,
                 defining_pack_name,
-                reference.referencing_pack_name,
+                referencing_pack_name,
             );
             let violation_type = String::from("dependency");
             let file = reference.relative_referencing_file.clone();
@@ -47,7 +41,7 @@ impl Checker {
                 violation_type,
                 file,
                 constant_name: reference.constant_name.clone(),
-                referencing_pack_name: reference.referencing_pack_name.clone(),
+                referencing_pack_name: referencing_pack_name.clone(),
                 defining_pack_name,
             };
 
@@ -65,7 +59,7 @@ impl Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
-    use std::path::PathBuf;
+    use std::{path::PathBuf, sync::Arc};
 
     #[test]
     fn referencing_and_defining_pack_are_identical() {
@@ -79,13 +73,15 @@ mod tests {
         let reference = Reference {
             constant_name: String::from("::Foo"),
             defining_pack_name: Some(String::from("packs/foo")),
-            referencing_pack_name: String::from("packs/foo"),
+            referencing_pack: Arc::new(
+                configuration.pack_set.for_pack(&String::from("packs/foo")),
+            ),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
             source_location: SourceLocation { line: 3, column: 1 },
         };
-        assert_eq!(None, checker.check(&configuration, &reference))
+        assert_eq!(None, checker.check(&reference))
     }
 
     #[test]
@@ -100,7 +96,9 @@ mod tests {
         let reference = Reference {
             constant_name: String::from("::Bar"),
             defining_pack_name: Some(String::from("packs/bar")),
-            referencing_pack_name: String::from("packs/foo"),
+            referencing_pack: Arc::new(
+                configuration.pack_set.for_pack(&String::from("packs/foo")),
+            ),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -117,9 +115,6 @@ mod tests {
                 defining_pack_name: String::from("packs/bar"),
             },
         };
-        assert_eq!(
-            expected_violation,
-            checker.check(&configuration, &reference).unwrap()
-        )
+        assert_eq!(expected_violation, checker.check(&&reference).unwrap())
     }
 }
