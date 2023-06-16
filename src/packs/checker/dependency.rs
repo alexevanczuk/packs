@@ -8,12 +8,12 @@ pub struct Checker {}
 // Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
-        let referencing_pack = reference.referencing_pack.clone();
+        let referencing_pack = reference.referencing_pack;
         if referencing_pack.enforce_dependencies.is_false() {
             return None;
         }
 
-        let referencing_pack_name = referencing_pack.name;
+        let referencing_pack_name = &referencing_pack.name;
         let defining_pack_name = &reference.defining_pack_name;
 
         if defining_pack_name.is_none() {
@@ -22,7 +22,7 @@ impl CheckerInterface for Checker {
 
         let defining_pack_name = defining_pack_name.as_ref().unwrap();
 
-        if &referencing_pack_name == defining_pack_name {
+        if referencing_pack_name == defining_pack_name {
             return None;
         }
 
