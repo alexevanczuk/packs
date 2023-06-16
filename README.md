@@ -2,6 +2,8 @@
 ![CI](https://github.com/alexevanczuk/packs/actions/workflows/ci.yml/badge.svg)
 ![Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)
 
+![Logo](logo.png)
+
 WIP Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
 
 # About
