@@ -110,7 +110,7 @@ impl Hash for Pack {
 impl Pack {
     pub fn all_violations(&self) -> Vec<ViolationIdentifier> {
         let mut violations = Vec::new();
-        let violations_by_pack = &self.package_todo.violations_by_pack;
+        let violations_by_pack = &self.package_todo.violations_by_defining_pack;
         for (defining_pack_name, violation_groups) in violations_by_pack {
             for (constant_name, violation_group) in violation_groups {
                 for violation_type in &violation_group.violation_types {

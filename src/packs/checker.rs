@@ -1,4 +1,5 @@
 use crate::packs::cache::create_cache_dir_idempotently;
+use crate::packs::package_todo;
 use crate::packs::parser::process_file_with_cache;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
@@ -25,7 +26,7 @@ pub struct ViolationIdentifier {
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
-    identifier: ViolationIdentifier,
+    pub identifier: ViolationIdentifier,
 }
 
 #[derive(Debug)]
@@ -139,9 +140,16 @@ pub(crate) fn check(
 }
 
 pub(crate) fn update(
-    _toconfiguration: Configuration,
+    configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    Err("Not implemented".into())
+    let violations = get_all_violations(
+        &configuration,
+        configuration.intersect_files(vec![]),
+    );
+
+    package_todo::write_violations_to_disk(configuration, violations);
+    println!("Successfully updated package_todo.yml files!");
+    Ok(())
 }
 
 fn get_all_violations(
