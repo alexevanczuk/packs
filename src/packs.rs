@@ -81,8 +81,31 @@ pub struct RawPack {
     dependencies: HashSet<String>,
     #[serde(default)]
     ignored_dependencies: HashSet<String>,
-    #[serde(default)]
-    enforce_dependencies: bool,
+    #[serde(default = "default_enforce_dependencies")]
+    enforce_dependencies: String,
+}
+
+fn default_enforce_dependencies() -> String {
+    "false".to_string()
+}
+
+// Make an enum for the configuration of a checker, which can be either false, true, or strict:
+#[derive(Debug, Default, PartialEq, Eq, Deserialize, Clone)]
+enum CheckerSetting {
+    #[default]
+    False,
+    True,
+    Strict,
+}
+
+impl CheckerSetting {
+    /// Returns `true` if the checker setting is [`False`].
+    ///
+    /// [`False`]: CheckerSetting::False
+    #[must_use]
+    fn is_false(&self) -> bool {
+        matches!(self, Self::False)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
@@ -99,7 +122,7 @@ pub struct Pack {
     dependencies: HashSet<String>,
     ignored_dependencies: HashSet<String>,
     package_todo: PackageTodo,
-    enforce_dependencies: bool,
+    enforce_dependencies: CheckerSetting,
 }
 
 impl Hash for Pack {

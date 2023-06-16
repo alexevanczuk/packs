@@ -14,7 +14,7 @@ use crate::packs::Pack;
 
 use crate::packs::RawPack;
 
-use super::{PackSet, PackageTodo};
+use super::{CheckerSetting, PackSet, PackageTodo};
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -287,7 +287,15 @@ fn walk_directory(
 
             let dependencies = raw_pack.dependencies;
             let ignored_dependencies = raw_pack.ignored_dependencies;
-            let enforce_dependencies = raw_pack.enforce_dependencies;
+            let raw_enforce_dependencies = raw_pack.enforce_dependencies;
+            let enforce_dependencies = if raw_enforce_dependencies == "true" {
+                CheckerSetting::True
+            } else if raw_enforce_dependencies == "strict" {
+                CheckerSetting::Strict
+            } else {
+                CheckerSetting::False
+            };
+
             let pack: Pack = Pack {
                 yml,
                 name,
@@ -431,7 +439,7 @@ mod tests {
 
         let expected_packs = vec![
             Pack {
-                enforce_dependencies: false,
+                enforce_dependencies: CheckerSetting::False,
 
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
@@ -441,7 +449,7 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
-                enforce_dependencies: false,
+                enforce_dependencies: CheckerSetting::False,
 
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
@@ -451,7 +459,7 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
-                enforce_dependencies: true,
+                enforce_dependencies: CheckerSetting::True,
 
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
@@ -463,7 +471,7 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
             },
             Pack {
-                enforce_dependencies: false,
+                enforce_dependencies: CheckerSetting::False,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),

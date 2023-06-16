@@ -9,7 +9,7 @@ pub struct Checker {}
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
         let referencing_pack = reference.referencing_pack.clone();
-        if referencing_pack.enforce_dependencies == false {
+        if referencing_pack.enforce_dependencies.is_false() {
             return None;
         }
 
