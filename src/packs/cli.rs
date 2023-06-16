@@ -14,13 +14,18 @@ enum Command {
     #[clap(about = "List packs based on configuration in packwerk.yml")]
     ListPacks,
     #[clap(about = "Look for violations in the codebase")]
-    Check { files: Vec<String> },
+    Check {
+        files: Vec<String>,
+    },
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
     #[clap(
         about = "Generate a cache to be used by the ruby implementation of packwerk"
     )]
-    GenerateCache { files: Vec<String> },
+    GenerateCache {
+        files: Vec<String>,
+    },
+    Update,
 }
 
 /// A CLI to interact with packs
@@ -59,6 +64,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::Check { files } => checker::check(configuration, files),
+        Command::Update => checker::update(configuration),
         Command::Validate => Err("💡 This command is coming soon!".into()),
         Command::GenerateCache { files } => {
             if !configuration.cache_enabled {

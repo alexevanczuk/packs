@@ -110,11 +110,46 @@ pub(crate) fn check(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Write a test that if this isn't here, it fails gracefully
-    create_cache_dir_idempotently(&configuration.cache_directory);
-
     debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+
+    let violations: Vec<Violation> =
+        get_all_violations(&configuration, absolute_paths);
+    let recorded_violations = configuration.pack_set.all_violations;
+
+    debug!("Filtering out recorded violations");
+    let unrecorded_violations = violations
+        .iter()
+        .filter(|v| !recorded_violations.contains(&v.identifier))
+        .collect::<Vec<&Violation>>();
+
+    debug!("Finished filtering out recorded violations");
+
+    if !unrecorded_violations.is_empty() {
+        for violation in unrecorded_violations.iter() {
+            println!("{}", violation.message);
+        }
+
+        println!("{} violation(s) detected:", unrecorded_violations.len());
+        Err("Packwerk check failed".into())
+    } else {
+        println!("No violations detected!");
+        Ok(())
+    }
+}
+
+pub(crate) fn update(
+    _toconfiguration: Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    Err("Not implemented".into())
+}
+
+fn get_all_violations(
+    configuration: &Configuration,
+    absolute_paths: HashSet<PathBuf>,
+) -> Vec<Violation> {
+    // TODO: Write a test that if this isn't here, it fails gracefully
+    create_cache_dir_idempotently(&configuration.cache_directory);
 
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = absolute_paths
@@ -164,25 +199,5 @@ pub(crate) fn check(
         .collect();
     debug!("Finished running checkers");
 
-    let recorded_violations = configuration.pack_set.all_violations;
-
-    debug!("Filtering out recorded violations");
-    let unrecorded_violations = violations
-        .iter()
-        .filter(|v| !recorded_violations.contains(&v.identifier))
-        .collect::<Vec<&Violation>>();
-
-    debug!("Finished filtering out recorded violations");
-
-    if !unrecorded_violations.is_empty() {
-        for violation in unrecorded_violations.iter() {
-            println!("{}", violation.message);
-        }
-
-        println!("{} violation(s) detected:", unrecorded_violations.len());
-        Err("Packwerk check failed".into())
-    } else {
-        println!("No violations detected!");
-        Ok(())
-    }
+    violations
 }
