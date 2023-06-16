@@ -15,8 +15,6 @@ impl CheckerInterface for Checker {
             return None;
         }
 
-        // let constant_is_public = reference.;
-
         let ignored_dependency = referencing_pack
             .ignored_dependencies
             .contains(&defining_pack_name);
