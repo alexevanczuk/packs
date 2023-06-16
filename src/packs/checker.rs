@@ -7,7 +7,6 @@ use crate::packs::SourceLocation;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
-use std::sync::Arc;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
@@ -35,7 +34,7 @@ pub struct Violation {
 pub struct Reference<'a> {
     constant_name: String,
     defining_pack_name: Option<String>,
-    referencing_pack: Arc<&'a Pack>,
+    referencing_pack: &'a Pack,
     relative_referencing_file: String,
     source_location: SourceLocation,
 }
@@ -78,7 +77,7 @@ impl<'a> Reference<'a> {
             });
 
         let referencing_pack =
-            Arc::new(configuration.pack_set.for_pack(&referencing_pack_name));
+            configuration.pack_set.for_pack(&referencing_pack_name);
 
         let loc = unresolved_reference.location.clone();
         let source_location = SourceLocation {

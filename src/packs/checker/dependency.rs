@@ -58,7 +58,7 @@ impl CheckerInterface for Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
-    use std::{path::PathBuf, sync::Arc};
+    use std::path::PathBuf;
 
     #[test]
     fn referencing_and_defining_pack_are_identical() {
@@ -72,9 +72,9 @@ mod tests {
         let reference = Reference {
             constant_name: String::from("::Foo"),
             defining_pack_name: Some(String::from("packs/foo")),
-            referencing_pack: Arc::new(
-                configuration.pack_set.for_pack(&String::from("packs/foo")),
-            ),
+            referencing_pack: configuration
+                .pack_set
+                .for_pack(&String::from("packs/foo")),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -95,9 +95,9 @@ mod tests {
         let reference = Reference {
             constant_name: String::from("::Bar"),
             defining_pack_name: Some(String::from("packs/bar")),
-            referencing_pack: Arc::new(
-                configuration.pack_set.for_pack(&String::from("packs/foo")),
-            ),
+            referencing_pack: configuration
+                .pack_set
+                .for_pack(&String::from("packs/foo")),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
