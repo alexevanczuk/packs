@@ -13,10 +13,16 @@ impl CheckerInterface for Checker {
             return None;
         }
 
-        let referencing_pack_name = &referencing_pack.name;
-        let defining_pack_name = reference.defining_pack_name.clone()?;
+        let referencing_pack_name = referencing_pack.name;
+        let defining_pack_name = &reference.defining_pack_name;
 
-        if referencing_pack_name == &defining_pack_name {
+        if defining_pack_name.is_none() {
+            return None;
+        }
+
+        let defining_pack_name = defining_pack_name.as_ref().unwrap();
+
+        if &referencing_pack_name == defining_pack_name {
             return None;
         }
 
@@ -24,8 +30,8 @@ impl CheckerInterface for Checker {
 
         let ignored_dependency = referencing_pack
             .ignored_dependencies
-            .contains(&defining_pack_name);
-        if !referencing_pack_dependencies.contains(&defining_pack_name)
+            .contains(defining_pack_name);
+        if !referencing_pack_dependencies.contains(defining_pack_name)
             && !ignored_dependency
         {
             let message = format!(
@@ -44,7 +50,7 @@ impl CheckerInterface for Checker {
                 file,
                 constant_name: reference.constant_name.clone(),
                 referencing_pack_name: referencing_pack_name.clone(),
-                defining_pack_name,
+                defining_pack_name: defining_pack_name.clone(),
             };
 
             return Some(Violation {
