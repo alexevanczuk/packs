@@ -2,11 +2,12 @@
 ![CI](https://github.com/alexevanczuk/packs/actions/workflows/ci.yml/badge.svg)
 ![Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)
 
-WIP: Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
+WIP Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
 
 # Features
-- It's entirely built in Rust, so it's really fast, and doesn't require any external dependencies since the binary contains everything that needed to run `packs`!
-- Currently all `packs` can do is generate a cache to be used by the ruby implementation.
+- It's entirely built in Rust, so it's really fast, and doesn't require any external dependencies since the binary contains everything that needed to run `packs`! In Gusto's monolith, it's about 20x faster than the ruby implementation.
+- The goal is for this to be able to be a drop-in replacement for `packwerk`.
+- Currently, `packs` implements `check`, with `update` coming soon.
 
 # Usage
 One simple way to try out `packs` to generate your cache would be to create a bash function which wraps the call to `bin/packwerk`, like so:
