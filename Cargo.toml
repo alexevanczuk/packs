@@ -42,7 +42,7 @@ serde_json = "1.0.96"
 line-col = "0.2.1"
 cruet = "0.13.3"
 serde_magnus = "0.2.2"
-chashmap = "2.2.2"
+dashmap = "5.4.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI

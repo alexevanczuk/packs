@@ -11,7 +11,7 @@ use super::{checker::ViolationIdentifier, Pack};
 pub struct PackSet {
     pub packs: Vec<Pack>,
     indexed_packs: HashMap<String, Pack>,
-    for_file_cache: chashmap::CHashMap<PathBuf, Option<String>>,
+    for_file_cache: dashmap::DashMap<PathBuf, Option<String>>,
     // For now, we keep track of all violations so that we can diff them and only
     // present the ones that are not recorded.
     // Eventually, we'll need to rewrite these to disk, in which case we'll need
@@ -42,7 +42,7 @@ impl PackSet {
         PackSet {
             indexed_packs,
             packs,
-            for_file_cache: chashmap::CHashMap::new(),
+            for_file_cache: dashmap::DashMap::new(),
             all_violations,
         }
     }
