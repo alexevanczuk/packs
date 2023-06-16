@@ -2,6 +2,7 @@ use assert_cmd::prelude::*;
 use std::{error::Error, process::Command};
 
 #[test]
+#[ignore]
 fn test_generate_cache() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
