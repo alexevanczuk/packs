@@ -183,7 +183,7 @@ fn get_all_violations(
                     let absolute_path_of_referring_file =
                         processed_file.absolute_path.clone();
                     Reference::from_unresolved_reference(
-                        &configuration,
+                        configuration,
                         unresolved_ref,
                         &absolute_path_of_referring_file,
                     )
