@@ -11,7 +11,6 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
-use std::thread;
 use tracing::debug;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -212,8 +211,7 @@ pub(crate) fn write_cache_for_files(
         );
         if !cachable_file.cache_is_valid() {
             let references = get_unresolved_references(path);
-            // Write the cache in a new thread:
-            thread::spawn(move || write_cache(&cachable_file, references));
+            write_cache(&cachable_file, references)
         }
     });
     debug!("Finished writing cache for {} files", file_count);
@@ -273,12 +271,23 @@ mod tests {
             ],
         };
 
-        write_cache_for_files(
-            vec![String::from("packs/foo/app/services/foo.rb")],
-            configuration::get(&PathBuf::from("tests/fixtures/simple_app")),
+        let absolute_root = &PathBuf::from("tests/fixtures/simple_app");
+        let file_to_cache = String::from("packs/foo/app/services/foo.rb");
+        let config = configuration::get(&absolute_root);
+
+        let absolute_filepath = &PathBuf::from(
+            "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
         );
 
-        let cache_file = PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk/061bf98e1706eac5af59c4b1a770fc7e");
+        let cachable_file = CachableFile::from(
+            absolute_root,
+            &config.cache_directory,
+            absolute_filepath,
+        );
+
+        write_cache_for_files(vec![file_to_cache.clone()], config);
+
+        let cache_file = cachable_file.cache_file_path;
         let actual = read_json_file(&cache_file).unwrap();
         assert_eq!(actual, expected);
     }
