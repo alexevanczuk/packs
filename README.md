@@ -4,8 +4,8 @@
 
 WIP Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
 
-# Features
-- It's entirely built in Rust, so it's really fast, and doesn't require any external dependencies since the binary contains everything that needed to run `packs`! In Gusto's monolith, it's about 20x faster than the ruby implementation.
+# About
+- It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
 - The goal is for this to be able to be a drop-in replacement for `packwerk`.
 - Currently, `packs` implements `check`, with `update` coming soon.
 
@@ -44,6 +44,9 @@ To verify:
 2. Run `packs generate_cache` (see directions below to get binary)
 3. Run `bin/packwerk update` to see how violations change using `packs`.
 
+Separately, you can run:
+`packs check` and compare the output to `bin/packwerk check`
+
 # Downloading the Binary
 Deployment ergonomics are still a WIP.
 
@@ -70,6 +73,33 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 - custom inflections
 - custom load paths
 - zeitwerk default namespaces
+
+# Benchmarks
+## Cold Cache, without Spring
+- `packs check`: `rm -rf tmp/cache/packwerk && DISABLE_SPRING=1 time ../pks/target/release/packs check`
+- `packwerk check`: `rm -rf tmp/cache/packwerk && DISABLE_SPRING=1 time bin/packwerk check`
+
+| Run         | `packs check` | `packwerk check` |
+|-------------|---------------|------------------|
+| 1           | 8.9s          | 107.83s          |
+| 2           | 7.31s         | 85.24s           |
+| 3           | 7.55s         | 126.52s          |
+| 4           | 6.85s         | 80.47s           |
+| 5           | 8.45s         | 99.90s           |
+| **Average** | 7.812s        | 99.99s           |
+
+## Hot Cache, without Spring
+- `packs check`: `DISABLE_SPRING=1 time ../pks/target/release/packs check`
+- `packwerk check`: `DISABLE_SPRING=1 time bin/packwerk check`
+
+| Run         | `packs check` | `packwerk check` |
+|-------------|---------------|------------------|
+| 1           | 3.86s         | 39.33s           |
+| 2           | 3.69s         | 34.02s           |
+| 3           | 3.6s          | 41.68s           |
+| 4           | 3.52s         | 35.26s           |
+| 5           | 3.32s         | 37.14s           |
+| **Average** | 3.598         | 37.29            |
 
 # Profiling
 I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
