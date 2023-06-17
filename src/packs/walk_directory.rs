@@ -1,15 +1,12 @@
 use jwalk::WalkDirGeneric;
 use std::{
     collections::HashSet,
-    fs::File,
-    io::Read,
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use super::{configuration::RawConfiguration, CheckerSetting, PackageTodo};
+use super::configuration::RawConfiguration;
 use crate::packs::Pack;
-use crate::packs::RawPack;
 
 fn matches_globs(path: &Path, globs: &[String]) -> bool {
     globs
@@ -111,7 +108,7 @@ pub fn walk_directory(
             continue;
         }
 
-        let mut relative_path = absolute_path
+        let relative_path = absolute_path
             .strip_prefix(absolute_root)
             .unwrap()
             .to_owned();
@@ -125,72 +122,13 @@ pub fn walk_directory(
         let file_name =
             relative_path.file_name().expect("expected a file_name");
 
-        // TODO: Move this whole case statement into some function within Pack
         if file_name.eq_ignore_ascii_case("package.yml")
             && (matches_globs(
                 relative_path.parent().unwrap(),
                 &raw.package_paths,
             ) || absolute_path.parent().unwrap() == absolute_root)
         {
-            let mut name = relative_path
-                .parent()
-                .expect("Expected package to be in a parent directory")
-                .to_str()
-                .expect("Non-unicode characters?")
-                .to_owned();
-            let yml = absolute_path.clone();
-            relative_path = relative_path.parent().unwrap().to_owned();
-
-            // Handle the root pack
-            if name == *"" {
-                name = String::from(".");
-                relative_path = PathBuf::from(".");
-            };
-
-            let mut yaml_contents = String::new();
-            let mut file =
-                File::open(&yml).expect("Failed to open the YAML file");
-            file.read_to_string(&mut yaml_contents)
-                .expect("Failed to read the YAML file");
-
-            let raw_pack: RawPack = serde_yaml::from_str(&yaml_contents)
-                .expect("Failed to deserialize the YAML");
-
-            let absolute_path_to_package_todo =
-                absolute_path.parent().unwrap().join("package_todo.yml");
-
-            let package_todo: PackageTodo =
-                if absolute_path_to_package_todo.exists() {
-                    let mut package_todo_contents = String::new();
-                    let mut file = File::open(&absolute_path_to_package_todo)
-                        .expect("Failed to open the package_todo.yml file");
-                    file.read_to_string(&mut package_todo_contents)
-                        .expect("Could not read the package_todo.yml file");
-                    serde_yaml::from_str(&package_todo_contents).unwrap()
-                } else {
-                    PackageTodo::default()
-                };
-
-            let dependencies = raw_pack.dependencies;
-            let ignored_dependencies = raw_pack.ignored_dependencies;
-            let raw_enforce_dependencies = raw_pack.enforce_dependencies;
-            let enforce_dependencies = if raw_enforce_dependencies == "true" {
-                CheckerSetting::True
-            } else if raw_enforce_dependencies == "strict" {
-                CheckerSetting::Strict
-            } else {
-                CheckerSetting::False
-            };
-
-            let pack: Pack = Pack {
-                yml,
-                name,
-                relative_path,
-                dependencies,
-                package_todo,
-                ignored_dependencies,
-                enforce_dependencies,
-            };
+            let pack = Pack::from_path(&absolute_path, &relative_path);
             included_packs.insert(pack);
         }
     }

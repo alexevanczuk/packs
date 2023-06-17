@@ -2,8 +2,10 @@ mod configuration;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
+use std::fs::File;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::io::Read;
 use std::path::PathBuf;
 pub(crate) mod cache;
 pub(crate) mod checker;
@@ -126,6 +128,76 @@ impl Pack {
             }
         }
         violations
+    }
+
+    pub fn from_path(
+        package_yml_absolute_path: &PathBuf,
+        package_yml_relative_path: &PathBuf,
+    ) -> Pack {
+        let mut relative_path = package_yml_relative_path
+            .parent()
+            .expect("Expected package to be in a parent directory")
+            .to_owned();
+
+        let mut name = relative_path
+            .to_str()
+            .expect("Non-unicode characters?")
+            .to_owned();
+        let yml = package_yml_absolute_path.clone();
+
+        // Handle the root pack
+        if name == *"" {
+            name = String::from(".");
+            relative_path = PathBuf::from(".");
+        };
+
+        let mut yaml_contents = String::new();
+        let mut file = File::open(&yml).expect("Failed to open the YAML file");
+        file.read_to_string(&mut yaml_contents)
+            .expect("Failed to read the YAML file");
+
+        let raw_pack: RawPack = serde_yaml::from_str(&yaml_contents)
+            .expect("Failed to deserialize the YAML");
+
+        let absolute_path_to_package_todo = package_yml_absolute_path
+            .parent()
+            .unwrap()
+            .join("package_todo.yml");
+
+        let package_todo: PackageTodo =
+            if absolute_path_to_package_todo.exists() {
+                let mut package_todo_contents = String::new();
+                let mut file = File::open(&absolute_path_to_package_todo)
+                    .expect("Failed to open the package_todo.yml file");
+                file.read_to_string(&mut package_todo_contents)
+                    .expect("Could not read the package_todo.yml file");
+                serde_yaml::from_str(&package_todo_contents).unwrap()
+            } else {
+                PackageTodo::default()
+            };
+
+        let dependencies = raw_pack.dependencies;
+        let ignored_dependencies = raw_pack.ignored_dependencies;
+        let raw_enforce_dependencies = raw_pack.enforce_dependencies;
+        let enforce_dependencies = if raw_enforce_dependencies == "true" {
+            CheckerSetting::True
+        } else if raw_enforce_dependencies == "strict" {
+            CheckerSetting::Strict
+        } else {
+            CheckerSetting::False
+        };
+
+        let pack: Pack = Pack {
+            yml,
+            name,
+            relative_path,
+            dependencies,
+            package_todo,
+            ignored_dependencies,
+            enforce_dependencies,
+        };
+
+        pack
     }
 }
 
