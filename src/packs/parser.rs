@@ -10,7 +10,7 @@ pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
 pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
 
-use crate::packs::cache::{write_cache, CachableFile};
+use crate::packs::per_file_cache::{write_cache, CachableFile};
 
 use super::ProcessedFile;
 
@@ -44,6 +44,7 @@ pub fn process_files_with_cache(
     paths
         .into_par_iter()
         .map(|path| {
+            // cache.get_unresolved_references_with_cache(path)
             let cachable_file =
                 CachableFile::from(absolute_root, cache_dir, path);
             let references = cachable_file
@@ -64,6 +65,7 @@ pub fn process_files_with_cache(
             }
         })
         .collect()
+    // Down here, flush the cache
 }
 
 fn get_file_type(path: &Path) -> Option<SupportedFileType> {

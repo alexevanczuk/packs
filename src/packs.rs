@@ -7,13 +7,13 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::io::Read;
 use std::path::PathBuf;
-pub(crate) mod cache;
 pub(crate) mod checker;
 pub mod cli;
 mod inflector_shim;
 mod pack_set;
 pub mod package_todo;
 pub mod parser;
+pub(crate) mod per_file_cache;
 mod walk_directory;
 
 // Re-exports: Eventually, these may be part of the public API for packs

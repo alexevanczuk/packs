@@ -1,6 +1,6 @@
 use crate::packs;
-use crate::packs::cache;
 use crate::packs::checker;
+use crate::packs::per_file_cache;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -71,7 +71,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 return Err("Cache is disabled. Enable it in packwerk.yml to use this command.".into());
             }
 
-            cache::write_cache_for_files(files, configuration);
+            per_file_cache::write_cache_for_files(files, configuration);
             Ok(())
         }
     }
