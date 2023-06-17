@@ -1,5 +1,6 @@
 use crate::packs::package_todo;
 use crate::packs::parser::process_files_with_cache;
+use crate::packs::per_file_cache;
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
@@ -10,6 +11,7 @@ use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
+use super::parser::Cache;
 use super::Pack;
 use super::UnresolvedReference;
 
@@ -112,11 +114,15 @@ pub(crate) fn check(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let cache = per_file_cache::PerFileCache {
+        cache_dir: configuration.cache_directory.to_owned(),
+    };
+
     debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let violations: Vec<Violation> =
-        get_all_violations(&configuration, absolute_paths);
+        get_all_violations(&configuration, absolute_paths, cache);
     let recorded_violations = configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
@@ -143,9 +149,14 @@ pub(crate) fn check(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let cache = per_file_cache::PerFileCache {
+        cache_dir: configuration.cache_directory.to_owned(),
+    };
+
     let violations = get_all_violations(
         &configuration,
         configuration.intersect_files(vec![]),
+        cache,
     );
 
     package_todo::write_violations_to_disk(configuration, violations);
@@ -153,9 +164,10 @@ pub(crate) fn update(
     Ok(())
 }
 
-fn get_all_violations(
+fn get_all_violations<T: Cache + Send + Sync>(
     configuration: &Configuration,
     absolute_paths: HashSet<PathBuf>,
+    cache: T,
 ) -> Vec<Violation> {
     // TODO: Write a test that if this isn't here, it fails gracefully
     create_cache_dir_idempotently(&configuration.cache_directory);
@@ -163,8 +175,8 @@ fn get_all_violations(
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
-        &configuration.cache_directory,
         &absolute_paths,
+        cache,
     );
 
     debug!("Turning unresolved references into fully qualified references");

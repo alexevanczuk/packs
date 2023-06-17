@@ -2,6 +2,7 @@ pub(crate) mod ruby;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
+    thread::JoinHandle,
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -9,8 +10,6 @@ pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby
 pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
 pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
-
-use crate::packs::per_file_cache::{write_cache, CachableFile};
 
 use super::ProcessedFile;
 
@@ -34,34 +33,37 @@ pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
     }
 }
 
+pub trait Cache {
+    fn get_unresolved_references_with_cache(
+        &self,
+        absolute_root: &PathBuf,
+        path: &PathBuf,
+    ) -> Vec<UnresolvedReference>;
+
+    fn setup() -> Self;
+
+    fn teardown(&self) -> JoinHandle<()>;
+}
+
 // TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
 // cache related activities within the implementation of the trait
-pub fn process_files_with_cache(
+pub fn process_files_with_cache<T: Cache + Send + Sync>(
     absolute_root: &PathBuf,
-    cache_dir: &Path,
     paths: &HashSet<PathBuf>,
+    cache: T,
 ) -> Vec<ProcessedFile> {
     paths
         .into_par_iter()
-        .map(|path| {
-            // cache.get_unresolved_references_with_cache(path)
-            let cachable_file =
-                CachableFile::from(absolute_root, cache_dir, path);
-            let references = cachable_file
-                .cache_entry_if_valid()
-                .map(|entry| entry.get_unresolved_references())
-                .or_else(|| {
-                    let uncached_references = get_unresolved_references(path);
-                    let cloned_references = uncached_references.clone();
-                    write_cache(&cachable_file, cloned_references);
-
-                    Some(uncached_references)
-                })
-                .unwrap();
+        .map(|absolute_path| -> ProcessedFile {
+            let unresolved_references = cache
+                .get_unresolved_references_with_cache(
+                    absolute_root,
+                    absolute_path,
+                );
 
             ProcessedFile {
-                absolute_path: path.to_owned(),
-                unresolved_references: references,
+                absolute_path: absolute_path.to_owned(),
+                unresolved_references,
             }
         })
         .collect()

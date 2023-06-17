@@ -13,6 +13,42 @@ use std::path::Path;
 use std::path::PathBuf;
 use tracing::debug;
 
+use super::parser::Cache;
+
+// Define PerFileStruct that implements the Cache trait
+pub struct PerFileCache {
+    pub cache_dir: PathBuf,
+}
+
+impl Cache for PerFileCache {
+    fn get_unresolved_references_with_cache(
+        &self,
+        absolute_root: &PathBuf,
+        path: &PathBuf,
+    ) -> Vec<UnresolvedReference> {
+        let cachable_file =
+            CachableFile::from(absolute_root, &self.cache_dir, path);
+        cachable_file
+            .cache_entry_if_valid()
+            .map(|entry| entry.get_unresolved_references())
+            .or_else(|| {
+                let uncached_references = get_unresolved_references(path);
+                let cloned_references = uncached_references.clone();
+                write_cache(&cachable_file, cloned_references);
+
+                Some(uncached_references)
+            })
+            .unwrap()
+    }
+
+    fn setup() -> Self {
+        todo!()
+    }
+
+    fn teardown(&self) -> std::thread::JoinHandle<()> {
+        todo!()
+    }
+}
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
