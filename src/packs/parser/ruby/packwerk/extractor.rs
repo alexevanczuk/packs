@@ -4,7 +4,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::packs::parser::ruby::namespace_calculator;
 
@@ -388,7 +388,7 @@ fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
     }
 }
 
-pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
+pub(crate) fn extract_from_path(path: &Path) -> Vec<UnresolvedReference> {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });

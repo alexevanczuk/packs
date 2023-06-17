@@ -6,6 +6,7 @@ use std::fs::File;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::io::Read;
+use std::path::Path;
 use std::path::PathBuf;
 pub(crate) mod checker;
 pub mod cli;
@@ -131,8 +132,8 @@ impl Pack {
     }
 
     pub fn from_path(
-        package_yml_absolute_path: &PathBuf,
-        package_yml_relative_path: &PathBuf,
+        package_yml_absolute_path: &Path,
+        package_yml_relative_path: &Path,
     ) -> Pack {
         let mut relative_path = package_yml_relative_path
             .parent()
@@ -143,7 +144,7 @@ impl Pack {
             .to_str()
             .expect("Non-unicode characters?")
             .to_owned();
-        let yml = package_yml_absolute_path.clone();
+        let yml = package_yml_absolute_path;
 
         // Handle the root pack
         if name == *"" {
@@ -152,7 +153,7 @@ impl Pack {
         };
 
         let mut yaml_contents = String::new();
-        let mut file = File::open(&yml).expect("Failed to open the YAML file");
+        let mut file = File::open(yml).expect("Failed to open the YAML file");
         file.read_to_string(&mut yaml_contents)
             .expect("Failed to read the YAML file");
 
@@ -188,7 +189,7 @@ impl Pack {
         };
 
         let pack: Pack = Pack {
-            yml,
+            yml: yml.to_path_buf(),
             name,
             relative_path,
             dependencies,

@@ -15,7 +15,6 @@ use tracing::debug;
 
 use super::parser::Cache;
 
-// Define PerFileStruct that implements the Cache trait
 pub struct PerFileCache {
     pub cache_dir: PathBuf,
 }
@@ -23,8 +22,8 @@ pub struct PerFileCache {
 impl Cache for PerFileCache {
     fn get_unresolved_references_with_cache(
         &self,
-        absolute_root: &PathBuf,
-        path: &PathBuf,
+        absolute_root: &Path,
+        path: &Path,
     ) -> Vec<UnresolvedReference> {
         let cachable_file =
             CachableFile::from(absolute_root, &self.cache_dir, path);
@@ -99,7 +98,7 @@ pub fn read_json_file(
     Ok(data)
 }
 
-pub(crate) fn file_content_digest(file: &PathBuf) -> String {
+pub(crate) fn file_content_digest(file: &Path) -> String {
     let mut file_content = Vec::new();
 
     // Read the file content
@@ -151,9 +150,9 @@ pub struct CachableFile {
 impl CachableFile {
     // Pass in Configuration and get cache_dir from that
     pub fn from(
-        absolute_root: &PathBuf,
+        absolute_root: &Path,
         cache_directory: &Path,
-        filepath: &PathBuf,
+        filepath: &Path,
     ) -> CachableFile {
         let relative_path: PathBuf =
             filepath.strip_prefix(absolute_root).unwrap().to_path_buf();
@@ -309,7 +308,7 @@ mod tests {
 
         let absolute_root = &PathBuf::from("tests/fixtures/simple_app");
         let file_to_cache = String::from("packs/foo/app/services/foo.rb");
-        let config = configuration::get(&absolute_root);
+        let config = configuration::get(absolute_root);
 
         let absolute_filepath = &PathBuf::from(
             "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
@@ -321,7 +320,7 @@ mod tests {
             absolute_filepath,
         );
 
-        write_cache_for_files(vec![file_to_cache.clone()], config);
+        write_cache_for_files(vec![file_to_cache], config);
 
         let cache_file = cachable_file.cache_file_path;
         let actual = read_json_file(&cache_file).unwrap();

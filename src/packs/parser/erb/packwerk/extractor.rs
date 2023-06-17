@@ -1,11 +1,11 @@
 use regex::Regex;
 
 use crate::packs::{Range, UnresolvedReference};
-use std::{fs, path::PathBuf};
+use std::{fs, path::Path};
 
 use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents as extract_from_ruby_contents;
 
-pub(crate) fn extract_from_path(path: &PathBuf) -> Vec<UnresolvedReference> {
+pub(crate) fn extract_from_path(path: &Path) -> Vec<UnresolvedReference> {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });

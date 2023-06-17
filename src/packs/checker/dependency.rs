@@ -123,6 +123,6 @@ mod tests {
                 defining_pack_name: String::from("packs/bar"),
             },
         };
-        assert_eq!(expected_violation, checker.check(&&reference).unwrap())
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
     }
 }

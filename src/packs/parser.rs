@@ -19,7 +19,7 @@ pub enum SupportedFileType {
     Erb,
 }
 
-pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
+pub fn get_unresolved_references(path: &Path) -> Vec<UnresolvedReference> {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
@@ -36,8 +36,8 @@ pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
 pub trait Cache {
     fn get_unresolved_references_with_cache(
         &self,
-        absolute_root: &PathBuf,
-        path: &PathBuf,
+        absolute_root: &Path,
+        path: &Path,
     ) -> Vec<UnresolvedReference>;
 
     fn setup() -> Self;
@@ -48,7 +48,7 @@ pub trait Cache {
 // TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
 // cache related activities within the implementation of the trait
 pub fn process_files_with_cache<T: Cache + Send + Sync>(
-    absolute_root: &PathBuf,
+    absolute_root: &Path,
     paths: &HashSet<PathBuf>,
     cache: T,
 ) -> Vec<ProcessedFile> {
