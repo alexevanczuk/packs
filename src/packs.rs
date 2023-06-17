@@ -5,14 +5,14 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::path::PathBuf;
-
-mod cache;
+pub(crate) mod cache;
 pub(crate) mod checker;
 pub mod cli;
 mod inflector_shim;
 mod pack_set;
 pub mod package_todo;
 pub mod parser;
+mod walk_directory;
 
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use crate::packs::checker::Violation;
