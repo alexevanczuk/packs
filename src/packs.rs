@@ -1,14 +1,11 @@
 mod configuration;
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::path::Path;
 use std::path::PathBuf;
-use tracing::debug;
+
 mod cache;
 pub(crate) mod checker;
 pub mod cli;
@@ -16,7 +13,6 @@ mod inflector_shim;
 mod pack_set;
 pub mod package_todo;
 pub mod parser;
-mod string_helpers;
 
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use crate::packs::checker::Violation;
@@ -42,31 +38,6 @@ pub fn list(configuration: Configuration) {
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
-}
-
-pub fn process_file(
-    absolute_root: &PathBuf,
-    cache_dir: &Path,
-    relative_files: Vec<String>,
-) -> Vec<ProcessedFile> {
-    debug!(
-        "Calling get_unresolved_references with {} files",
-        relative_files.len()
-    );
-    let ret = relative_files
-        .into_par_iter()
-        .map(|relative_path| {
-            let absolute_path = absolute_root.join(relative_path);
-            parser::process_file_with_cache(
-                absolute_root,
-                cache_dir,
-                &absolute_path,
-            )
-        })
-        .collect();
-    // dbg!(&ret);
-    debug!("Finished get_unresolved_references");
-    ret
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]

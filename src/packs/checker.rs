@@ -1,6 +1,6 @@
 use crate::packs::cache::create_cache_dir_idempotently;
 use crate::packs::package_todo;
-use crate::packs::parser::process_file_with_cache;
+use crate::packs::parser::process_files_with_cache;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
@@ -161,16 +161,11 @@ fn get_all_violations(
     create_cache_dir_idempotently(&configuration.cache_directory);
 
     debug!("Getting unresolved references (using cache if possible)");
-    let processed_files: Vec<ProcessedFile> = absolute_paths
-        .into_par_iter()
-        .map(|p| {
-            process_file_with_cache(
-                &configuration.absolute_root,
-                &configuration.cache_directory,
-                &p,
-            )
-        })
-        .collect();
+    let processed_files: Vec<ProcessedFile> = process_files_with_cache(
+        &configuration.absolute_root,
+        &configuration.cache_directory,
+        &absolute_paths,
+    );
 
     debug!("Turning unresolved references into fully qualified references");
     let references: Vec<Reference> = processed_files

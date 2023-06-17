@@ -2,18 +2,16 @@ use itertools::Itertools;
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use tracing::debug;
 
-#[allow(unused_imports)]
-use crate::packs::Pack;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct ConstantResolver {
     fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
     // Just for testing
+    #[allow(dead_code)]
     pub(crate) autoload_paths: Vec<PathBuf>,
 }
 
@@ -191,7 +189,6 @@ impl ConstantResolver {
     }
 }
 
-#[allow(unused_imports)]
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;

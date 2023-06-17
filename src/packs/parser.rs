@@ -1,9 +1,11 @@
 pub(crate) mod ruby;
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
     thread,
 };
 
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
 pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
@@ -35,30 +37,36 @@ pub fn get_unresolved_references(path: &PathBuf) -> Vec<UnresolvedReference> {
 
 // TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
 // cache related activities within the implementation of the trait
-pub fn process_file_with_cache(
+pub fn process_files_with_cache(
     absolute_root: &PathBuf,
     cache_dir: &Path,
-    path: &PathBuf,
-) -> ProcessedFile {
-    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
-    let references = cachable_file
-        .cache_entry_if_valid()
-        .map(|entry| entry.get_unresolved_references())
-        .or_else(|| {
-            let uncached_references = get_unresolved_references(path);
-            let cloned_references = uncached_references.clone();
-            thread::spawn(move || {
-                write_cache(&cachable_file, cloned_references);
-            });
+    paths: &HashSet<PathBuf>,
+) -> Vec<ProcessedFile> {
+    paths
+        .into_par_iter()
+        .map(|path| {
+            let cachable_file =
+                CachableFile::from(absolute_root, cache_dir, path);
+            let references = cachable_file
+                .cache_entry_if_valid()
+                .map(|entry| entry.get_unresolved_references())
+                .or_else(|| {
+                    let uncached_references = get_unresolved_references(path);
+                    let cloned_references = uncached_references.clone();
+                    thread::spawn(move || {
+                        write_cache(&cachable_file, cloned_references);
+                    });
 
-            Some(uncached_references)
+                    Some(uncached_references)
+                })
+                .unwrap();
+
+            ProcessedFile {
+                absolute_path: path.to_owned(),
+                unresolved_references: references,
+            }
         })
-        .unwrap();
-
-    ProcessedFile {
-        absolute_path: path.to_owned(),
-        unresolved_references: references,
-    }
+        .collect()
 }
 
 fn get_file_type(path: &Path) -> Option<SupportedFileType> {
