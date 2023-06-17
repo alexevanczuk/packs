@@ -2,7 +2,6 @@ pub(crate) mod ruby;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    thread,
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -53,9 +52,7 @@ pub fn process_files_with_cache(
                 .or_else(|| {
                     let uncached_references = get_unresolved_references(path);
                     let cloned_references = uncached_references.clone();
-                    thread::spawn(move || {
-                        write_cache(&cachable_file, cloned_references);
-                    });
+                    write_cache(&cachable_file, cloned_references);
 
                     Some(uncached_references)
                 })
