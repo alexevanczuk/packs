@@ -83,9 +83,9 @@ enum ParseError {
     // Add more variants as needed for different error cases
 }
 
-fn fetch_node_location(node: &nodes::Node) -> Result<Loc, ParseError> {
+fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
     match node {
-        Node::Const(const_node) => Ok(const_node.expression_l),
+        Node::Const(const_node) => Ok(&const_node.expression_l),
         node => {
             dbg!(node);
             panic!(
@@ -184,7 +184,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.current_namespaces.push(namespace);
 
         let definition_loc = fetch_node_location(&node.name).unwrap();
-        let location = loc_to_range(definition_loc, &self.line_col_lookup);
+        let location = loc_to_range(&definition_loc, &self.line_col_lookup);
         self.definitions.push(Definition {
             fully_qualified_name: fully_qualified_name.to_owned(),
             namespace_path: self.current_namespaces.to_owned(),
@@ -252,7 +252,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                     name: unwrapped_name,
                     namespace_path: self.current_namespaces.to_owned(),
                     location: loc_to_range(
-                        node.expression_l,
+                        &node.expression_l,
                         &self.line_col_lookup,
                     ),
                 })
@@ -281,7 +281,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.definitions.push(Definition {
             fully_qualified_name,
             namespace_path: self.current_namespaces.to_owned(),
-            location: loc_to_range(node.expression_l, &self.line_col_lookup),
+            location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         });
 
         if let Some(v) = node.value.to_owned() {
@@ -371,12 +371,12 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.references.push(UnresolvedReference {
             name,
             namespace_path,
-            location: loc_to_range(node.expression_l, &self.line_col_lookup),
+            location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         })
     }
 }
 
-fn loc_to_range(loc: Loc, lookup: &LineColLookup) -> Range {
+fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
     let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
     let (end_row, end_col) = lookup.get(loc.end);
 
