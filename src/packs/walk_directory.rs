@@ -22,7 +22,7 @@ fn matches_globs(path: &Path, globs: &[String]) -> bool {
 // Likely, we can organize this better by moving each piece of logic into its own function so this function
 // allows for a sort of "visitor pattern" for different things that need to walk the directory.
 pub fn walk_directory(
-    absolute_root: &Path,
+    absolute_root: PathBuf,
     raw: &RawConfiguration,
     excluded_globs: &Vec<String>,
 ) -> (HashSet<PathBuf>, HashSet<Pack>) {
@@ -48,6 +48,8 @@ pub fn walk_directory(
 
     let excluded_dirs_ref = Arc::new(all_excluded_dirs);
 
+    let absolute_root_ref = Arc::new(absolute_root.clone());
+
     // TODO: Pull directory walker into separate module. Allow it to be called with implementations of a trait
     // so separate concerns can each be in their own place.
     //
@@ -59,12 +61,13 @@ pub fn walk_directory(
     // we'll save a lot of time by just skipping the entire directory.
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
-    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(absolute_root)
+    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(&absolute_root.clone())
         .process_read_dir(move |depth, _path, _read_dir_state, children| {
             // We need to let the compiler know that we are using a reference and not the value itself.
             // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
             // (with an increase to the reference count).
             let cloned_excluded_dirs = excluded_dirs_ref.clone();
+            let cloned_absolute_root = absolute_root_ref.clone();
 
             // Excluded dirs are top-level only
             if let Some(depth) = depth {
@@ -74,20 +77,15 @@ pub fn walk_directory(
             }
             children.iter_mut().for_each(|dir_entry_result| {
                 if let Ok(dir_entry) = dir_entry_result {
-                    // Can't figure out how to actually match against raw.exclude due to ownership issues
-                    // Hope to learn soon!
-                    // let absolute_path = dir_entry_result.unwrap().path();
-                    // let relative_path = absolute_path
-                    //     .strip_prefix(&absolute_root)
-                    //     .unwrap();
-
-                    // if matches_globs(&relative_path, &raw.exclude) {
-                    //     dir_entry.read_children_path = None;
-                    // }
-
-                    // So instead, we'll just use the hardcoded directories we want to exclude
-                    let dirname = dir_entry.path();
-                    if matches_globs(&dirname, cloned_excluded_dirs.as_ref()) {
+                    let absolute_dirname = dir_entry.path();
+                    let relative_path = absolute_dirname
+                        .strip_prefix(cloned_absolute_root.as_ref())
+                        .unwrap()
+                        .to_owned();
+                    if matches_globs(
+                        &relative_path,
+                        cloned_excluded_dirs.as_ref(),
+                    ) {
                         dir_entry.read_children_path = None;
                     }
                 }
@@ -112,7 +110,7 @@ pub fn walk_directory(
         }
 
         let relative_path = absolute_path
-            .strip_prefix(absolute_root)
+            .strip_prefix(&absolute_root)
             .unwrap()
             .to_owned();
 
