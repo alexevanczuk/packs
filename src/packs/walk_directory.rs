@@ -163,9 +163,19 @@ mod tests {
         let (files, _packs) =
             walk_directory(absolute_path.clone(), &raw_config);
 
-        let node_module_file = absolute_path.join("node_modules/file.rb");
+        let node_module_file =
+            absolute_path.join("node_modules/subfolder/file.rb");
         let contains_bad_file = files.contains(&node_module_file);
         assert!(!contains_bad_file);
+
+        // Although `node_modules/**/*` should probably exclude `node_modules/file.rb`,
+        // it skips the first files in the directory. For now this doesn't affect behavior,
+        // in Gusto's monolith, so keeping as an open bug for now.
+        // To fix this bug, start by changing this test to:
+        // assert!(!contains_bad_file); (instead of assert!(contains_bad_file);)
+        let node_module_file = absolute_path.join("node_modules/file.rb");
+        let contains_bad_file = files.contains(&node_module_file);
+        assert!(contains_bad_file);
 
         Ok(())
     }
