@@ -421,9 +421,9 @@ pub(crate) fn extract_from_contents(
 
     let lookup = LineColLookup::new(&contents);
     let parser = Parser::new(contents.clone(), options);
-    let _ret = parser.do_parse();
+    let parse_result = parser.do_parse();
 
-    let ast_option: Option<Box<Node>> = _ret.ast;
+    let ast_option: Option<Box<Node>> = parse_result.ast;
 
     let ast = match ast_option {
         Some(some_ast) => some_ast,
