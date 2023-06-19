@@ -96,8 +96,8 @@ pub fn walk_directory(
     for entry in walk_dir {
         // I was using this to explore what directories were being walked to potentially
         // find performance improvements.
-        // use std::io::Write;
         // Write the entry out to a log file:
+        // use std::io::Write;
         // let mut file = std::fs::OpenOptions::new()
         //     .create(true)
         //     .append(true)
@@ -115,18 +115,19 @@ pub fn walk_directory(
             .unwrap()
             .to_owned();
 
+        // This could be one line, but I'm keeping it separate for debugging purposes
         if matches_globs(&relative_path, &raw.include) {
             if !matches_globs(&relative_path, &raw.exclude) {
                 included_paths.insert(absolute_path.clone());
             } else {
-                println!("file excluded: {}", relative_path.display())
+                // println!("file excluded: {}", relative_path.display())
             }
         } else {
-            println!(
-                "file not included: {:?}, {:?}",
-                relative_path.display(),
-                &raw.include
-            )
+            // println!(
+            //     "file not included: {:?}, {:?}",
+            //     relative_path.display(),
+            //     &raw.include
+            // )
         }
 
         let file_name =
