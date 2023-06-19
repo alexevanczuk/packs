@@ -139,16 +139,7 @@ pub fn write_violations_to_disk(
 
         // This is a hack until I figure out how to use serde to do this for me
         let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
-        let header = format!("\
-# This file contains a list of dependencies that are not part of the long term plan for the
-# '{}' package.
-# We should generally work to reduce this list over time.
-#
-# You can regenerate this file using the following command:
-#
-# bin/packwerk update-todo
----
-", responsible_pack_name);
+        let header = header(&responsible_pack_name);
         let package_todo_yml = header + &package_todo_yml;
 
         if !package_todo_yml_absolute_filepath.exists() {
@@ -160,6 +151,19 @@ pub fn write_violations_to_disk(
     }
 
     debug!("Finished writing violations to disk");
+}
+
+fn header(responsible_pack_name: &String) -> String {
+    format!("\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# '{}' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+", responsible_pack_name)
 }
 
 #[cfg(test)]
