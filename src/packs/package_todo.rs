@@ -1,5 +1,5 @@
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use tracing::debug;
 
 use super::{Configuration, Violation};
@@ -7,7 +7,7 @@ use super::{Configuration, Violation};
 #[derive(PartialEq, Debug, Eq, Deserialize, Serialize, Default, Clone)]
 pub struct ViolationGroup {
     // Use serde rename to parse the key as violations
-    #[serde(rename = "violations")]
+    #[serde(rename = "violations", serialize_with = "serialize_sorted_set")]
     pub violation_types: HashSet<String>,
     #[serde(serialize_with = "serialize_sorted_set")]
     pub files: HashSet<String>,
@@ -50,7 +50,11 @@ where
             .iter()
             .map(|(k, v)| (format!("QUOTE{}QUOTE", k), v))
             .collect();
-        map_serializer.serialize_entry(key, &quoted_value)?;
+        // https://stackoverflow.com/questions/42723065/how-to-sort-hashmap-keys-when-serializing-with-serde
+        let ordered_quoted_value: BTreeMap<_, _> =
+            quoted_value.iter().collect();
+
+        map_serializer.serialize_entry(key, &ordered_quoted_value)?;
     }
 
     map_serializer.end()
