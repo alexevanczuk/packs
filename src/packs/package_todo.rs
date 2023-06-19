@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tracing::debug;
@@ -46,15 +47,17 @@ where
         serializer.serialize_map(Some(sorted_entries.len()))?;
 
     for (key, value) in sorted_entries {
-        let quoted_value: HashMap<_, _> = value
+        let quoted_value: BTreeMap<_, _> = value
             .iter()
+            .sorted_by_key(|v| v.0)
             .map(|(k, v)| (format!("QUOTE{}QUOTE", k), v))
             .collect();
         // https://stackoverflow.com/questions/42723065/how-to-sort-hashmap-keys-when-serializing-with-serde
-        let ordered_quoted_value: BTreeMap<_, _> =
-            quoted_value.iter().collect();
+        let mut items: Vec<(_, _)> = quoted_value.iter().collect();
+        items.sort_by(|a, b| a.0.cmp(&b.0));
+        let sorted_quoted_value = BTreeMap::from_iter(items);
 
-        map_serializer.serialize_entry(key, &ordered_quoted_value)?;
+        map_serializer.serialize_entry(key, &sorted_quoted_value)?;
     }
 
     map_serializer.end()
