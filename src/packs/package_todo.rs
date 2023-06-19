@@ -206,32 +206,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    #[test]
-    fn test_deserialize_trivial_case() {
-        let contents: String = String::from(
-            "
-        # This file contains a list of dependencies that are not part of the long term plan for the
-        # 'packs/foo' package.
-        # We should generally work to reduce this list over time.
-        #
-        # You can regenerate this file using the following command:
-        #
-        # bin/packwerk update-todo
-        packs/bar:
-            \"::Bar\":
-                violations:
-                - dependency
-                files:
-                - packs/foo/app/services/foo.rb
-            \"::Baz\":
-                violations:
-                - dependency
-                - privacy
-                files:
-                - packs/foo/app/services/foo.rb
-        ",
-        );
-
+    fn example_package_todo() -> PackageTodo {
         let mut violations_by_defining_pack: HashMap<
             String,
             HashMap<String, ViolationGroup>,
@@ -263,9 +238,39 @@ mod tests {
         );
         violations_by_defining_pack
             .insert(String::from("packs/bar"), bar_violations);
-        let expected = PackageTodo {
+
+        PackageTodo {
             violations_by_defining_pack,
-        };
+        }
+    }
+
+    #[test]
+    fn test_deserialize_trivial_case() {
+        let contents: String = String::from(
+            "
+        # This file contains a list of dependencies that are not part of the long term plan for the
+        # 'packs/foo' package.
+        # We should generally work to reduce this list over time.
+        #
+        # You can regenerate this file using the following command:
+        #
+        # bin/packwerk update-todo
+        packs/bar:
+            \"::Bar\":
+                violations:
+                - dependency
+                files:
+                - packs/foo/app/services/foo.rb
+            \"::Baz\":
+                violations:
+                - dependency
+                - privacy
+                files:
+                - packs/foo/app/services/foo.rb
+        ",
+        );
+
+        let expected = example_package_todo();
 
         let actual: PackageTodo = serde_yaml::from_str(&contents).unwrap();
         assert_eq!(expected, actual);
