@@ -56,28 +56,14 @@ where
     map_serializer.end()
 }
 
-pub fn write_violations_to_disk(
-    configuration: Configuration,
-    violations: Vec<Violation>,
-) {
-    debug!("Starting writing violations to disk");
-    // First we need to group the violations by the repsonsible pack, which today is always the referencing pack
-    // Later if we change where a violation shows up, we should delegate to the checker
-    // to decide what pack it should be in.
-    let mut violations_by_responsible_pack: HashMap<String, Vec<Violation>> =
-        HashMap::new();
-    for violation in violations {
-        let referencing_pack_name =
-            violation.identifier.referencing_pack_name.to_owned();
-        violations_by_responsible_pack
-            .entry(referencing_pack_name)
-            .or_insert(Vec::new())
-            .push(violation);
-    }
+pub fn package_todos_for_pack_name(
+    violations_by_responsible_pack_name: HashMap<String, Vec<Violation>>,
+) -> HashMap<String, PackageTodo> {
+    let mut ret = HashMap::new();
 
     // Then we group violations by the defining pack, since that's how they're grouped in the package_todo.yml file
     for (responsible_pack_name, mut violations) in
-        violations_by_responsible_pack
+        violations_by_responsible_pack_name
     {
         let mut violations_by_defining_pack: HashMap<
             String,
@@ -127,30 +113,70 @@ pub fn write_violations_to_disk(
             violations_by_defining_pack,
         };
 
-        let responsible_pack =
-            configuration.pack_set.for_pack(&responsible_pack_name);
-        let package_todo_yml_absolute_filepath = responsible_pack
-            .yml
-            .parent()
-            .unwrap()
-            .join("package_todo.yml");
+        ret.insert(responsible_pack_name, package_todo);
+    }
 
-        let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
+    ret
+}
+pub fn write_violations_to_disk(
+    configuration: Configuration,
+    violations: Vec<Violation>,
+) {
+    debug!("Starting writing violations to disk");
+    // First we need to group the violations by the repsonsible pack, which today is always the referencing pack
+    // Later if we change where a violation shows up, we should delegate to the checker
+    // to decide what pack it should be in.
+    let mut violations_by_responsible_pack: HashMap<String, Vec<Violation>> =
+        HashMap::new();
+    for violation in violations {
+        let referencing_pack_name =
+            violation.identifier.referencing_pack_name.to_owned();
+        violations_by_responsible_pack
+            .entry(referencing_pack_name)
+            .or_insert(Vec::new())
+            .push(violation);
+    }
 
-        // This is a hack until I figure out how to use serde to do this for me
-        let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
-        let header = header(&responsible_pack_name);
-        let package_todo_yml = header + &package_todo_yml;
+    let package_todos_by_pack_name =
+        package_todos_for_pack_name(violations_by_responsible_pack);
 
-        if !package_todo_yml_absolute_filepath.exists() {
-            std::fs::File::create(&package_todo_yml_absolute_filepath).unwrap();
-        }
-
-        std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
-            .unwrap();
+    for (responsible_pack_name, package_todo) in package_todos_by_pack_name {
+        write_package_todo_to_disk(
+            &configuration,
+            responsible_pack_name,
+            package_todo,
+        );
     }
 
     debug!("Finished writing violations to disk");
+}
+
+fn write_package_todo_to_disk(
+    configuration: &Configuration,
+    responsible_pack_name: String,
+    package_todo: PackageTodo,
+) {
+    let responsible_pack =
+        configuration.pack_set.for_pack(&responsible_pack_name);
+    let package_todo_yml_absolute_filepath = responsible_pack
+        .yml
+        .parent()
+        .unwrap()
+        .join("package_todo.yml");
+
+    let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
+
+    // This is a hack until I figure out how to use serde to do this for me
+    let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
+    let header = header(&responsible_pack_name);
+    let package_todo_yml = header + &package_todo_yml;
+
+    if !package_todo_yml_absolute_filepath.exists() {
+        std::fs::File::create(&package_todo_yml_absolute_filepath).unwrap();
+    }
+
+    std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
+        .unwrap();
 }
 
 fn header(responsible_pack_name: &String) -> String {
