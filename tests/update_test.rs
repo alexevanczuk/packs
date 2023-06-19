@@ -3,7 +3,6 @@ use predicates::prelude::*;
 use std::{error::Error, path::Path, process::Command};
 
 #[test]
-#[ignore]
 fn test_update() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
@@ -20,8 +19,16 @@ fn test_update() -> Result<(), Box<dyn Error>> {
     let actual = std::fs::read_to_string(package_todo_yml_filepath)?;
     let expected = String::from(
         "\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
 packs/bar:
-  ::Bar:
+  \"::Bar\":
     violations:
     - dependency
     files:

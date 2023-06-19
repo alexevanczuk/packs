@@ -25,6 +25,13 @@ where
     sorted_files.serialize(serializer)
 }
 
+#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Default, Clone)]
+pub struct PackageTodo {
+    #[serde(flatten, serialize_with = "serialize_violations_by_defining_pack")]
+    pub violations_by_defining_pack:
+        HashMap<String, HashMap<String, ViolationGroup>>,
+}
+
 fn serialize_violations_by_defining_pack<S>(
     map: &HashMap<String, HashMap<String, ViolationGroup>>,
     serializer: S,
@@ -47,12 +54,6 @@ where
     }
 
     map_serializer.end()
-}
-#[derive(PartialEq, Eq, Debug, Deserialize, Serialize, Default, Clone)]
-pub struct PackageTodo {
-    #[serde(flatten, serialize_with = "serialize_violations_by_defining_pack")]
-    pub violations_by_defining_pack:
-        HashMap<String, HashMap<String, ViolationGroup>>,
 }
 
 pub fn write_violations_to_disk(
@@ -135,26 +136,25 @@ pub fn write_violations_to_disk(
             .join("package_todo.yml");
 
         let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
-        let header = format!("
-            # This file contains a list of dependencies that are not part of the long term plan for the
-            # '{}' package.
-            # We should generally work to reduce this list over time.
-            #
-            # You can regenerate this file using the following command:
-            #
-            # bin/packwerk update-todo
-            ---
-        ", responsible_pack_name);
+
+        // This is a hack until I figure out how to use serde to do this for me
+        let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
+        let header = format!("\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# '{}' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+", responsible_pack_name);
         let package_todo_yml = header + &package_todo_yml;
 
         if !package_todo_yml_absolute_filepath.exists() {
             std::fs::File::create(&package_todo_yml_absolute_filepath).unwrap();
         }
 
-        // Replace all instances of QUOTE with ".
-        // This is a hack to work around the fact that I can't figure out how to make serde_yaml
-        // double quote some strings but not others.
-        let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
         std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
             .unwrap();
     }
