@@ -275,4 +275,39 @@ mod tests {
         let actual: PackageTodo = serde_yaml::from_str(&contents).unwrap();
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn test_serialize_trivial_case() {
+        let expected: String = String::from(
+            "\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+packs/bar:
+    \"::Bar\":
+        violations:
+        - dependency
+        files:
+        - packs/foo/app/services/foo.rb
+    \"::Baz\":
+        violations:
+        - dependency
+        - privacy
+        files:
+        - packs/foo/app/services/foo.rb
+",
+);
+
+        let actual_package_todo = example_package_todo();
+        let actual = serialize_package_todo(
+            &String::from("packs/foo"),
+            actual_package_todo,
+        );
+
+        assert_eq!(expected, actual);
+    }
 }
