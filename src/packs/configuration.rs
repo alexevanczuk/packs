@@ -30,19 +30,19 @@ pub struct RawConfiguration {
 
     // List of custom associations, if any
     #[serde(default = "default_custom_associations")]
-    custom_associations: Vec<String>,
+    pub custom_associations: Vec<String>,
 
     // Whether or not you want the cache enabled
     #[serde(default = "default_cache")]
-    cache: bool,
+    pub cache: bool,
 
     // Where you want the cache to be stored
     #[serde(default = "default_cache_directory")]
-    cache_directory: String,
+    pub cache_directory: String,
 
     // Autoload paths used to resolve constants
     #[serde(default)]
-    autoload_paths: Option<Vec<String>>,
+    pub autoload_paths: Option<Vec<String>>,
 }
 
 fn default_include() -> Vec<String> {
@@ -158,13 +158,9 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         };
 
     debug!("Beginning directory walk");
-    let excluded_globs = &raw_config.exclude;
 
-    let (included_files, unsorted_packs) = walk_directory(
-        absolute_root.to_path_buf(),
-        &raw_config,
-        excluded_globs,
-    );
+    let (included_files, unsorted_packs) =
+        walk_directory(absolute_root.to_path_buf(), &raw_config);
     debug!("Finished directory walk");
 
     let absolute_root = absolute_root.to_path_buf();

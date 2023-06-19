@@ -24,7 +24,6 @@ fn matches_globs(path: &Path, globs: &[String]) -> bool {
 pub fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
-    excluded_globs: &Vec<String>,
 ) -> (HashSet<PathBuf>, HashSet<Pack>) {
     let mut included_paths: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
@@ -44,6 +43,7 @@ pub fn walk_directory(
     all_excluded_dirs
         .extend(default_excluded_dirs.iter().map(|s| s.to_string()));
 
+    let excluded_globs = &raw.exclude;
     all_excluded_dirs.extend(excluded_globs.to_owned());
 
     let excluded_dirs_ref = Arc::new(all_excluded_dirs);
@@ -82,6 +82,7 @@ pub fn walk_directory(
                         .strip_prefix(cloned_absolute_root.as_ref())
                         .unwrap()
                         .to_owned();
+
                     if matches_globs(
                         &relative_path,
                         cloned_excluded_dirs.as_ref(),
@@ -95,14 +96,14 @@ pub fn walk_directory(
     for entry in walk_dir {
         // I was using this to explore what directories were being walked to potentially
         // find performance improvements.
-        use std::io::Write;
+        // use std::io::Write;
         // Write the entry out to a log file:
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("tmp/pks_log.txt")
-            .unwrap();
-        writeln!(file, "{:?}", entry).unwrap();
+        // let mut file = std::fs::OpenOptions::new()
+        //     .create(true)
+        //     .append(true)
+        //     .open("tmp/pks_log.txt")
+        //     .unwrap();
+        // writeln!(file, "{:?}", entry).unwrap();
         let absolute_path = entry.unwrap().path();
 
         if absolute_path.is_dir() {
@@ -114,10 +115,18 @@ pub fn walk_directory(
             .unwrap()
             .to_owned();
 
-        if matches_globs(&relative_path, &raw.include)
-            && !matches_globs(&relative_path, &raw.exclude)
-        {
-            included_paths.insert(absolute_path.clone());
+        if matches_globs(&relative_path, &raw.include) {
+            if !matches_globs(&relative_path, &raw.exclude) {
+                included_paths.insert(absolute_path.clone());
+            } else {
+                println!("file excluded: {}", relative_path.display())
+            }
+        } else {
+            println!(
+                "file not included: {:?}, {:?}",
+                relative_path.display(),
+                &raw.include
+            )
         }
 
         let file_name =
@@ -135,4 +144,34 @@ pub fn walk_directory(
     }
 
     (included_paths, included_packs)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{error::Error, path::PathBuf};
+
+    use crate::packs::{
+        configuration::RawConfiguration, walk_directory::walk_directory,
+    };
+
+    #[test]
+    fn test_walk_directory() -> Result<(), Box<dyn Error>> {
+        let absolute_path = PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .expect("Could not canonicalize path");
+
+        let raw_config = RawConfiguration {
+            include: vec!["**/*".to_string()],
+            ..RawConfiguration::default()
+        };
+
+        let (files, _packs) =
+            walk_directory(absolute_path.clone(), &raw_config);
+
+        let node_module_file = absolute_path.join("node_modules/file.rb");
+        let contains_bad_file = files.contains(&node_module_file);
+        assert!(!contains_bad_file);
+
+        Ok(())
+    }
 }
