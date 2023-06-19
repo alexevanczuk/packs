@@ -168,7 +168,7 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
-    fn test_trivial_case() {
+    fn test_deserialize_trivial_case() {
         let contents: String = String::from(
             "
         # This file contains a list of dependencies that are not part of the long term plan for the
