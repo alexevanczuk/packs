@@ -96,6 +96,17 @@ fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
     }
 }
 
+fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
+    let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
+    let (end_row, end_col) = lookup.get(loc.end);
+
+    Range {
+        start_row,
+        start_col: start_col - 1,
+        end_row,
+        end_col,
+    }
+}
 fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
     match node {
         Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
@@ -373,18 +384,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             namespace_path,
             location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         })
-    }
-}
-
-fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
-    let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
-    let (end_row, end_col) = lookup.get(loc.end);
-
-    Range {
-        start_row,
-        start_col: start_col - 1,
-        end_row,
-        end_col,
     }
 }
 
