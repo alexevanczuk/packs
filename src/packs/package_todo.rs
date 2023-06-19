@@ -287,18 +287,19 @@ mod tests {
 # You can regenerate this file using the following command:
 #
 # bin/packwerk update-todo
+---
 packs/bar:
-    \"::Bar\":
-        violations:
-        - dependency
-        files:
-        - packs/foo/app/services/foo.rb
-    \"::Baz\":
-        violations:
-        - dependency
-        - privacy
-        files:
-        - packs/foo/app/services/foo.rb
+  \"::Bar\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::Baz\":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
 ",
 );
 
