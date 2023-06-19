@@ -94,14 +94,14 @@ pub fn walk_directory(
     for entry in walk_dir {
         // I was using this to explore what directories were being walked to potentially
         // find performance improvements.
-        // use std::io::Write;
-        // // Write the entry out to a log file:
-        // let mut file = std::fs::OpenOptions::new()
-        //     .create(true)
-        //     .append(true)
-        //     .open("tmp/pks_log.txt")
-        //     .unwrap();
-        // writeln!(file, "{:?}", entry).unwrap();
+        use std::io::Write;
+        // Write the entry out to a log file:
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("tmp/pks_log.txt")
+            .unwrap();
+        writeln!(file, "{:?}", entry).unwrap();
         let absolute_path = entry.unwrap().path();
 
         if absolute_path.is_dir() {
