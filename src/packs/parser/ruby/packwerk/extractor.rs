@@ -135,6 +135,34 @@ fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
     }
 }
 
+fn get_definition_from(
+    current_nesting: &String,
+    parent_nesting: &Vec<String>,
+    location: &Range,
+) -> Definition {
+    let name = current_nesting.to_owned();
+
+    let owned_namespace_path: Vec<String> = parent_nesting
+        .to_owned()
+        .into_iter()
+        .map(|x| x.to_owned())
+        .collect();
+
+    let fully_qualified_name = if !owned_namespace_path.is_empty() {
+        let mut name_components = owned_namespace_path.clone();
+        name_components.push(name);
+        format!("::{}", name_components.join("::"))
+    } else {
+        format!("::{}", name)
+    };
+
+    Definition {
+        fully_qualified_name,
+        namespace_path: owned_namespace_path,
+        location: location.to_owned(),
+    }
+}
+
 // TODO: Combine with fetch_const_const_name
 fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     match &node.scope {
@@ -180,33 +208,28 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             self.visit(inner);
             self.in_superclass = false;
         }
+        let definition_loc = fetch_node_location(&node.name).unwrap();
+        let location = loc_to_range(&definition_loc, &self.line_col_lookup);
 
-        let fully_qualified_name = if !self.current_namespaces.is_empty() {
-            let mut name_components = self.current_namespaces.clone();
-            name_components.push(namespace.to_owned());
-            format!("::{}", name_components.join("::"))
-        } else {
-            format!("::{}", namespace)
-        };
+        let definition = get_definition_from(
+            &namespace,
+            &self.current_namespaces,
+            &location,
+        );
 
         // Note – is there a way to use lifetime specifiers to get rid of this and
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
 
-        let definition_loc = fetch_node_location(&node.name).unwrap();
-        let location = loc_to_range(&definition_loc, &self.line_col_lookup);
-        self.definitions.push(Definition {
-            fully_qualified_name: fully_qualified_name.to_owned(),
-            namespace_path: self.current_namespaces.to_owned(),
-
-            location: location.to_owned(),
-        });
+        let name = definition.fully_qualified_name.to_owned();
+        let namespace_path = definition.namespace_path.to_owned();
+        self.definitions.push(definition);
 
         // Packwerk also considers a definition to be a "reference"
         self.references.push(UnresolvedReference {
-            name: fully_qualified_name,
-            namespace_path: self.current_namespaces.to_owned(),
+            name,
+            namespace_path,
             location,
         });
 

@@ -91,7 +91,7 @@ end
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("::Foo"),
-                namespace_path: vec![String::from("Foo")],
+                namespace_path: vec![],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
@@ -510,7 +510,7 @@ end
             extract_from_contents(contents),
             vec![UnresolvedReference {
                 name: String::from("::Foo"),
-                namespace_path: vec![String::from("Foo")],
+                namespace_path: vec![],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
@@ -541,7 +541,7 @@ end
             vec![
                 UnresolvedReference {
                     name: String::from("::Foo"),
-                    namespace_path: vec![String::from("Foo"),],
+                    namespace_path: vec![],
                     location: Range {
                         start_row: 1,
                         start_col: 6,
@@ -551,10 +551,7 @@ end
                 },
                 UnresolvedReference {
                     name: String::from("::Foo::Baz"),
-                    namespace_path: vec![
-                        String::from("Foo"),
-                        String::from("Baz")
-                    ],
+                    namespace_path: vec![String::from("Foo"),],
                     location: Range {
                         start_row: 2,
                         start_col: 8,
@@ -612,7 +609,7 @@ end
         assert_eq!(
             UnresolvedReference {
                 name: String::from("::Foo::Bar"),
-                namespace_path: vec![String::from("Foo::Bar")],
+                namespace_path: vec![],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
@@ -642,7 +639,7 @@ end
             vec![
                 UnresolvedReference {
                     name: String::from("::Foo"),
-                    namespace_path: vec![String::from("Foo")],
+                    namespace_path: vec![],
                     location: Range {
                         start_row: 1,
                         start_col: 6,
@@ -652,10 +649,7 @@ end
                 },
                 UnresolvedReference {
                     name: String::from("::Foo::Bar"),
-                    namespace_path: vec![
-                        String::from("Foo"),
-                        String::from("Bar")
-                    ],
+                    namespace_path: vec![String::from("Foo"),],
                     location: Range {
                         start_row: 2,
                         start_col: 8,
@@ -1009,7 +1003,7 @@ end
         assert_eq!(
             UnresolvedReference {
                 name: String::from("::Foo::Bar"),
-                namespace_path: vec![String::from("Foo::Bar")],
+                namespace_path: vec![],
                 location: Range {
                     start_row: 1,
                     start_col: 6,
