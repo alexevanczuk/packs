@@ -327,38 +327,31 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         }
     }
 
-    // TODO: extract the common stuff from on_class
     fn on_module(&mut self, node: &nodes::Module) {
         let namespace = fetch_const_name(&node.name)
             .expect("We expect no parse errors in class/module definitions");
+        let definition_loc = fetch_node_location(&node.name).unwrap();
+        let location = loc_to_range(definition_loc, &self.line_col_lookup);
 
-        // EXTRACT THIS FROM ON_CLASS!
-        let fully_qualified_name = if !self.current_namespaces.is_empty() {
-            let mut name_components = self.current_namespaces.clone();
-            name_components.push(namespace.to_owned());
-            format!("::{}", name_components.join("::"))
-        } else {
-            format!("::{}", namespace)
-        };
+        let definition = get_definition_from(
+            &namespace,
+            &self.current_namespaces,
+            &location,
+        );
 
         // Note – is there a way to use lifetime specifiers to get rid of this and
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
 
-        let definition_loc = fetch_node_location(&node.name).unwrap();
-        let location = loc_to_range(definition_loc, &self.line_col_lookup);
-        self.definitions.push(Definition {
-            fully_qualified_name: fully_qualified_name.to_owned(),
-            namespace_path: self.current_namespaces.to_owned(),
-
-            location: location.to_owned(),
-        });
+        let name = definition.fully_qualified_name.to_owned();
+        let namespace_path = definition.namespace_path.to_owned();
+        self.definitions.push(definition);
 
         // Packwerk also considers a definition to be a "reference"
         self.references.push(UnresolvedReference {
-            name: fully_qualified_name,
-            namespace_path: self.current_namespaces.to_owned(),
+            name,
+            namespace_path,
             location,
         });
 

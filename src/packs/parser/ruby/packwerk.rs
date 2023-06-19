@@ -202,7 +202,7 @@ end
             vec![
                 UnresolvedReference {
                     name: String::from("::Foo"),
-                    namespace_path: vec![String::from("Foo")],
+                    namespace_path: vec![],
                     location: Range {
                         start_row: 1,
                         start_col: 7,
@@ -359,10 +359,7 @@ end
         assert_eq!(
             UnresolvedReference {
                 name: String::from("::Foo::Bar::Baz"),
-                namespace_path: vec![
-                    String::from("Foo::Bar"),
-                    String::from("Baz")
-                ],
+                namespace_path: vec![String::from("Foo::Bar"),],
                 location: Range {
                     start_row: 2,
                     start_col: 9,
