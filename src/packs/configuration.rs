@@ -158,8 +158,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         };
 
     debug!("Beginning directory walk");
+    let excluded_globs = &raw_config.exclude;
+
     let (included_files, unsorted_packs) =
-        walk_directory(absolute_root, &raw_config);
+        walk_directory(absolute_root, &raw_config, excluded_globs);
     debug!("Finished directory walk");
 
     let absolute_root = absolute_root.to_path_buf();

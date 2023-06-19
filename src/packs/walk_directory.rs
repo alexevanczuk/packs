@@ -24,23 +24,29 @@ fn matches_globs(path: &Path, globs: &[String]) -> bool {
 pub fn walk_directory(
     absolute_root: &Path,
     raw: &RawConfiguration,
+    excluded_globs: &Vec<String>,
 ) -> (HashSet<PathBuf>, HashSet<Pack>) {
     let mut included_paths: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
     // Create this vector outside of the closure to avoid reallocating it
-    let excluded_dirs = vec![
-        "node_modules",
-        "vendor",
-        "tmp",
-        ".git",
-        "public",
-        "bin",
-        "log",
-        "frontend",
-        "sorbet",
+    let default_excluded_dirs = vec![
+        "node_modules/**/**",
+        "vendor/**/**",
+        "tmp/**/**",
+        ".git/**/**",
+        "public/**/**",
+        "bin/**/**",
+        "log/**/**",
+        "frontend/**/**",
+        "sorbet/**/**",
     ];
+    let mut all_excluded_dirs: Vec<String> = Vec::new();
+    all_excluded_dirs
+        .extend(default_excluded_dirs.iter().map(|s| s.to_string()));
 
-    let excluded_dirs_ref = Arc::new(excluded_dirs);
+    all_excluded_dirs.extend(excluded_globs.to_owned());
+
+    let excluded_dirs_ref = Arc::new(all_excluded_dirs);
 
     // TODO: Pull directory walker into separate module. Allow it to be called with implementations of a trait
     // so separate concerns can each be in their own place.
@@ -81,11 +87,8 @@ pub fn walk_directory(
 
                     // So instead, we'll just use the hardcoded directories we want to exclude
                     let dirname = dir_entry.path();
-                    for excluded_dir in cloned_excluded_dirs.iter() {
-                        if dirname.ends_with(excluded_dir) {
-                            dir_entry.read_children_path = None;
-                            break;
-                        }
+                    if matches_globs(&dirname, cloned_excluded_dirs.as_ref()) {
+                        dir_entry.read_children_path = None;
                     }
                 }
             });
