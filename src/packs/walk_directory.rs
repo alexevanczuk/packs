@@ -69,12 +69,6 @@ pub fn walk_directory(
             let cloned_excluded_dirs = excluded_dirs_ref.clone();
             let cloned_absolute_root = absolute_root_ref.clone();
 
-            // Excluded dirs are top-level only
-            if let Some(depth) = depth {
-                if depth > 2 {
-                    return;
-                }
-            }
             children.iter_mut().for_each(|dir_entry_result| {
                 if let Ok(dir_entry) = dir_entry_result {
                     let absolute_dirname = dir_entry.path();
