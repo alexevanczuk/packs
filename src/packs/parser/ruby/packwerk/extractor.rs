@@ -430,7 +430,6 @@ pub(crate) fn extract_from_contents(
         None => return vec![],
     };
 
-    // .unwrap_or_else(|| panic!("No AST found for {}!", &path.display()));
     let mut collector = ReferenceCollector {
         references: vec![],
         current_namespaces: vec![],
