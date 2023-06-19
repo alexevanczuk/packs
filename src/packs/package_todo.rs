@@ -151,6 +151,19 @@ pub fn write_violations_to_disk(
     debug!("Finished writing violations to disk");
 }
 
+fn serialize_package_todo(
+    responsible_pack_name: &String,
+    package_todo: PackageTodo,
+) -> String {
+    let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
+
+    // This is a hack until I figure out how to use serde to do this for me
+    let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
+    let header = header(&responsible_pack_name);
+    let package_todo_yml = header + &package_todo_yml;
+    package_todo_yml
+}
+
 fn write_package_todo_to_disk(
     configuration: &Configuration,
     responsible_pack_name: String,
@@ -164,16 +177,12 @@ fn write_package_todo_to_disk(
         .unwrap()
         .join("package_todo.yml");
 
-    let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
-
-    // This is a hack until I figure out how to use serde to do this for me
-    let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
-    let header = header(&responsible_pack_name);
-    let package_todo_yml = header + &package_todo_yml;
-
     if !package_todo_yml_absolute_filepath.exists() {
         std::fs::File::create(&package_todo_yml_absolute_filepath).unwrap();
     }
+
+    let package_todo_yml =
+        serialize_package_todo(&responsible_pack_name, package_todo);
 
     std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
         .unwrap();
