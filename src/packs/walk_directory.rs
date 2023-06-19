@@ -30,15 +30,15 @@ pub fn walk_directory(
     let mut included_packs: HashSet<Pack> = HashSet::new();
     // Create this vector outside of the closure to avoid reallocating it
     let default_excluded_dirs = vec![
-        "node_modules/**/**",
-        "vendor/**/**",
-        "tmp/**/**",
-        ".git/**/**",
-        "public/**/**",
-        "bin/**/**",
-        "log/**/**",
+        "node_modules/**/*",
+        "vendor/**/*",
+        "tmp/**/*",
+        ".git/**/*",
+        "public/**/*",
+        "bin/**/*",
+        "log/**/*",
         "frontend/**/**",
-        "sorbet/**/**",
+        "sorbet/**/*",
     ];
     let mut all_excluded_dirs: Vec<String> = Vec::new();
     all_excluded_dirs
