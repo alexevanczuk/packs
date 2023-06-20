@@ -29,35 +29,27 @@ where
 pub struct PackageTodo {
     #[serde(flatten, serialize_with = "serialize_violations_by_defining_pack")]
     pub violations_by_defining_pack:
-        HashMap<String, HashMap<String, ViolationGroup>>,
+        BTreeMap<String, BTreeMap<String, ViolationGroup>>,
 }
 
 fn serialize_violations_by_defining_pack<S>(
-    map: &HashMap<String, HashMap<String, ViolationGroup>>,
+    map: &BTreeMap<String, BTreeMap<String, ViolationGroup>>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let mut sorted_entries: Vec<_> = map.iter().collect();
-    sorted_entries.sort_by_key(|(k, _)| k.as_str());
+    let mut map_serializer = serializer.serialize_map(Some(map.len()))?;
 
-    let mut map_serializer =
-        serializer.serialize_map(Some(sorted_entries.len()))?;
-
-    for (key, value) in sorted_entries {
-        let mut items: Vec<(_, _)> = value.iter().collect();
-
-        items.sort_by(|a, b| a.0.cmp(&b.0));
-
-        let items: Vec<(_, _)> = items
+    for (key, value) in map {
+        let items: Vec<(_, _)> = value
             .iter()
             .map(|(k, v)| (format!("QUOTE{}QUOTE", k), v))
             .collect();
 
-        let sorted_quoted_value = BTreeMap::from_iter(items);
+        let quoted_items = BTreeMap::from_iter(items);
 
-        map_serializer.serialize_entry(key, &sorted_quoted_value)?;
+        map_serializer.serialize_entry(key, &quoted_items)?;
     }
 
     map_serializer.end()
@@ -72,10 +64,10 @@ pub fn package_todos_for_pack_name(
     for (responsible_pack_name, mut violations) in
         violations_by_responsible_pack_name
     {
-        let mut violations_by_defining_pack: HashMap<
+        let mut violations_by_defining_pack: BTreeMap<
             String,
-            HashMap<String, ViolationGroup>,
-        > = HashMap::new();
+            BTreeMap<String, ViolationGroup>,
+        > = BTreeMap::new();
         // Sort violations by the defining pack name, then constant name, then file name
         // This ensures they show up deterministically in the package_todo.yml file.
         violations.sort_by(|a, b| {
@@ -102,7 +94,7 @@ pub fn package_todos_for_pack_name(
             let existing_violations_by_constant_group =
                 violations_by_defining_pack
                     .entry(defining_pack_name)
-                    .or_insert(HashMap::new());
+                    .or_insert(BTreeMap::new());
 
             let violation_group = existing_violations_by_constant_group
                 .entry(violation.identifier.constant_name.to_owned())
@@ -211,48 +203,74 @@ fn header(responsible_pack_name: &String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+
+    fn construct_violations(
+        constant_name: String,
+        input_types: Vec<String>,
+        input_files: Vec<String>,
+    ) -> BTreeMap<String, ViolationGroup> {
+        let mut bar_violations = BTreeMap::new();
+        let mut files = HashSet::new();
+        let mut violation_types = HashSet::new();
+
+        for file in input_files {
+            files.insert(file);
+        }
+
+        for violation_type in input_types {
+            violation_types.insert(violation_type);
+        }
+
+        bar_violations.insert(
+            constant_name,
+            ViolationGroup {
+                violation_types,
+                files,
+            },
+        );
+
+        bar_violations
+    }
+
+    fn bar_violations() -> BTreeMap<String, ViolationGroup> {
+        construct_violations(
+            String::from("::Bar"),
+            vec![String::from("dependency")],
+            vec![String::from("packs/foo/app/services/foo.rb")],
+        )
+    }
+
+    fn bar_blah_violations() -> BTreeMap<String, ViolationGroup> {
+        construct_violations(
+            String::from("::BarBlah"),
+            vec![String::from("dependency")],
+            vec![String::from("packs/foo/app/services/foo.rb")],
+        )
+    }
+
+    fn baz_violations() -> BTreeMap<String, ViolationGroup> {
+        construct_violations(
+            String::from("::Baz"),
+            vec![String::from("dependency"), String::from("privacy")],
+            vec![String::from("packs/foo/app/services/foo.rb")],
+        )
+    }
 
     fn example_package_todo() -> PackageTodo {
-        let mut violations_by_defining_pack: HashMap<
+        let mut violations_by_defining_pack: BTreeMap<
             String,
-            HashMap<String, ViolationGroup>,
-        > = HashMap::new();
-        let mut bar_violations = HashMap::new();
-        let mut violation_types = HashSet::new();
-        violation_types.insert(String::from("dependency"));
-        let mut files = HashSet::new();
-        files.insert(String::from("packs/foo/app/services/foo.rb"));
-        bar_violations.insert(
-            String::from("::Bar"),
-            ViolationGroup {
-                violation_types: violation_types.clone(),
-                files: files.clone(),
-            },
-        );
+            BTreeMap<String, ViolationGroup>,
+        > = BTreeMap::new();
+        let bar_violations = bar_violations();
+        let bar_blah_violations = bar_blah_violations();
+        let baz_violations = baz_violations();
+        let mut merged_map: BTreeMap<String, ViolationGroup> = BTreeMap::new();
+        merged_map.extend(bar_violations);
+        merged_map.extend(bar_blah_violations);
+        merged_map.extend(baz_violations);
 
-        bar_violations.insert(
-            String::from("::BarBlah"),
-            ViolationGroup {
-                violation_types,
-                files,
-            },
-        );
-
-        let mut violation_types = HashSet::new();
-        violation_types.insert(String::from("dependency"));
-        violation_types.insert(String::from("privacy"));
-        let mut files = HashSet::new();
-        files.insert(String::from("packs/foo/app/services/foo.rb"));
-        bar_violations.insert(
-            String::from("::Baz"),
-            ViolationGroup {
-                violation_types,
-                files,
-            },
-        );
         violations_by_defining_pack
-            .insert(String::from("packs/bar"), bar_violations);
+            .insert(String::from("packs/bar"), merged_map);
 
         PackageTodo {
             violations_by_defining_pack,
