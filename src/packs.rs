@@ -57,9 +57,15 @@ pub struct RawPack {
     ignored_dependencies: HashSet<String>,
     #[serde(default = "default_enforce_dependencies")]
     enforce_dependencies: String,
+    #[serde(default = "default_enforce_privacy")]
+    enforce_privacy: String,
 }
 
 fn default_enforce_dependencies() -> String {
+    "false".to_string()
+}
+
+fn default_enforce_privacy() -> String {
     "false".to_string()
 }
 
@@ -97,6 +103,7 @@ pub struct Pack {
     ignored_dependencies: HashSet<String>,
     package_todo: PackageTodo,
     enforce_dependencies: CheckerSetting,
+    enforce_privacy: CheckerSetting,
 }
 
 impl Hash for Pack {
@@ -188,6 +195,15 @@ impl Pack {
             CheckerSetting::False
         };
 
+        let raw_enforce_privacy = raw_pack.enforce_privacy;
+        let enforce_privacy = if raw_enforce_privacy == "true" {
+            CheckerSetting::True
+        } else if raw_enforce_privacy == "strict" {
+            CheckerSetting::Strict
+        } else {
+            CheckerSetting::False
+        };
+
         let pack: Pack = Pack {
             yml: yml.to_path_buf(),
             name,
@@ -196,6 +212,7 @@ impl Pack {
             package_todo,
             ignored_dependencies,
             enforce_dependencies,
+            enforce_privacy,
         };
 
         pack

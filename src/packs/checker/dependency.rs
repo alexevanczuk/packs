@@ -87,6 +87,9 @@ mod tests {
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/bar.rb",
+            )),
             source_location: SourceLocation { line: 3, column: 1 },
         };
         assert_eq!(None, checker.check(&reference))
@@ -110,6 +113,9 @@ mod tests {
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/bar.rb",
+            )),
             source_location: SourceLocation { line: 3, column: 1 },
         };
 

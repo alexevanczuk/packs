@@ -250,7 +250,7 @@ mod tests {
         let expected_packs = vec![
             Pack {
                 enforce_dependencies: CheckerSetting::False,
-
+                enforce_privacy: CheckerSetting::False,
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
                 relative_path: PathBuf::from("packs/bar"),
@@ -260,7 +260,7 @@ mod tests {
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
-
+                enforce_privacy: CheckerSetting::False,
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
                 relative_path: PathBuf::from("packs/baz"),
@@ -270,7 +270,7 @@ mod tests {
             },
             Pack {
                 enforce_dependencies: CheckerSetting::True,
-
+                enforce_privacy: CheckerSetting::True,
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
                 relative_path: PathBuf::from("packs/foo"),
@@ -282,6 +282,7 @@ mod tests {
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
+                enforce_privacy: CheckerSetting::False,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),

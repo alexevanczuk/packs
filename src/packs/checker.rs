@@ -16,6 +16,7 @@ use super::Pack;
 use super::UnresolvedReference;
 
 pub mod dependency;
+pub mod privacy;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
@@ -36,6 +37,7 @@ pub struct Violation {
 pub struct Reference<'a> {
     constant_name: String,
     defining_pack_name: Option<String>,
+    relative_defining_file: Option<String>,
     referencing_pack: &'a Pack,
     relative_referencing_file: String,
     source_location: SourceLocation,
@@ -51,13 +53,26 @@ impl<'a> Reference<'a> {
             &unresolved_reference.namespace_path,
         );
 
-        let defining_pack_name = if let Some(constant) = &maybe_constant {
-            configuration
-                .pack_set
-                .for_file(&constant.absolute_path_of_definition)
-        } else {
-            None
-        };
+        let (defining_pack_name, relative_defining_file) =
+            if let Some(constant) = &maybe_constant {
+                let absolute_path_of_definition =
+                    &constant.absolute_path_of_definition;
+                let relative_defining_file = absolute_path_of_definition
+                    .strip_prefix(&configuration.absolute_root)
+                    .unwrap()
+                    .to_path_buf()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+
+                let defining_pack_name = configuration
+                    .pack_set
+                    .for_file(absolute_path_of_definition);
+
+                (defining_pack_name, Some(relative_defining_file))
+            } else {
+                (None, None)
+            };
 
         let constant_name = if let Some(constant) = &maybe_constant {
             &constant.fully_qualified_name
@@ -101,6 +116,7 @@ impl<'a> Reference<'a> {
             referencing_pack,
             relative_referencing_file,
             source_location,
+            relative_defining_file,
         }
     }
 }
