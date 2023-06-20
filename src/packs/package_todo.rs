@@ -42,14 +42,19 @@ where
     let mut map_serializer = serializer.serialize_map(Some(map.len()))?;
 
     for (key, value) in map {
-        let items: Vec<(_, _)> = value
-            .iter()
-            .map(|(k, v)| (format!("QUOTE{}QUOTE", k), v))
-            .collect();
+        let mut quoted_sorted_violations_by_constant: BTreeMap<
+            String,
+            ViolationGroup,
+        > = BTreeMap::new();
+        for (constant_name, violation_group) in value {
+            // This is a hack, search aaaaaaa for more
+            let quoted_constant_name = format!("#{}#", constant_name);
+            quoted_sorted_violations_by_constant
+                .insert(quoted_constant_name, violation_group.clone());
+        }
 
-        let quoted_items = BTreeMap::from_iter(items);
-
-        map_serializer.serialize_entry(key, &quoted_items)?;
+        map_serializer
+            .serialize_entry(key, &quoted_sorted_violations_by_constant)?;
     }
 
     map_serializer.end()
@@ -149,7 +154,8 @@ fn serialize_package_todo(
     let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
 
     // This is a hack until I figure out how to use serde to do this for me
-    let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
+    let package_todo_yml = package_todo_yml.replace("'#", "\"");
+    let package_todo_yml = package_todo_yml.replace("#'", "\"");
     let header = header(responsible_pack_name);
     header + &package_todo_yml
 }
@@ -306,7 +312,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_serialize_trivial_case() {
         let expected: String = String::from(
             "\
