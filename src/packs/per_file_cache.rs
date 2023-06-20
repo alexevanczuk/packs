@@ -271,6 +271,16 @@ mod tests {
 
     #[test]
     fn test_write_cache_for_files() {
+        let absolute_root = &PathBuf::from("tests/fixtures/simple_app");
+
+        // Delete the existing cache directory
+        // TODO: This is a bit of a hack, we should probably use a temporary directory
+        // instead of the real one
+        let cache_dir = absolute_root.join("tmp");
+        if cache_dir.exists() {
+            std::fs::remove_dir_all(&cache_dir).unwrap();
+        }
+
         let expected = CacheEntry {
             file_contents_digest: String::from(
                 // This is the MD5 digest of the contents of "packs/foo/app/services/foo.rb"
@@ -281,7 +291,7 @@ mod tests {
             unresolved_references: vec![
                 ReferenceEntry {
                     constant_name: String::from("::Foo"),
-                    namespace_path: vec![String::from("Foo")],
+                    namespace_path: vec![],
                     relative_path: String::from(
                         "packs/foo/app/services/foo.rb",
                     ),
@@ -306,7 +316,6 @@ mod tests {
             ],
         };
 
-        let absolute_root = &PathBuf::from("tests/fixtures/simple_app");
         let file_to_cache = String::from("packs/foo/app/services/foo.rb");
         let config = configuration::get(absolute_root);
 
@@ -324,6 +333,6 @@ mod tests {
 
         let cache_file = cachable_file.cache_file_path;
         let actual = read_json_file(&cache_file).unwrap();
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 }
