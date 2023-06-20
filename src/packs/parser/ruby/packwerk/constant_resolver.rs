@@ -38,10 +38,6 @@ fn inferred_constant_from_file(
         .map(|s| crate::packs::inflector_shim::to_class_case(&s, false))
         .join("::");
 
-    // Prefix each constant with :: to indicate it's an absolute reference
-    let fully_qualified_constant_name =
-        format!("::{}", fully_qualified_constant_name);
-
     Constant {
         fully_qualified_name: fully_qualified_constant_name,
         absolute_path_of_definition: absolute_path.to_path_buf(),
@@ -110,68 +106,121 @@ impl ConstantResolver {
         &self,
         fully_or_partially_qualified_constant: &String,
         namespace_path: &[String],
-    ) -> Option<&Constant> {
-        // Example for namespace_path: ['Foo', 'Bar', 'Baz']
-        // If the fully_or_partially_qualified_constant is 'Boo',
-        // it could refer to any of the following:
-        // ::Foo::Bar::Baz::Boo
-        // ::Foo::Bar::Boo
-        // ::Foo::Boo
-        // ::Boo
-        // We need to check each of these possibilities in order, and return the first one that exists
-        // If none of them exist, return None
-
-        // If the fully_or_partially_qualified_constant is prefixed with ::, we should skip checking the namespace_path
-        // because it's an absolute reference.
-        if fully_or_partially_qualified_constant.starts_with("::") {
-            if let Some(constant) = self.constant_for_fully_qualified_name(
-                fully_or_partially_qualified_constant,
-            ) {
-                return Some(constant);
+    ) -> Option<Constant> {
+        // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
+        let namespace_path =
+            if fully_or_partially_qualified_constant.starts_with("::") {
+                vec![]
             } else {
-                return None;
-            }
-        }
-        let namespace_path = namespace_path.to_owned();
-        for i in (0..=namespace_path.len()).rev() {
-            let intermediate_namespace: Vec<String> =
-                namespace_path.clone().into_iter().take(i).collect();
-            let candidate_namespace = intermediate_namespace.join("::");
-
-            let possible_constant = if !intermediate_namespace.is_empty() {
-                // Append the fully_or_partially_qualified_constant to the candidate_namespace
-                format!(
-                    "::{}::{}",
-                    candidate_namespace, fully_or_partially_qualified_constant
-                )
-            } else {
-                // If the intermediate_namespace is empty, we don't need to append anything.
-                // If we did, we'd end up checking ::::SomeConstant
-                // TODO: Write a test that fails when this is removed.
-                // The test needs to have a constant Foo that is defined in the root namespace (::)
-                // and another constant Foo that is defined in a Bar.
-                // The test should verify when we resolve Foo in the context of Bar, we get Bar::Foo,
-                // not ::Foo.
-                // The test should fail when we only use the first branch of this conditional.
-                fully_or_partially_qualified_constant.to_owned()
+                namespace_path.to_vec()
             };
 
-            if let Some(constant) =
-                self.constant_for_fully_qualified_name(&possible_constant)
-            {
-                return Some(constant);
+        let const_name = fully_or_partially_qualified_constant
+            .trim_start_matches("::")
+            .to_owned();
+
+        self.resolve_constant(const_name.clone(), namespace_path, const_name)
+    }
+
+    fn resolve_constant(
+        &self,
+        const_name: String,
+        current_namespace_path: Vec<String>,
+        original_name: String,
+    ) -> Option<Constant> {
+        let constant = self.resolve_traversing_namespace_path(
+            const_name.clone(),
+            current_namespace_path.clone(),
+        );
+        match constant {
+            (Some(namespace), Some(absolute_path_of_definition)) => {
+                let mut fully_qualified_name_vec = vec![String::from("")];
+                fully_qualified_name_vec.extend(namespace.clone());
+                fully_qualified_name_vec.push(original_name.clone());
+                let fully_qualified_name_guess =
+                    fully_qualified_name_vec.join("::");
+
+                Some(Constant {
+                    fully_qualified_name: fully_qualified_name_guess,
+                    absolute_path_of_definition: absolute_path_of_definition
+                        .to_owned(),
+                })
+            }
+            (None, None) => {
+                // If we couldn't find a match, it's possible the constant is defined within its parent namespace and not within its own file.
+                // For example, `Boo` above could be defined in `foo/bar.rb` as:
+                // module Foo
+                //   module Bar
+                //     class Boo
+                //     end
+                //   end
+                // end
+                // Therefore, we take the given const_name, remove the last part of the fully qualified name, and try again.
+                // In this case, we'd try to resolve `::Foo::Bar` instead of `::Foo::Bar::Boo`
+                let split_const = const_name.split("::").collect::<Vec<&str>>();
+                if split_const.len() <= 1 {
+                    return None;
+                }
+                let parent_constant = split_const[0..=split_const.len() - 2]
+                    .join("::")
+                    .to_owned();
+                self.resolve_constant(
+                    parent_constant,
+                    current_namespace_path,
+                    original_name,
+                )
+            }
+            _ => {
+                todo!()
             }
         }
+    }
 
-        let global_reference =
-            format!("::{}", fully_or_partially_qualified_constant);
+    // Example for namespace_path: ['Foo', 'Bar', 'Baz']
+    // If the const_name is 'Boo',
+    // it could refer to any of the following:
+    // ::Foo::Bar::Baz::Boo
+    // ::Foo::Bar::Boo
+    // ::Foo::Boo
+    // ::Boo
+    // We need to check each of these possibilities in order, and return the first one that exists
+    // If none of them exist, return None
+    fn resolve_traversing_namespace_path(
+        &self,
+        const_name: String,
+        current_namespace_path: Vec<String>,
+    ) -> (Option<Vec<String>>, Option<PathBuf>) {
+        let mut fully_qualified_name_guess_vec = current_namespace_path.clone();
+        fully_qualified_name_guess_vec.push(const_name.clone());
+        let fully_qualified_name_guess =
+            fully_qualified_name_guess_vec.join("::");
+        // Join current_namespace_path and const_name with "::"
+        // current_namespace_path
+        //     .iter()
+        //     .chain(std::iter::once(const_name))
+        //     .join("::");
         if let Some(constant) =
-            self.constant_for_fully_qualified_name(&global_reference)
+            self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
-            return Some(constant);
+            let x = current_namespace_path.clone();
+            let y = constant.absolute_path_of_definition.clone();
+            (Some(x), Some(y))
+        } else {
+            // In this case, we couldn't find a constant with the given name under the given namespace.
+            // However, it's possible the constant is defined within the parent namespace.
+            let split_result = current_namespace_path.split_last();
+            match split_result {
+                Some((_last, parent_namespace)) => {
+                    let (namespace, absolute_path_of_definition) = self
+                        .resolve_traversing_namespace_path(
+                            const_name,
+                            parent_namespace.to_vec(),
+                        );
+                    (namespace, absolute_path_of_definition)
+                }
+                None => (None, None),
+            }
         }
-
-        None
     }
 
     fn constant_for_fully_qualified_name(
@@ -210,9 +259,9 @@ mod tests {
 
         let mut expected_file_map: HashMap<String, Constant> = HashMap::new();
         expected_file_map.insert(
-            "::Foo".to_string(),
+            "Foo".to_string(),
             Constant {
-                fully_qualified_name: "::Foo".to_string(),
+                fully_qualified_name: "Foo".to_string(),
                 absolute_path_of_definition: PathBuf::from(
                     "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
                 ),
@@ -220,9 +269,9 @@ mod tests {
         );
 
         expected_file_map.insert(
-            "::Foo::Bar".to_string(),
+            "Foo::Bar".to_string(),
             Constant {
-                fully_qualified_name: "::Foo::Bar".to_string(),
+                fully_qualified_name: "Foo::Bar".to_string(),
                 absolute_path_of_definition: PathBuf::from(
                     "tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb",
                 ),
@@ -243,7 +292,7 @@ mod tests {
         let resolver = configuration::get(&absolute_root).constant_resolver;
 
         assert_eq!(
-            &Constant {
+            Constant {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb")
@@ -258,7 +307,7 @@ mod tests {
             .unwrap();
         let resolver = configuration::get(&absolute_root).constant_resolver;
         assert_eq!(
-            &Constant {
+            Constant {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb")
@@ -283,7 +332,7 @@ mod tests {
             .unwrap();
         let resolver = configuration::get(&absolute_root).constant_resolver;
         assert_eq!(
-            &Constant {
+            Constant {
                 fully_qualified_name: "::Foo::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
@@ -301,7 +350,7 @@ mod tests {
             .unwrap();
         let resolver = configuration::get(&absolute_root).constant_resolver;
         assert_eq!(
-            &Constant {
+            Constant {
                 fully_qualified_name: "::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
@@ -319,7 +368,7 @@ mod tests {
             .unwrap();
         let resolver = configuration::get(&absolute_root).constant_resolver;
         assert_eq!(
-            &Constant {
+            Constant {
                 fully_qualified_name: "::Bar::BAR".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
