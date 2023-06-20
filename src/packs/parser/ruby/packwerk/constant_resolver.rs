@@ -104,7 +104,7 @@ impl ConstantResolver {
 
     pub fn resolve(
         &self,
-        fully_or_partially_qualified_constant: &String,
+        fully_or_partially_qualified_constant: &str,
         namespace_path: &[String],
     ) -> Option<Constant> {
         // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
@@ -135,15 +135,14 @@ impl ConstantResolver {
         match constant {
             (Some(namespace), Some(absolute_path_of_definition)) => {
                 let mut fully_qualified_name_vec = vec![String::from("")];
-                fully_qualified_name_vec.extend(namespace.clone());
-                fully_qualified_name_vec.push(original_name.clone());
+                fully_qualified_name_vec.extend(namespace);
+                fully_qualified_name_vec.push(original_name);
                 let fully_qualified_name_guess =
                     fully_qualified_name_vec.join("::");
 
                 Some(Constant {
                     fully_qualified_name: fully_qualified_name_guess,
-                    absolute_path_of_definition: absolute_path_of_definition
-                        .to_owned(),
+                    absolute_path_of_definition,
                 })
             }
             (None, None) => {
@@ -161,9 +160,8 @@ impl ConstantResolver {
                 if split_const.len() <= 1 {
                     return None;
                 }
-                let parent_constant = split_const[0..=split_const.len() - 2]
-                    .join("::")
-                    .to_owned();
+                let parent_constant =
+                    split_const[0..=split_const.len() - 2].join("::");
                 self.resolve_constant(
                     parent_constant,
                     current_namespace_path,
@@ -202,7 +200,7 @@ impl ConstantResolver {
         if let Some(constant) =
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
-            let x = current_namespace_path.clone();
+            let x = current_namespace_path;
             let y = constant.absolute_path_of_definition.clone();
             (Some(x), Some(y))
         } else {
