@@ -150,9 +150,8 @@ fn serialize_package_todo(
 
     // This is a hack until I figure out how to use serde to do this for me
     let package_todo_yml = package_todo_yml.replace("QUOTE", "\"");
-    let header = header(&responsible_pack_name);
-    let package_todo_yml = header + &package_todo_yml;
-    package_todo_yml
+    let header = header(responsible_pack_name);
+    header + &package_todo_yml
 }
 
 fn write_package_todo_to_disk(

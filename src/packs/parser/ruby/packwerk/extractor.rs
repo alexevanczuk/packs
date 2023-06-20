@@ -137,16 +137,12 @@ fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
 
 fn get_definition_from(
     current_nesting: &String,
-    parent_nesting: &Vec<String>,
+    parent_nesting: &[String],
     location: &Range,
 ) -> Definition {
     let name = current_nesting.to_owned();
 
-    let owned_namespace_path: Vec<String> = parent_nesting
-        .to_owned()
-        .into_iter()
-        .map(|x| x.to_owned())
-        .collect();
+    let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
 
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
         let mut name_components = owned_namespace_path.clone();
@@ -209,7 +205,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             self.in_superclass = false;
         }
         let definition_loc = fetch_node_location(&node.name).unwrap();
-        let location = loc_to_range(&definition_loc, &self.line_col_lookup);
+        let location = loc_to_range(definition_loc, &self.line_col_lookup);
 
         let definition = get_definition_from(
             &namespace,
