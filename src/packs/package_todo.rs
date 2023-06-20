@@ -71,21 +71,13 @@ pub fn package_todos_for_pack_name(
         // Sort violations by the defining pack name, then constant name, then file name
         // This ensures they show up deterministically in the package_todo.yml file.
         violations.sort_by(|a, b| {
-            let defining_pack_name_comparison = a
-                .identifier
+            a.identifier
                 .defining_pack_name
-                .cmp(&b.identifier.defining_pack_name);
-            if defining_pack_name_comparison != std::cmp::Ordering::Equal {
-                return defining_pack_name_comparison;
-            }
-
-            let constant_name_comparison =
-                a.identifier.constant_name.cmp(&b.identifier.constant_name);
-            if constant_name_comparison != std::cmp::Ordering::Equal {
-                return constant_name_comparison;
-            }
-
-            a.identifier.file.cmp(&b.identifier.file)
+                .cmp(&b.identifier.defining_pack_name)
+                .then_with(|| {
+                    a.identifier.constant_name.cmp(&b.identifier.constant_name)
+                })
+                .then_with(|| a.identifier.file.cmp(&b.identifier.file))
         });
 
         for violation in violations {
