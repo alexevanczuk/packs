@@ -36,7 +36,7 @@ pub struct Violation {
 #[derive(Debug)]
 pub struct Reference<'a> {
     constant_name: String,
-    defining_pack_name: Option<String>,
+    defining_pack: Option<&'a Pack>,
     relative_defining_file: Option<String>,
     referencing_pack: &'a Pack,
     relative_referencing_file: String,
@@ -53,26 +53,31 @@ impl<'a> Reference<'a> {
             &unresolved_reference.namespace_path,
         );
 
-        let (defining_pack_name, relative_defining_file) =
-            if let Some(constant) = &maybe_constant {
-                let absolute_path_of_definition =
-                    &constant.absolute_path_of_definition;
-                let relative_defining_file = absolute_path_of_definition
-                    .strip_prefix(&configuration.absolute_root)
-                    .unwrap()
-                    .to_path_buf()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+        let (defining_pack, relative_defining_file) = if let Some(constant) =
+            &maybe_constant
+        {
+            let absolute_path_of_definition =
+                &constant.absolute_path_of_definition;
+            let relative_defining_file = absolute_path_of_definition
+                .strip_prefix(&configuration.absolute_root)
+                .unwrap()
+                .to_path_buf()
+                .to_str()
+                .unwrap()
+                .to_string();
 
-                let defining_pack_name = configuration
-                    .pack_set
-                    .for_file(absolute_path_of_definition);
+            let defining_pack_name =
+                configuration.pack_set.for_file(absolute_path_of_definition);
 
-                (defining_pack_name, Some(relative_defining_file))
-            } else {
-                (None, None)
+            let defining_pack: Option<&'a Pack> = match defining_pack_name {
+                Some(name) => Some(configuration.pack_set.for_pack(&name)),
+                None => None,
             };
+
+            (defining_pack, Some(relative_defining_file))
+        } else {
+            (None, None)
+        };
 
         let constant_name = if let Some(constant) = &maybe_constant {
             &constant.fully_qualified_name
@@ -112,7 +117,7 @@ impl<'a> Reference<'a> {
 
         Reference {
             constant_name,
-            defining_pack_name,
+            defining_pack,
             referencing_pack,
             relative_referencing_file,
             source_location,

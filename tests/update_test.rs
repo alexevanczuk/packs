@@ -34,12 +34,6 @@ packs/bar:
     - privacy
     files:
     - packs/foo/app/services/foo.rb
-packs/baz:
-  \"::Baz\":
-    violations:
-    - privacy
-    files:
-    - packs/foo/app/services/foo.rb
 ",
     );
     std::fs::remove_file(package_todo_yml_filepath)?;

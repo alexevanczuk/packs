@@ -9,22 +9,22 @@ impl CheckerInterface for Checker {
         let referencing_pack = &reference.referencing_pack;
         let relative_defining_file = &reference.relative_defining_file;
 
-        if referencing_pack.enforce_privacy.is_false() {
-            return None;
-        }
-
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack_name = &reference.defining_pack_name;
-
-        if defining_pack_name.is_none() {
+        let defining_pack = &reference.defining_pack;
+        if defining_pack.is_none() {
             return None;
         }
+        let defining_pack = defining_pack.unwrap();
+
+        if defining_pack.enforce_privacy.is_false() {
+            return None;
+        }
+
+        let defining_pack_name = &defining_pack.name;
 
         if relative_defining_file.is_none() {
             return None;
         }
-
-        let defining_pack_name = defining_pack_name.as_ref().unwrap();
 
         if referencing_pack_name == defining_pack_name {
             return None;
@@ -83,7 +83,9 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack_name: Some(String::from("packs/foo")),
+            defining_pack: Some(
+                configuration.pack_set.for_pack(&String::from("packs/foo")),
+            ),
             referencing_pack: configuration
                 .pack_set
                 .for_pack(&String::from("packs/foo")),
@@ -109,7 +111,9 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack_name: Some(String::from("packs/bar")),
+            defining_pack: Some(
+                configuration.pack_set.for_pack(&String::from("packs/bar")),
+            ),
             referencing_pack: configuration
                 .pack_set
                 .for_pack(&String::from("packs/foo")),

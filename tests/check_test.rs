@@ -10,9 +10,8 @@ fn test_check() -> Result<(), Box<dyn Error>> {
         .arg("check")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("3 violation(s) detected:"))
+        .stdout(predicate::str::contains("2 violation(s) detected:"))
         .stdout(predicate::str::contains("dependency: packs/foo/app/services/foo.rb:3 references ::Bar from packs/bar without an explicit dependency in packs/foo/package.yml"))
-        .stdout(predicate::str::contains("privacy: packs/foo/app/services/foo.rb:7 references private constant ::Baz from packs/baz"))
         .stdout(predicate::str::contains("privacy: packs/foo/app/services/foo.rb:3 references private constant ::Bar from packs/bar"));
     Ok(())
 }
