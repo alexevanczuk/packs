@@ -226,6 +226,14 @@ mod tests {
         bar_violations.insert(
             String::from("::Bar"),
             ViolationGroup {
+                violation_types: violation_types.clone(),
+                files: files.clone(),
+            },
+        );
+
+        bar_violations.insert(
+            String::from("::BarBlah"),
+            ViolationGroup {
                 violation_types,
                 files,
             },
@@ -268,6 +276,11 @@ mod tests {
                 - dependency
                 files:
                 - packs/foo/app/services/foo.rb
+            \"::BarBlah\":
+                violations:
+                - dependency
+                files:
+                - packs/foo/app/services/foo.rb
             \"::Baz\":
                 violations:
                 - dependency
@@ -297,6 +310,11 @@ mod tests {
 ---
 packs/bar:
   \"::Bar\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::BarBlah\":
     violations:
     - dependency
     files:
