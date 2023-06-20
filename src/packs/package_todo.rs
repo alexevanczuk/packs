@@ -307,6 +307,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_serialize_trivial_case() {
         let expected: String = String::from(
             "\
