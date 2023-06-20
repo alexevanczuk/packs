@@ -31,6 +31,13 @@ packs/bar:
   \"::Bar\":
     violations:
     - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
+packs/baz:
+  \"::Baz\":
+    violations:
+    - privacy
     files:
     - packs/foo/app/services/foo.rb
 ",

@@ -8,7 +8,6 @@ impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
         let referencing_pack = &reference.referencing_pack;
         let relative_defining_file = &reference.relative_defining_file;
-        dbg!(&relative_defining_file);
 
         if referencing_pack.enforce_privacy.is_false() {
             return None;

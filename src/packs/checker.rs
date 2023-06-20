@@ -219,7 +219,10 @@ fn get_all_violations<T: Cache + Send + Sync>(
     debug!("Finished turning unresolved references into fully qualified references");
 
     debug!("Running checkers on resolved references");
-    let checkers = vec![dependency::Checker {}];
+    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
+        Box::new(dependency::Checker {}),
+        Box::new(privacy::Checker {}),
+    ];
     let violations: Vec<Violation> = references
         .into_par_iter()
         .flat_map(|r| {
