@@ -47,8 +47,16 @@ where
             ViolationGroup,
         > = BTreeMap::new();
         for (constant_name, violation_group) in value {
-            // This is a hack, search aaaaaaa for more
+            // HACK: This is the first part of a hack (search `HACK:` for more)
             let quoted_constant_name = format!("#{}#", constant_name);
+
+            // The issue is that I have not been able to figure out how to get serde to serialize
+            // a String key with double quotes.
+            // When I tried this:
+            // let quoted_constant_name = format!("\"{}\"", constant_name);
+            // serde_yaml would escape the quotes, so I would get this:
+            // '\"::Bar\"'
+            // (uncomment the above and run tests to reproduce)
             quoted_sorted_violations_by_constant
                 .insert(quoted_constant_name, violation_group.clone());
         }
@@ -153,7 +161,7 @@ fn serialize_package_todo(
 ) -> String {
     let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
 
-    // This is a hack until I figure out how to use serde to do this for me
+    // HACK: This is the other part of the hack above (search `HACK:` for more)
     let package_todo_yml = package_todo_yml.replace("'#", "\"");
     let package_todo_yml = package_todo_yml.replace("#'", "\"");
     let header = header(responsible_pack_name);
