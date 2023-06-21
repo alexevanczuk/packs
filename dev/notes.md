@@ -1,5 +1,5 @@
 # TODO
-## Perforamnce
+## Performance
 - Create new cache implementation that creates one large file and only uses cache when no files are inputted. Could consider using `rustql`
 - Convert existing cache to be `PackwerkCompatibleCache`.
 - We end up looking at a lot more references than necessary because we record class and superclass definitions each as their own reference.
@@ -11,8 +11,9 @@
 - look for additional speed ups for cold cache generation, mostly in parsing logic. Consider progress bar.
 - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
 
-## Deployment
+## Distribution
 - Sign the binary
+- Distribute with brew: https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
 
 # Milestones
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
