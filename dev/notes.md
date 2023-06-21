@@ -11,9 +11,6 @@
 - look for additional speed ups for cold cache generation, mostly in parsing logic. Consider progress bar.
 - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
 
-## Features
-- Remove `packwerk_parity_checker`, as it should be replaced with simply using `packs update` to compare accuracy.
-
 ## Deployment
 - Sign the binary
 

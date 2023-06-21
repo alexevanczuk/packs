@@ -18,12 +18,10 @@ Once installed and added to your `$PATH`, just call `packs` to see the CLI help 
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
 
 To verify:
-1. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-2. Run `packs generate_cache` (see directions below to get binary)
-3. Run `bin/packwerk update` to see how violations change using `packs`.
-
-Separately, you can run:
-`packs check` and compare the output to `bin/packwerk check`
+1. Follow directions below to get the `packs` binary
+2. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
+3a. Option 1: Run `packs check` (there should be no violations)
+3b. Option 2: Run `packs update` (there should be no diff)
 
 # Downloading the Binary
 Deployment ergonomics are still a WIP.
@@ -53,6 +51,8 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 - custom load paths
 - zeitwerk default namespaces
 - extensible plugin system
+- stale violation detection
+- bin/packwerk validate (e.g. cycle detection)
 
 # Benchmarks
 ## Cold Cache, without Spring
