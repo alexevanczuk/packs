@@ -16,7 +16,11 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
-
+        with:
+           # https://stackoverflow.com/questions/65944700/how-to-run-git-diff-in-github-actions
+           # TLDR – By default this action fetches no history.
+           # We need a bit of history to be able to check if we've recently updated the version in Cargo.toml
+           fetch-depth: 2
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
