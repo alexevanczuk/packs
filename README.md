@@ -4,12 +4,12 @@
 
 ![Logo](logo.png)
 
-WIP Rust implementation of [packs](https://github.com/rubyatscale/use_packs) and [packwerk](https://github.com/Shopify/packwerk) for ruby
+WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk) for ruby
 
 # About
 - It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
 - The goal is for this to be able to be a drop-in replacement for `packwerk`.
-- Currently, `packs` implements `check`, with `update` coming soon.
+- Currently, `packs` implements `check` and `update`. 
 
 # Usage
 Once installed and added to your `$PATH`, just call `packs` to see the CLI help message.
@@ -18,13 +18,13 @@ Once installed and added to your `$PATH`, just call `packs` to see the CLI help 
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
 
 To verify:
-1. Follow directions below to get the `packs` binary
-2. Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-3a. Option 1: Run `packs check` (there should be no violations)
-3b. Option 2: Run `packs update` (there should be no diff)
+- Follow directions below to get the `packs` binary
+- Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
+- Option 1: Run `packs check` (there should be no violations)
+- Option 2: Run `packs update` (there should be no diff)
 
 # Downloading the Binary
-Deployment ergonomics are still a WIP.
+Distribution ergonomics are still a WIP.
 
 If you want to try it out:
 - Go to https://github.com/alexevanczuk/packs/releases
@@ -34,7 +34,7 @@ If you want to try it out:
 
 You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
 
-# Deployment Improvements
+# Distribution Improvements
 In the future, I hope to:
 - Somehow sign the binary so it does not get a warning message
 - Make it executable before download
