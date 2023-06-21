@@ -102,7 +102,10 @@ jobs:
       - name: Check for version changes in Cargo.toml
         id: check_for_version_changes
         run: |
-          VERSION_CHANGES=$(git diff HEAD HEAD~1 Cargo.toml | grep "\+version")
+          # When there are no changes, VERSION_CHANGES will be empty
+          # Without the echo, this command would exit with a 1, causing the GitHub Action to fail
+          # Instead, we want it to succeed, but just evaluate `changed=false` in the other branch of the conditional
+          VERSION_CHANGES=$(git diff HEAD HEAD~1 Cargo.toml | grep "\+version" || echo "")
           if [[ -n $VERSION_CHANGES ]]; then
             NEW_VERSION=$(echo $VERSION_CHANGES | awk -F'"' '{print $2}')
             echo "changed=true" >> $GITHUB_OUTPUT
