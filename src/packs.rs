@@ -55,6 +55,8 @@ pub struct RawPack {
     dependencies: HashSet<String>,
     #[serde(default)]
     ignored_dependencies: HashSet<String>,
+    #[serde(default)]
+    ignored_private_constants: HashSet<String>,
     #[serde(default = "default_enforce_dependencies")]
     enforce_dependencies: String,
     #[serde(default = "default_enforce_privacy")]
@@ -101,6 +103,7 @@ pub struct Pack {
     // behavior to Pack via a trait or something? That would make extension simpler!
     dependencies: HashSet<String>,
     ignored_dependencies: HashSet<String>,
+    ignored_private_constants: HashSet<String>,
     package_todo: PackageTodo,
     enforce_dependencies: CheckerSetting,
     enforce_privacy: CheckerSetting,
@@ -186,6 +189,7 @@ impl Pack {
 
         let dependencies = raw_pack.dependencies;
         let ignored_dependencies = raw_pack.ignored_dependencies;
+        let ignored_private_constants = raw_pack.ignored_private_constants;
         let raw_enforce_dependencies = raw_pack.enforce_dependencies;
         let enforce_dependencies = if raw_enforce_dependencies == "true" {
             CheckerSetting::True
@@ -211,6 +215,7 @@ impl Pack {
             dependencies,
             package_todo,
             ignored_dependencies,
+            ignored_private_constants,
             enforce_dependencies,
             enforce_privacy,
         };

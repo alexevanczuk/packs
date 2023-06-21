@@ -257,6 +257,7 @@ mod tests {
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
+                ignored_private_constants: HashSet::new(),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
@@ -267,6 +268,7 @@ mod tests {
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
+                ignored_private_constants: HashSet::new(),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::True,
@@ -279,6 +281,7 @@ mod tests {
                 )]),
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
+                ignored_private_constants: HashSet::new(),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
@@ -289,6 +292,7 @@ mod tests {
                 dependencies: HashSet::new(),
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
+                ignored_private_constants: HashSet::new(),
             },
         ];
 
