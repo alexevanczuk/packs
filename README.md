@@ -9,7 +9,7 @@ WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk) for r
 # About
 - It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
 - The goal is for this to be able to be a drop-in replacement for `packwerk`.
-- Currently, `packs` implements `check` and `update`. 
+- Currently, `packs` implements `check` and `update`.
 
 # Usage
 Once installed and added to your `$PATH`, just call `packs` to see the CLI help message.
@@ -33,6 +33,8 @@ If you want to try it out:
 - Execute `path/to/packs` to see the CLI help message.
 
 You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
+
+Currently, the uploaded binary file is built for macOS. If you want to try it on another platform, you'll need to build it yourself, or just let me know (e.g. file an issue) you're interested in trying it, what platform you're using, and I'll upload a binary for you.
 
 # Distribution Improvements
 In the future, I hope to:
