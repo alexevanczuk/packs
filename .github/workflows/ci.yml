@@ -95,26 +95,26 @@ jobs:
           cargo clippy --version
       - name: Build
         run: cargo build --release --target aarch64-apple-darwin --target x86_64-apple-darwin
-      - name: Set sha_short Variable
-        id: sha-short-var
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Create GitHub Release
+      - name: Check for version changes in Cargo.toml
+        id: check_for_version_changes
+        run: |
+          VERSION_CHANGES=$(git diff HEAD HEAD~1 Cargo.toml | grep "\+version")
+          if [[ -n $VERSION_CHANGES ]]; then
+            NEW_VERSION=$(echo $VERSION_CHANGES | awk -F'"' '{print $2}')
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No diff to the version found in Cargo.toml. Skipping publishing."
+          fi
+
+      - name: cargo publish and create GitHub Release if current commit has updated the version in Cargo.toml
+        if: steps.check_for_version_changes.outputs.changed == 'true'
         run: |
           lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
-          gh release create "${{ steps.sha-short-var.outputs.sha_short }}" --target "${{ github.sha }}" -t "${{ steps.sha-short-var.outputs.sha_short }}" --latest
-          gh release upload "${{ steps.sha-short-var.outputs.sha_short }}" target/packs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Cargo publish
-        run: |
-          cargo_search_output=$(cargo search pks)
-          published_version=$(echo "$cargo_search_output" | grep -o 'pks = "[^"]*"' | cut -d'"' -f2)
-          package_version=$(awk -F '"' '/^name/ {pkg = $2} /^version/ && pkg == "pks" {print $2}' Cargo.toml)
-
-          if [[ "$published_version" == "$package_version" ]]; then
-            echo "Package 'pks' version $package_version has already been published."
-          else
-            cargo publish
-          fi
+          gh release create v${{steps.check_for_version_changes.outputs.new_version}} --target "${{ github.sha }}" --generate-notes
+          gh release upload v${{steps.check_for_version_changes.outputs.new_version}} target/packs
+          cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
