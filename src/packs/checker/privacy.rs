@@ -20,6 +20,13 @@ impl CheckerInterface for Checker {
             return None;
         }
 
+        if defining_pack
+            .ignored_private_constants
+            .contains(&reference.constant_name)
+        {
+            return None;
+        }
+
         let defining_pack_name = &defining_pack.name;
 
         if relative_defining_file.is_none() {
@@ -137,5 +144,35 @@ mod tests {
             },
         };
         assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_ignored_private_constants() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            enforce_privacy: CheckerSetting::True,
+            ignored_private_constants: HashSet::from([String::from("::Foo")]),
+            ..Pack::default()
+        };
+
+        let referencing_pack = Pack {
+            name: String::from("packs/bar"),
+            ..Pack::default()
+        };
+        let reference = Reference {
+            constant_name: String::from("::Foo"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack: &referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/bar/app/services/bar.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/foo/app/services/foo.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        assert_eq!(None, checker.check(&reference))
     }
 }

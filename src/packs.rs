@@ -90,7 +90,7 @@ impl CheckerSetting {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone, Default)]
 pub struct Pack {
     #[serde(skip_deserializing)]
     yml: PathBuf,
