@@ -26,6 +26,10 @@ enum Command {
         files: Vec<String>,
     },
     Update,
+    #[clap(
+        about = "List analyzed files based on configuration in packwerk.yml"
+    )]
+    ListIncludedFiles,
 }
 
 /// A CLI to interact with packs
@@ -61,6 +65,13 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::ListPacks => {
             packs::list(configuration);
+            Ok(())
+        }
+        Command::ListIncludedFiles => {
+            configuration
+                .included_files
+                .iter()
+                .for_each(|f| println!("{}", f.display()));
             Ok(())
         }
         Command::Check { files } => checker::check(configuration, files),
