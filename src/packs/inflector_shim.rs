@@ -1,13 +1,12 @@
-// use cruet::cases::classcase::to_class_case as buggy_to_class_case;
-use cruet::{
+use regex::Regex;
+use ruby_inflector::{
     case::{to_case_camel_like, CamelOptions},
     Inflector,
 };
-use regex::Regex;
 
 // See https://github.com/whatisinternet/Inflector/pull/87
-// Note that as of the PR that adds this comment, we are now using https://github.com/chrislearn/cruet,
-// a more supported fork of the Inflector library
+// Note that as of the PR that adds this comment, we are now using https://github.com/alexevanczuk/ruby_inflector,
+// so that we have an easier time making this inflector more specific to ruby applications (for now)
 pub fn to_class_case(s: &str, should_singularize: bool) -> String {
     let options = CamelOptions {
         new_word: true,
@@ -52,4 +51,24 @@ pub fn to_class_case(s: &str, should_singularize: bool) -> String {
     }
 
     class_name
+}
+
+// Add tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trivial() {
+        let actual = to_class_case("my_string", false);
+        let expected = "MyString";
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_digits() {
+        let actual = to_class_case("my_string_401k_thing", false);
+        let expected = "MyString401KThing";
+        assert_eq!(expected, actual);
+    }
 }

@@ -96,6 +96,7 @@ impl ConstantResolver {
         }
 
         debug!("Finished building constant resolver");
+
         ConstantResolver {
             fully_qualified_constant_to_constant_map,
             autoload_paths,
