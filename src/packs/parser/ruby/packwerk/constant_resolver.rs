@@ -31,15 +31,9 @@ fn inferred_constant_from_file(
 
     let relative_path = relative_path.with_extension("");
 
-    let fully_qualified_constant_name = relative_path
-        .to_str()
-        .unwrap()
-        .split('/')
-        .map(|s| s.to_string())
-        .map(|s| {
-            crate::packs::inflector_shim::to_class_case(&s, false, acronyms)
-        })
-        .join("::");
+    let relative_path_str = relative_path.to_str().unwrap();
+    let fully_qualified_constant_name =
+        crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
 
     Constant {
         fully_qualified_name: fully_qualified_constant_name,
@@ -411,12 +405,12 @@ mod tests {
 
         assert_eq!(
             Constant {
-                fully_qualified_name: "::SomeAPIClass".to_string(),
+                fully_qualified_name: "::MyModule::SomeAPIClass".to_string(),
                 absolute_path_of_definition: absolute_root
-                    .join("app/services/some_api_class.rb")
+                    .join("app/services/my_module/some_api_class.rb")
             },
             resolver
-                .resolve(&String::from("::SomeAPIClass"), &[])
+                .resolve(&String::from("::MyModule::SomeAPIClass"), &[])
                 .unwrap()
         )
     }

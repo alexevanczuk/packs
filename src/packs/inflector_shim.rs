@@ -58,6 +58,77 @@ pub fn to_class_case(
     class_name
 }
 
+pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
+    // Meant to emulate https://github.com/rails/rails/blob/e88857bbb9d4e1dd64555c34541301870de4a45b/activesupport/lib/active_support/inflector/methods.rb#L69
+    //
+    // def camelize(term, uppercase_first_letter = true)
+    //   string = term.to_s
+    //   # String#camelize takes a symbol (:upper or :lower), so here we also support :lower to keep the methods consistent.
+    //   if !uppercase_first_letter || uppercase_first_letter == :lower
+    //     string = string.sub(inflections.acronyms_camelize_regex) { |match| match.downcase! || match }
+    //   else
+    //     string = string.sub(/^[a-z\d]*/) { |match| inflections.acronyms[match] || match.capitalize! || match }
+    //   end
+    //   string.gsub!(/(?:_|(\/))([a-z\d]*)/i) do
+    //     word = $2
+    //     substituted = inflections.acronyms[word] || word.capitalize! || word
+    //     $1 ? "::#{substituted}" : substituted
+    //   end
+    //   string
+    // end
+
+    let lowercase_acronyms = acronyms
+        .iter()
+        .map(|acronym| acronym.to_lowercase())
+        .collect::<HashSet<String>>();
+
+    let mut new_string = s.to_string();
+    // Replace the beginning of the word, matched with lowercase letters, with either a matching inflection or a capitalized version of the word
+    let re = Regex::new("^[a-z\\d]*").unwrap();
+    new_string = re
+        .replace(&new_string, |caps: &regex::Captures| {
+            let word = caps.get(0).unwrap().as_str();
+            if lowercase_acronyms.contains(word) {
+                word.to_uppercase()
+            } else {
+                capitalize(word)
+            }
+        })
+        .to_mut()
+        .to_string();
+
+    let re = Regex::new("(?:_|(/))([a-z\\d]*)").unwrap();
+    new_string = re
+        .replace_all(&new_string, |caps: &regex::Captures| {
+            let matched_slash = caps.get(1);
+            let word = caps.get(2).unwrap().as_str();
+            let capitalized_word = if lowercase_acronyms.contains(word) {
+                word.to_uppercase()
+            } else {
+                capitalize(word)
+            };
+
+            if matched_slash.is_some() {
+                format!("::{}", capitalized_word)
+            } else {
+                capitalized_word
+            }
+        })
+        .to_mut()
+        .to_string();
+
+    new_string
+}
+
+/// Capitalizes the first character in s.
+fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
 // Add tests
 #[cfg(test)]
 mod tests {
