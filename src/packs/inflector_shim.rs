@@ -1,18 +1,13 @@
-use std::collections::HashSet;
-
 use regex::Regex;
-use ruby_inflector::case::{
-    to_case_camel_like, to_class_case as to_class_case_original, CamelOptions,
+use ruby_inflector::{
+    case::{to_case_camel_like, CamelOptions},
+    Inflector,
 };
 
 // See https://github.com/whatisinternet/Inflector/pull/87
 // Note that as of the PR that adds this comment, we are now using https://github.com/alexevanczuk/ruby_inflector,
 // so that we have an easier time making this inflector more specific to ruby applications (for now)
-pub fn to_class_case(
-    s: &str,
-    should_singularize: bool,
-    acronyms: &HashSet<String>,
-) -> String {
+pub fn to_class_case(s: &str, should_singularize: bool) -> String {
     let options = CamelOptions {
         new_word: true,
         last_char: ' ',
@@ -23,9 +18,9 @@ pub fn to_class_case(
     };
 
     let mut class_name = if should_singularize {
-        to_class_case_original(s, acronyms)
+        s.to_class_case()
     } else {
-        to_case_camel_like(s, options, acronyms)
+        to_case_camel_like(s, options)
     };
 
     // let mut class_name = s.to_class_case();
@@ -65,16 +60,15 @@ mod tests {
 
     #[test]
     fn test_trivial() {
-        let actual = to_class_case("my_string", false, &HashSet::new());
+        let actual = to_class_case("my_string", false);
         let expected = "MyString";
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn test_digits() {
-        let actual =
-            to_class_case("my_string_401k_thing", false, &HashSet::new());
-        let expected = "MyString401kThing";
+        let actual = to_class_case("my_string_401k_thing", false);
+        let expected = "MyString401KThing";
         assert_eq!(expected, actual);
     }
 }
