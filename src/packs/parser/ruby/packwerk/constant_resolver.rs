@@ -3,7 +3,7 @@ use rayon::prelude::{ParallelBridge, ParallelIterator};
 use tracing::debug;
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
 };
 
@@ -24,6 +24,7 @@ pub struct Constant {
 fn inferred_constant_from_file(
     absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
+    acronyms: &HashSet<String>,
 ) -> Constant {
     let relative_path =
         absolute_path.strip_prefix(absolute_autoload_path).unwrap();
@@ -35,7 +36,9 @@ fn inferred_constant_from_file(
         .unwrap()
         .split('/')
         .map(|s| s.to_string())
-        .map(|s| crate::packs::inflector_shim::to_class_case(&s, false))
+        .map(|s| {
+            crate::packs::inflector_shim::to_class_case(&s, false, acronyms)
+        })
         .join("::");
 
     Constant {
@@ -65,6 +68,27 @@ impl ConstantResolver {
 
         debug!("Building constant resolver");
 
+        let mut acronyms: HashSet<String> = HashSet::new();
+
+        // Load in config/initializers/inflections.rb
+        // For any inflections in there, add them to the acronyms vector
+        // An inflection takes the form of "inflect.acronym 'API'", so "API" would be the acronym here
+        // This is a bit of a hack, but it's the easiest way to get the inflections loaded in
+        // TODO: Figure out a better way to do this
+        let inflections_path =
+            absolute_root.join("config/initializers/inflections.rb");
+        if inflections_path.exists() {
+            let inflections_file =
+                std::fs::read_to_string(inflections_path).unwrap();
+            let inflections_lines = inflections_file.lines();
+            for line in inflections_lines {
+                if line.contains("inflect.acronym") {
+                    let acronym = line.split('\'').nth(1).unwrap();
+                    acronyms.insert(acronym.to_string());
+                }
+            }
+        }
+
         let constants: Vec<Constant> = autoload_paths
             .iter()
             .par_bridge()
@@ -81,6 +105,7 @@ impl ConstantResolver {
                         inferred_constant_from_file(
                             &file,
                             absolute_autoload_path,
+                            &acronyms,
                         )
                     })
                     .collect::<Vec<Constant>>()
@@ -373,6 +398,26 @@ mod tests {
                     .join("packs/bar/app/services/bar.rb")
             },
             resolver.resolve(&String::from("::Bar::BAR"), &[]).unwrap()
+        )
+    }
+
+    #[test]
+    fn inflected_constant() {
+        let absolute_root =
+            PathBuf::from("tests/fixtures/app_with_inflections")
+                .canonicalize()
+                .unwrap();
+        let resolver = configuration::get(&absolute_root).constant_resolver;
+
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "::SomeAPIClass".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("app/services/some_api_class.rb")
+            },
+            resolver
+                .resolve(&String::from("::SomeAPIClass"), &[])
+                .unwrap()
         )
     }
 }

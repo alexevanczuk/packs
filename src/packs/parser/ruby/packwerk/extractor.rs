@@ -4,7 +4,11 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::Path,
+};
 
 use crate::packs::parser::ruby::namespace_calculator;
 
@@ -262,7 +266,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                 if name.is_none() {
                     // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
                     // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
-                    name = Some(to_class_case(&d.name.to_string_lossy(), true));
+                    name = Some(to_class_case(
+                        &d.name.to_string_lossy(),
+                        true,
+                        &HashSet::new(), // todo: pass in acronyms here
+                    ));
                 }
             }
 
