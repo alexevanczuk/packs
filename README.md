@@ -1,6 +1,7 @@
 # packs
 ![CI](https://github.com/alexevanczuk/packs/actions/workflows/ci.yml/badge.svg)
 ![Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)
+
 ![Logo](logo.png)
 
 A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby.
