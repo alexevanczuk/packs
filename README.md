@@ -4,12 +4,40 @@
 
 ![Logo](logo.png)
 
-WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby
+A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby.
 
-# About
-- It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
-- The goal is for this to be able to be a drop-in replacement for `packwerk`.
-- Currently, `packs` implements `check` and `update`.
+# Goals:
+## Drop-in replacement for `packwerk` on most projects
+- Currently can serve as a drop-in replacement on Gusto's extra-large Rails monolith
+- This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `packs` is the same as `packwerk`.
+
+## 20x faster than `packwerk` on most projects
+- Currently ~10x as fast as the ruby implementation. See [Benchmarks](#benchmarks).
+- Your milemage may vary!
+- Other performance improvements are coming soon!
+
+# Documentation
+```
+Welcome! Please see https://github.com/alexevanczuk/packs for more information!
+
+Usage: packs [OPTIONS] <COMMAND>
+
+Commands:
+  greet                Just saying hi
+  check                Look for violations in the codebase
+  update               Update package_todo.yml files with the current violations
+  validate             Look for validation errors in the codebase
+  generate_cache       Generate a cache to be used by the ruby implementation of packwerk
+  list_packs           List packs based on configuration in packwerk.yml
+  delete_cache         `rm -rf` on your cache directory, usually `tmp/cache/packwerk`
+  list_included_files  List analyzed files based on configuration in packwerk.yml
+  help                 Print this message or the help of the given subcommand(s)
+
+Options:
+      --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]
+  -h, --help                         Print help
+  -V, --version                      Print version
+```
 
 # Installation
 ## Option 1:
@@ -41,13 +69,7 @@ Instructions:
 - Run `packs delete_cache`
 - Run `packs update`
 - Confirm the output of `git diff` is empty
-- Please file an issue if it's not! 
-
-# Distribution Improvements
-In the future, I hope to:
-- Somehow sign the binary so it does not get a warning message
-- Make it executable before download
-- Add directions to download via some other tool, or ship as a native ruby gem extension.
+- Please file an issue if it's not!
 
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!

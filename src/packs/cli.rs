@@ -11,25 +11,31 @@ use std::path::PathBuf;
 enum Command {
     #[clap(about = "Just saying hi")]
     Greet,
-    #[clap(about = "List packs based on configuration in packwerk.yml")]
-    ListPacks,
+
     #[clap(about = "Look for violations in the codebase")]
-    Check {
-        files: Vec<String>,
-    },
+    Check { files: Vec<String> },
+
+    #[clap(
+        about = "Update package_todo.yml files with the current violations"
+    )]
+    Update,
+
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
+
     #[clap(
         about = "Generate a cache to be used by the ruby implementation of packwerk"
     )]
-    GenerateCache {
-        files: Vec<String>,
-    },
+    GenerateCache { files: Vec<String> },
+
+    #[clap(about = "List packs based on configuration in packwerk.yml")]
+    ListPacks,
+
     #[clap(
         about = "`rm -rf` on your cache directory, usually `tmp/cache/packwerk`"
     )]
     DeleteCache,
-    Update,
+
     #[clap(
         about = "List analyzed files based on configuration in packwerk.yml"
     )]

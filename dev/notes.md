@@ -14,6 +14,7 @@
 ## Distribution
 - Sign the binary
 - Distribute with brew: https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
+- Add directions to download via some other tool, or ship as a native ruby gem extension.
 
 # Milestones
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
