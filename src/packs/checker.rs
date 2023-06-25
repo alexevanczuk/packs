@@ -17,6 +17,7 @@ use super::UnresolvedReference;
 
 pub mod dependency;
 pub mod privacy;
+pub mod visibility;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
