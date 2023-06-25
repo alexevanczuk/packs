@@ -6,6 +6,11 @@ use std::{error::Error, process::Command};
 mod common;
 
 #[test]
+// The reason we need serial and below is because there is a race condition in the test where sometimes the cache directory
+// does not exist, even though it is created before it is used.
+// The reason for this is another test thread calls `teardown()` (or `delete_cache`) after these tests have created the cache
+// directory. Eventually, we should fix this by improving test isolation so that we can continue to run these in parallel.
+// Other tests that have the same issue can get the #[serial] tag until the issue is fixed.
 #[serial]
 fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
