@@ -18,8 +18,8 @@
 # Milestones
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
 - [x] Parse ERB files
+- [x] `packs update`, which can be used to update `package_todo.yml`
 - [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
-- [ ] `packs update`, which can be used to update `package_todo.yml`
 
 # Other notes
 ## Wrap Packwerk
