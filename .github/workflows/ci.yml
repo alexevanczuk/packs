@@ -4,7 +4,15 @@ on:
   push:
     branches:
       - main
+    # See:
+    # https://stackoverflow.com/questions/62968897/is-it-possible-to-not-run-github-action-for-readme-updates
+    # and
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-excluding-paths
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
 
 env:
   CARGO_TERM_COLOR: always
