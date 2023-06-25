@@ -261,7 +261,7 @@ mod tests {
         )
     }
 
-    fn example_package_todo() -> PackageTodo {
+    fn example_package_todo(defining_package_name: String) -> PackageTodo {
         let mut violations_by_defining_pack: BTreeMap<
             String,
             BTreeMap<String, ViolationGroup>,
@@ -274,8 +274,7 @@ mod tests {
         merged_map.extend(bar_blah_violations);
         merged_map.extend(baz_violations);
 
-        violations_by_defining_pack
-            .insert(String::from("packs/bar"), merged_map);
+        violations_by_defining_pack.insert(defining_package_name, merged_map);
 
         PackageTodo {
             violations_by_defining_pack,
@@ -313,7 +312,7 @@ mod tests {
         ",
         );
 
-        let expected = example_package_todo();
+        let expected = example_package_todo(String::from("packs/bar"));
 
         let actual: PackageTodo = serde_yaml::from_str(&contents).unwrap();
         assert_eq!(expected, actual);
@@ -351,7 +350,49 @@ packs/bar:
 ",
 );
 
-        let actual_package_todo = example_package_todo();
+        let actual_package_todo =
+            example_package_todo(String::from("packs/bar"));
+        let actual = serialize_package_todo(
+            &String::from("packs/foo"),
+            actual_package_todo,
+        );
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_serialize_violation_against_root() {
+        let expected: String = String::from(
+            "\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+\".\":
+  \"::Bar\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::BarBlah\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::Baz\":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
+",
+);
+
+        let actual_package_todo = example_package_todo(String::from("."));
         let actual = serialize_package_todo(
             &String::from("packs/foo"),
             actual_package_todo,
