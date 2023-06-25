@@ -17,7 +17,9 @@ A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a
 - Your milemage may vary!
 - Other performance improvements are coming soon!
 
-# Documentation
+# Usage and Documentation
+Once installed and added to your `$PATH`, just call `packs` to see the CLI help message and documentation.
+
 ```
 Welcome! Please see https://github.com/alexevanczuk/packs for more information!
 
@@ -41,26 +43,7 @@ Options:
 ```
 
 # Installation
-## Option 1:
-- Install Rust: https://www.rust-lang.org/tools/install
-  - TLDR: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`, and you're done!
-- `cargo install packs` (it's like `gem install`)
-
-## Option 2:
-(Mac only – for other platforms, please create an issue/PR or try option 1.)
-
-- Go to https://github.com/alexevanczuk/packs/releases
-- Download the `packs` asset and run `chmod +x path/to/packs`. This makes the asset executable on your machine.
-- Open the containing directory, right click on the binary, click open, and then accept the warning message that says its from an unknown developer (it's me!)
-- Execute `path/to/packs` to see the CLI help message.
-
-You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
-
-## Option 3 (coming soon):
-I'm looking into installing via `brew` or as a native ruby gem extension. More coming soon!
-
-# Usage
-Once installed and added to your `$PATH`, just call `packs` to see the CLI help message and documentation.
+See [INSTALLATION.md](https://github.com/alexevanczuk/packs/blob/main/INSTALLATION.md)
 
 # Verification
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
