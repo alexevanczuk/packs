@@ -66,6 +66,7 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 
 # Not yet supported
 - architecture and visibility checkers (from https://github.com/rubyatscale/packwerk-extensions)
+- custom public folder
 - custom associations
 - custom inflections
 - custom load paths

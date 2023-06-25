@@ -67,18 +67,18 @@ pub struct RawPack {
     #[serde(default)]
     ignored_dependencies: HashSet<String>,
     #[serde(default)]
+    visible_to: HashSet<String>,
+    #[serde(default)]
     ignored_private_constants: HashSet<String>,
-    #[serde(default = "default_enforce_dependencies")]
+    #[serde(default = "default_checker_setting")]
     enforce_dependencies: String,
-    #[serde(default = "default_enforce_privacy")]
+    #[serde(default = "default_checker_setting")]
     enforce_privacy: String,
+    #[serde(default = "default_checker_setting")]
+    enforce_visibility: String,
 }
 
-fn default_enforce_dependencies() -> String {
-    "false".to_string()
-}
-
-fn default_enforce_privacy() -> String {
+fn default_checker_setting() -> String {
     "false".to_string()
 }
 
@@ -116,8 +116,10 @@ pub struct Pack {
     ignored_dependencies: HashSet<String>,
     ignored_private_constants: HashSet<String>,
     package_todo: PackageTodo,
+    visible_to: HashSet<String>,
     enforce_dependencies: CheckerSetting,
     enforce_privacy: CheckerSetting,
+    enforce_visibility: CheckerSetting,
 }
 
 impl Hash for Pack {
@@ -125,6 +127,15 @@ impl Hash for Pack {
         // Implement the hash function for your struct fields
         // Call the appropriate `hash` method on the `Hasher` to hash each field
         self.name.hash(state);
+    }
+}
+
+fn convert_raw_checker_setting(raw_checker_setting: &str) -> CheckerSetting {
+    match raw_checker_setting {
+        "false" => CheckerSetting::False,
+        "true" => CheckerSetting::True,
+        "strict" => CheckerSetting::Strict,
+        _ => panic!("Invalid checker setting: {}", raw_checker_setting),
     }
 }
 
@@ -199,25 +210,16 @@ impl Pack {
             };
 
         let dependencies = raw_pack.dependencies;
+        let visible_to = raw_pack.visible_to;
         let ignored_dependencies = raw_pack.ignored_dependencies;
         let ignored_private_constants = raw_pack.ignored_private_constants;
-        let raw_enforce_dependencies = raw_pack.enforce_dependencies;
-        let enforce_dependencies = if raw_enforce_dependencies == "true" {
-            CheckerSetting::True
-        } else if raw_enforce_dependencies == "strict" {
-            CheckerSetting::Strict
-        } else {
-            CheckerSetting::False
-        };
 
-        let raw_enforce_privacy = raw_pack.enforce_privacy;
-        let enforce_privacy = if raw_enforce_privacy == "true" {
-            CheckerSetting::True
-        } else if raw_enforce_privacy == "strict" {
-            CheckerSetting::Strict
-        } else {
-            CheckerSetting::False
-        };
+        let enforce_dependencies =
+            convert_raw_checker_setting(&raw_pack.enforce_dependencies);
+        let enforce_privacy =
+            convert_raw_checker_setting(&raw_pack.enforce_privacy);
+        let enforce_visibility =
+            convert_raw_checker_setting(&raw_pack.enforce_visibility);
 
         let pack: Pack = Pack {
             yml: yml.to_path_buf(),
@@ -227,8 +229,10 @@ impl Pack {
             package_todo,
             ignored_dependencies,
             ignored_private_constants,
+            visible_to,
             enforce_dependencies,
             enforce_privacy,
+            enforce_visibility,
         };
 
         pack
