@@ -65,7 +65,7 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 If you'd like to contribute but don't know where to start, please reach out! I'd love to help you get started.
 
 # Not yet supported
-- privacy checker or other checkers
+- architecture and visibility checkers (from https://github.com/rubyatscale/packwerk-extensions)
 - custom associations
 - custom inflections
 - custom load paths
