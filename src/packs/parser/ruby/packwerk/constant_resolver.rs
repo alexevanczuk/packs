@@ -1,4 +1,5 @@
 use rayon::prelude::{ParallelBridge, ParallelIterator};
+use regex::Regex;
 use tracing::debug;
 
 use std::{
@@ -75,8 +76,9 @@ impl ConstantResolver {
                 std::fs::read_to_string(inflections_path).unwrap();
             let inflections_lines = inflections_file.lines();
             for line in inflections_lines {
-                if line.contains("inflect.acronym") {
-                    let acronym = line.split('\'').nth(1).unwrap();
+                if line.contains(".acronym") {
+                    let re = Regex::new(r#"['\\"]"#).unwrap();
+                    let acronym = re.split(line).nth(1).unwrap();
                     acronyms.insert(acronym.to_string());
                 }
             }
@@ -410,6 +412,17 @@ mod tests {
             },
             resolver
                 .resolve(&String::from("::MyModule::SomeAPIClass"), &[])
+                .unwrap()
+        );
+
+        assert_eq!(
+            Constant {
+                fully_qualified_name: "::MyModule::SomeCSVClass".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("app/services/my_module/some_csv_class.rb")
+            },
+            resolver
+                .resolve(&String::from("::MyModule::SomeCSVClass"), &[])
                 .unwrap()
         )
     }
