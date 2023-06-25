@@ -60,9 +60,16 @@ where
             quoted_sorted_violations_by_constant
                 .insert(quoted_constant_name, violation_group.clone());
         }
+        let modified_key = if key == &String::from(".") {
+            String::from("#.#")
+        } else {
+            key.to_owned()
+        };
 
-        map_serializer
-            .serialize_entry(key, &quoted_sorted_violations_by_constant)?;
+        map_serializer.serialize_entry(
+            &modified_key,
+            &quoted_sorted_violations_by_constant,
+        )?;
     }
 
     map_serializer.end()
