@@ -254,9 +254,15 @@ pub(crate) fn write_cache_for_files(
 
 #[cfg(test)]
 mod tests {
-    use crate::packs::configuration;
+    use crate::packs::{self, configuration};
 
     use super::*;
+
+    fn teardown() {
+        packs::delete_cache(configuration::get(&PathBuf::from(
+            "tests/fixtures/simple_app",
+        )));
+    }
 
     #[test]
     fn test_file_content_digest() {
@@ -267,6 +273,8 @@ mod tests {
         let digest = file_content_digest(&PathBuf::from(file_path));
 
         assert_eq!(digest, expected_digest);
+
+        teardown();
     }
 
     #[test]
@@ -334,5 +342,7 @@ mod tests {
         let cache_file = cachable_file.cache_file_path;
         let actual = read_json_file(&cache_file).unwrap();
         assert_eq!(expected, actual);
+
+        teardown();
     }
 }

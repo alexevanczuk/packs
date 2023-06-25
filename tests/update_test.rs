@@ -1,6 +1,7 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{error::Error, path::Path, process::Command};
+mod common;
 
 #[test]
 fn test_update() -> Result<(), Box<dyn Error>> {
@@ -38,5 +39,8 @@ packs/bar:
     );
     std::fs::remove_file(package_todo_yml_filepath)?;
     assert_eq!(expected, actual);
+
+    common::teardown();
+
     Ok(())
 }

@@ -4,37 +4,44 @@
 
 ![Logo](logo.png)
 
-WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk) for ruby
+WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby
 
 # About
 - It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
 - The goal is for this to be able to be a drop-in replacement for `packwerk`.
 - Currently, `packs` implements `check` and `update`.
 
-# Usage
-Once installed and added to your `$PATH`, just call `packs` to see the CLI help message.
+# Installation
+## Option 1:
+- Install Rust: https://www.rust-lang.org/tools/install
+  - TLDR: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`, and you're done!
+- `cargo install packs` (it's like `gem install`)
 
-# Verification
-As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
+## Option 2:
+(Mac only – for other platforms, please create an issue/PR or try option 1.)
 
-To verify:
-- Follow directions below to get the `packs` binary
-- Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-- Option 1: Run `packs check` (there should be no violations)
-- Option 2: Run `packs update` (there should be no diff)
-
-# Downloading the Binary
-Distribution ergonomics are still a WIP.
-
-If you want to try it out:
 - Go to https://github.com/alexevanczuk/packs/releases
-- Download the `packs` asset and run `chmod +x path/to/packs`
+- Download the `packs` asset and run `chmod +x path/to/packs`. This makes the asset executable on your machine.
 - Open the containing directory, right click on the binary, click open, and then accept the warning message that says its from an unknown developer (it's me!)
 - Execute `path/to/packs` to see the CLI help message.
 
 You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
 
-Currently, the uploaded binary file is built for macOS. If you want to try it on another platform, you'll need to build it yourself, or just let me know (e.g. file an issue) you're interested in trying it, what platform you're using, and I'll upload a binary for you.
+## Option 3 (coming soon):
+I'm looking into installing via `brew` or as a native ruby gem extension. More coming soon!
+
+# Usage
+Once installed and added to your `$PATH`, just call `packs` to see the CLI help message and documentation.
+
+# Verification
+As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
+
+Instructions:
+- Follow directions above to install `packs`
+- Run `packs delete_cache`
+- Run `packs update`
+- Confirm the output of `git diff` is empty
+- Please file an issue if it's not! 
 
 # Distribution Improvements
 In the future, I hope to:
@@ -44,9 +51,14 @@ In the future, I hope to:
 
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
+
+Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile type checks on memory usage.
+
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
 
-# Not yet supported:
+If you'd like to contribute but don't know where to start, please reach out! I'd love to help you get started.
+
+# Not yet supported
 - privacy checker or other checkers
 - custom associations
 - custom inflections
