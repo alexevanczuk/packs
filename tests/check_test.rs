@@ -1,10 +1,12 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::{error::Error, process::Command};
 
 mod common;
 
 #[test]
+#[serial]
 fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
@@ -21,6 +23,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+#[serial]
 fn test_check_with_package_todo_file() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
