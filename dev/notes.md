@@ -20,3 +20,18 @@
 - [x] Parse ERB files
 - [x] `packs update`, which can be used to update `package_todo.yml`
 - [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
+
+# Profiling
+I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
+
+Specifically, this command which merges similar code paths to see where most of the time is spent:
+```
+sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../your_app check
+```
+For more, see: https://nnethercote.github.io/perf-book/profiling.html
+
+# Local Development
+## Running the CLI in release mode against a target app
+```
+RUST_LOG=debug time cargo run --profile=release -- --project-root=../your_app check
+```

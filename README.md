@@ -82,18 +82,3 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 | 4           | 3.52s         | 35.26s           |
 | 5           | 3.32s         | 37.14s           |
 | **Average** | 3.598         | 37.29            |
-
-# Profiling
-I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
-
-Specifically, this command which merges similar code paths to see where most of the time is spent:
-```
-sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../your_app check
-```
-For more, see: https://nnethercote.github.io/perf-book/profiling.html
-
-# Local Development
-## Running the CLI in release mode against a target app
-```
-RUST_LOG=debug time cargo run --profile=release -- --project-root=../your_app check
-```
