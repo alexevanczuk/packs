@@ -14,37 +14,25 @@
 ## Distribution
 - Sign the binary
 - Distribute with brew: https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
+- Add directions to download via some other tool, or ship as a native ruby gem extension.
 
 # Milestones
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
 - [x] Parse ERB files
+- [x] `packs update`, which can be used to update `package_todo.yml`
 - [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
-- [ ] `packs update`, which can be used to update `package_todo.yml`
 
-# Other notes
-## Wrap Packwerk
-One simple way to try out `packs` to generate your cache would be to create a bash function which wraps the call to `bin/packwerk`, like so:
-```bash
-# In your ~/.bash_profile or analogous file
-packwerk() {
-    if [ "$1" = "check" ] || [ "$1" = "update" ]; then
-        echo "Calling packs generate_cache with args: ${@:2}"
-        packs generate_cache "${@:2}"
-    fi
+# Profiling
+I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
 
-    echo "Now calling packwerk with args: $@"
-    bin/packwerk "$@"
-}
+Specifically, this command which merges similar code paths to see where most of the time is spent:
 ```
+sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../your_app check
+```
+For more, see: https://nnethercote.github.io/perf-book/profiling.html
 
-You can also modify the `bin/packwerk` executable to call `packs` conditionally, e.g.
-```ruby
-# In bin/packwerk
-packs_executable = `which packs`.chomp
-if !packs_executable.empty?
-  if ARGV.first == 'check' || ARGV.first == 'update'
-    puts "Calling packs generate_cache with args: #{ARGV[1..-1]}"
-    system('packs', 'generate_cache', *ARGV[1..-1])
-  end
-end
+# Local Development
+## Running the CLI in release mode against a target app
+```
+RUST_LOG=debug time cargo run --profile=release -- --project-root=../your_app check
 ```

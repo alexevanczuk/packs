@@ -98,6 +98,7 @@ pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
         .to_string();
 
     let re = Regex::new("(?:_|(/))([a-z\\d]*)").unwrap();
+
     new_string = re
         .replace_all(&new_string, |caps: &regex::Captures| {
             let matched_slash = caps.get(1);

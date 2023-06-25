@@ -37,6 +37,17 @@ pub fn list(configuration: Configuration) {
     }
 }
 
+pub fn delete_cache(configuration: Configuration) {
+    let absolute_cache_dir = configuration.cache_directory;
+    if let Err(err) = std::fs::remove_dir_all(&absolute_cache_dir) {
+        eprintln!(
+            "Failed to remove {}: {}",
+            &absolute_cache_dir.display(),
+            err
+        );
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,

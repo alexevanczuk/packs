@@ -4,49 +4,83 @@
 
 ![Logo](logo.png)
 
-WIP Rust implementation of [packwerk](https://github.com/Shopify/packwerk) for ruby
+A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby.
 
-# About
-- It's entirely built in Rust, so it's pretty fast! In Gusto's monolith, it's about 10x faster ([Benchmarks](#benchmarks)) than the ruby implementation. Your mileage may vary! Other performance optimizations could potentially get to 20x faster.
-- The goal is for this to be able to be a drop-in replacement for `packwerk`.
-- Currently, `packs` implements `check` and `update`.
+# Goals:
+## Drop-in replacement for `packwerk` on most projects
+- Currently can serve as a drop-in replacement on Gusto's extra-large Rails monolith
+- This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `packs` is the same as `packwerk`.
 
-# Usage
-Once installed and added to your `$PATH`, just call `packs` to see the CLI help message.
+## 20x faster than `packwerk` on most projects
+- Currently ~10x as fast as the ruby implementation. See [Benchmarks](#benchmarks).
+- Your milemage may vary!
+- Other performance improvements are coming soon!
 
-# Verification
-As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see below). If not, please file an issue!
+# Documentation
+```
+Welcome! Please see https://github.com/alexevanczuk/packs for more information!
 
-To verify:
-- Follow directions below to get the `packs` binary
-- Run `rm -rf tmp/cache/packwerk` to delete the existing cache.
-- Option 1: Run `packs check` (there should be no violations)
-- Option 2: Run `packs update` (there should be no diff)
+Usage: packs [OPTIONS] <COMMAND>
 
-# Downloading the Binary
-Distribution ergonomics are still a WIP.
+Commands:
+  greet                Just saying hi
+  check                Look for violations in the codebase
+  update               Update package_todo.yml files with the current violations
+  validate             Look for validation errors in the codebase
+  generate_cache       Generate a cache to be used by the ruby implementation of packwerk
+  list_packs           List packs based on configuration in packwerk.yml
+  delete_cache         `rm -rf` on your cache directory, usually `tmp/cache/packwerk`
+  list_included_files  List analyzed files based on configuration in packwerk.yml
+  help                 Print this message or the help of the given subcommand(s)
 
-If you want to try it out:
+Options:
+      --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]
+  -h, --help                         Print help
+  -V, --version                      Print version
+```
+
+# Installation
+## Option 1:
+- Install Rust: https://www.rust-lang.org/tools/install
+  - TLDR: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`, and you're done!
+- `cargo install packs` (it's like `gem install`)
+
+## Option 2:
+(Mac only – for other platforms, please create an issue/PR or try option 1.)
+
 - Go to https://github.com/alexevanczuk/packs/releases
-- Download the `packs` asset and run `chmod +x path/to/packs`
+- Download the `packs` asset and run `chmod +x path/to/packs`. This makes the asset executable on your machine.
 - Open the containing directory, right click on the binary, click open, and then accept the warning message that says its from an unknown developer (it's me!)
 - Execute `path/to/packs` to see the CLI help message.
 
 You can add `path/to/packs` to your `PATH` so it's available in every terminal session.
 
-Currently, the uploaded binary file is built for macOS. If you want to try it on another platform, you'll need to build it yourself, or just let me know (e.g. file an issue) you're interested in trying it, what platform you're using, and I'll upload a binary for you.
+## Option 3 (coming soon):
+I'm looking into installing via `brew` or as a native ruby gem extension. More coming soon!
 
-# Distribution Improvements
-In the future, I hope to:
-- Somehow sign the binary so it does not get a warning message
-- Make it executable before download
-- Add directions to download via some other tool, or ship as a native ruby gem extension.
+# Usage
+Once installed and added to your `$PATH`, just call `packs` to see the CLI help message and documentation.
+
+# Verification
+As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
+
+Instructions:
+- Follow directions above to install `packs`
+- Run `packs delete_cache`
+- Run `packs update`
+- Confirm the output of `git diff` is empty
+- Please file an issue if it's not!
 
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
+
+Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile type checks on memory usage.
+
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
 
-# Not yet supported:
+If you'd like to contribute but don't know where to start, please reach out! I'd love to help you get started.
+
+# Not yet supported
 - privacy checker or other checkers
 - custom associations
 - custom inflections
@@ -82,18 +116,3 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 | 4           | 3.52s         | 35.26s           |
 | 5           | 3.32s         | 37.14s           |
 | **Average** | 3.598         | 37.29            |
-
-# Profiling
-I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
-
-Specifically, this command which merges similar code paths to see where most of the time is spent:
-```
-sudo cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../your_app check
-```
-For more, see: https://nnethercote.github.io/perf-book/profiling.html
-
-# Local Development
-## Running the CLI in release mode against a target app
-```
-RUST_LOG=debug time cargo run --profile=release -- --project-root=../your_app check
-```

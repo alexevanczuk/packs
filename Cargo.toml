@@ -4,10 +4,8 @@
 name = "pks"
 version = "0.1.27"
 edition = "2021"
-description = "Welcome! Please see https://github.com/alexevanczuk/packs for documentation!"
+description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
-
-[profile.release]
 # This runs all of the optimizations, but doesn't strip debug symbols,
 # such as the name of the methods
 # This meaningfully increases the size of the binary
