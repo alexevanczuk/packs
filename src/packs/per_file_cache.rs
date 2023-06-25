@@ -203,7 +203,7 @@ impl CachableFile {
     }
 }
 
-pub fn write_cache(
+fn write_cache(
     cachable_file: &CachableFile,
     references: Vec<UnresolvedReference>,
 ) {
