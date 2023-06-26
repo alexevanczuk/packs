@@ -43,6 +43,10 @@ pub struct RawConfiguration {
     // Autoload paths used to resolve constants
     #[serde(default)]
     pub autoload_paths: Option<Vec<String>>,
+
+    // Architecture layers
+    #[serde(default)]
+    pub architecture_layers: Vec<String>,
 }
 
 fn default_include() -> Vec<String> {
@@ -81,6 +85,7 @@ pub struct Configuration {
     pub cache_directory: PathBuf,
     pub constant_resolver: ConstantResolver,
     pub pack_set: PackSet,
+    pub layers: crate::packs::checker::architecture::Layers,
 }
 
 impl Configuration {
@@ -173,6 +178,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let constant_resolver =
         ConstantResolver::create(&absolute_root, autoload_paths);
 
+    let layers = crate::packs::checker::architecture::Layers {
+        layers: raw_config.architecture_layers,
+    };
+
     debug!("Finished building configuration");
 
     Configuration {
@@ -182,6 +191,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         cache_directory,
         constant_resolver,
         pack_set,
+        layers,
     }
 }
 
@@ -252,6 +262,7 @@ mod tests {
                 enforce_dependencies: CheckerSetting::False,
                 enforce_privacy: CheckerSetting::True,
                 enforce_visibility: CheckerSetting::False,
+                enforce_architecture: CheckerSetting::False,
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
                 relative_path: PathBuf::from("packs/bar"),
@@ -261,11 +272,13 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
                 public_folder: PathBuf::from("packs/bar/app/public"),
+                layer: None,
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
                 enforce_privacy: CheckerSetting::False,
                 enforce_visibility: CheckerSetting::False,
+                enforce_architecture: CheckerSetting::False,
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
                 relative_path: PathBuf::from("packs/baz"),
@@ -275,11 +288,13 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
                 public_folder: PathBuf::from("packs/baz/app/public"),
+                layer: None,
             },
             Pack {
                 enforce_dependencies: CheckerSetting::True,
                 enforce_privacy: CheckerSetting::True,
                 enforce_visibility: CheckerSetting::False,
+                enforce_architecture: CheckerSetting::False,
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
                 relative_path: PathBuf::from("packs/foo"),
@@ -291,11 +306,13 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
                 public_folder: PathBuf::from("packs/foo/app/public"),
+                layer: None,
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
                 enforce_privacy: CheckerSetting::False,
                 enforce_visibility: CheckerSetting::False,
+                enforce_architecture: CheckerSetting::False,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
                 relative_path: PathBuf::from("."),
@@ -305,6 +322,7 @@ mod tests {
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
                 public_folder: PathBuf::from("./app/public"),
+                layer: None,
             },
         ];
 

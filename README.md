@@ -65,7 +65,6 @@ If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https:/
 If you'd like to contribute but don't know where to start, please reach out! I'd love to help you get started.
 
 # Not yet supported
-- architecture and visibility checkers (from https://github.com/rubyatscale/packwerk-extensions)
 - custom public folder
 - custom associations
 - custom inflections
@@ -74,6 +73,7 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 - extensible plugin system
 - stale violation detection
 - bin/packwerk validate (e.g. cycle detection)
+- strict mode on checkers
 
 # Benchmarks
 See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
