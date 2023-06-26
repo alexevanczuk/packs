@@ -77,25 +77,25 @@ impl CheckerInterface for Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
-    use std::path::PathBuf;
 
     #[test]
     fn referencing_and_defining_pack_are_identical() {
         let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        );
+
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/foo")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -110,20 +110,21 @@ mod tests {
     #[test]
     fn test_check() {
         let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        );
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/bar")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
