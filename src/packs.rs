@@ -72,12 +72,16 @@ pub struct RawPack {
     ignored_private_constants: HashSet<String>,
     #[serde(default = "default_public_folder")]
     public_folder: String,
+    #[serde(default)]
+    layer: Option<String>,
     #[serde(default = "default_checker_setting")]
     enforce_dependencies: String,
     #[serde(default = "default_checker_setting")]
     enforce_privacy: String,
     #[serde(default = "default_checker_setting")]
     enforce_visibility: String,
+    #[serde(default = "default_checker_setting")]
+    enforce_architecture: String,
 }
 
 fn default_checker_setting() -> String {
@@ -124,9 +128,11 @@ pub struct Pack {
     package_todo: PackageTodo,
     visible_to: HashSet<String>,
     public_folder: PathBuf,
+    layer: Option<String>,
     enforce_dependencies: CheckerSetting,
     enforce_privacy: CheckerSetting,
     enforce_visibility: CheckerSetting,
+    enforce_architecture: CheckerSetting,
 }
 
 impl Hash for Pack {
@@ -228,6 +234,10 @@ impl Pack {
             convert_raw_checker_setting(&raw_pack.enforce_privacy);
         let enforce_visibility =
             convert_raw_checker_setting(&raw_pack.enforce_visibility);
+        let enforce_architecture =
+            convert_raw_checker_setting(&raw_pack.enforce_architecture);
+
+        let layer = raw_pack.layer;
 
         let pack: Pack = Pack {
             yml: yml.to_path_buf(),
@@ -241,7 +251,9 @@ impl Pack {
             enforce_dependencies,
             enforce_privacy,
             enforce_visibility,
+            enforce_architecture,
             public_folder,
+            layer,
         };
 
         pack

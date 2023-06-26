@@ -15,6 +15,7 @@ use super::parser::Cache;
 use super::Pack;
 use super::UnresolvedReference;
 
+pub mod architecture;
 pub mod dependency;
 pub mod privacy;
 pub mod visibility;
