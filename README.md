@@ -74,6 +74,7 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 - extensible plugin system
 - stale violation detection
 - bin/packwerk validate (e.g. cycle detection)
+- strict mode on checkers
 
 # Benchmarks
 See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
