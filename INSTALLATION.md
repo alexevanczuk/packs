@@ -2,7 +2,9 @@
 ## Option 1:
 - Install Rust: https://www.rust-lang.org/tools/install
   - TLDR: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`, and you're done!
-- `cargo install packs` (it's like `gem install`)
+- `cargo install pks` (it's like `gem install`)
+
+(Note – if you're using [`use_packs`]([url](https://github.com/rubyatscale/use_packs)) AND [`chruby`]([url](https://github.com/capistrano/chruby)), `chruby` might overwrite the `packs` executable with the `packs` executable from `use_packs`. If so, I'd recommend making an alias, e.g. `pks` that points to the cargo installed executable.
 
 ## Option 2:
 (Mac only – for other platforms, please create an issue/PR or try option 1.)
