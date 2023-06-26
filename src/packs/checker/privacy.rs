@@ -39,10 +39,12 @@ impl CheckerInterface for Checker {
 
         // This is a hack for now – we need to read package.yml file public_paths at some point,
         // and probably find a better way to check if the constant is public
+
+        let public_folder = defining_pack.relative_path.join("public");
         let is_public = relative_defining_file
             .as_ref()
             .unwrap()
-            .contains("/public/");
+            .starts_with(public_folder.to_string_lossy().as_ref());
 
         if is_public {
             return None;
