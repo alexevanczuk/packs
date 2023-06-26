@@ -40,7 +40,8 @@ impl CheckerInterface for Checker {
         // This is a hack for now – we need to read package.yml file public_paths at some point,
         // and probably find a better way to check if the constant is public
 
-        let public_folder = defining_pack.relative_path.join("public");
+        let public_folder = &defining_pack.public_folder;
+
         let is_public = relative_defining_file
             .as_ref()
             .unwrap()
@@ -115,6 +116,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/public"),
             ..Pack::default()
         };
 
@@ -185,6 +187,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/public"),
             ..Pack::default()
         };
 
@@ -217,5 +220,36 @@ mod tests {
             },
         };
         assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_custom_public_folder_detection_works() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            public_folder: PathBuf::from("packs/bar/api"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/api/app/services/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        assert_eq!(None, checker.check(&reference))
     }
 }
