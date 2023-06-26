@@ -50,7 +50,7 @@ impl CheckerInterface for Checker {
         }
         let defining_pack = defining_pack.unwrap();
 
-        if defining_pack.enforce_architecture.is_false() {
+        if referencing_pack.enforce_architecture.is_false() {
             return None;
         }
 
@@ -104,106 +104,124 @@ impl CheckerInterface for Checker {
 #[cfg(test)]
 mod tests {
 
-    // #[test]
-    // fn referencing_and_defining_pack_are_identical() {
-    //     let checker = Checker { };
+    use crate::packs::{CheckerSetting, Pack, SourceLocation};
 
-    //     let defining_pack = Pack {
-    //         name: String::from("packs/foo"),
-    //         enforce_visibility: CheckerSetting::True,
-    //         ..Pack::default()
-    //     };
-    //     let referencing_pack = Pack {
-    //         name: String::from("packs/foo"),
-    //         ..Pack::default()
-    //     };
+    use super::*;
 
-    //     let reference = Reference {
-    //         constant_name: String::from("::Foo"),
-    //         defining_pack: Some(&defining_pack),
-    //         referencing_pack: &referencing_pack,
-    //         relative_referencing_file: String::from(
-    //             "packs/foo/app/services/foo.rb",
-    //         ),
-    //         relative_defining_file: Some(String::from(
-    //             "packs/bar/app/services/bar.rb",
-    //         )),
-    //         source_location: SourceLocation { line: 3, column: 1 },
-    //     };
-    //     assert_eq!(None, checker.check(&reference))
-    // }
+    #[test]
+    fn referencing_and_defining_pack_are_identical() {
+        let checker = Checker {
+            layers: Layers::default(),
+        };
 
-    // #[test]
-    // fn reference_is_a_visibility_violation() {
-    //     let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            enforce_visibility: CheckerSetting::True,
+            ..Pack::default()
+        };
+        let referencing_pack = Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
 
-    //     let defining_pack = Pack {
-    //         name: String::from("packs/foo"),
-    //         enforce_visibility: CheckerSetting::True,
-    //         ..Pack::default()
-    //     };
-    //     let referencing_pack = Pack {
-    //         name: String::from("packs/bar"),
-    //         ..Pack::default()
-    //     };
+        let reference = Reference {
+            constant_name: String::from("::Foo"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack: &referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+        assert_eq!(None, checker.check(&reference))
+    }
 
-    //     let reference = Reference {
-    //         constant_name: String::from("::Foo"),
-    //         defining_pack: Some(&defining_pack),
-    //         referencing_pack: &referencing_pack,
-    //         relative_referencing_file: String::from(
-    //             "packs/bar/app/services/bar.rb",
-    //         ),
-    //         relative_defining_file: Some(String::from(
-    //             "packs/foo/app/services/foo.rb",
-    //         )),
-    //         source_location: SourceLocation { line: 3, column: 1 },
-    //     };
+    #[test]
+    fn reference_is_an_architecture_violation() {
+        let checker = Checker {
+            layers: Layers {
+                layers: vec![
+                    String::from("product"),
+                    String::from("utilities"),
+                ],
+            },
+        };
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            layer: Some(String::from("product")),
+            ..Pack::default()
+        };
+        let referencing_pack = Pack {
+            name: String::from("packs/bar"),
+            layer: Some(String::from("utilities")),
+            enforce_architecture: CheckerSetting::True,
+            ..Pack::default()
+        };
 
-    //     let expected_violation = Violation {
-    //         message: String::from("visibility: packs/bar/app/services/bar.rb:3 references ::Foo from packs/foo, which is not visible to packs/bar"),
-    //         identifier: ViolationIdentifier {
-    //             violation_type: String::from("visibility"),
-    //             file: String::from("packs/bar/app/services/bar.rb"),
-    //             constant_name: String::from("::Foo"),
-    //             referencing_pack_name: String::from("packs/bar"),
-    //             defining_pack_name: String::from("packs/foo"),
-    //         },
-    //     };
-    //     assert_eq!(expected_violation, checker.check(&reference).unwrap())
-    // }
+        let reference = Reference {
+            constant_name: String::from("::Foo"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack: &referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/bar/app/services/bar.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/foo/app/services/foo.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
 
-    // #[test]
-    // fn reference_is_not_a_visibility_violation() {
-    //     let checker = Checker {};
+        let expected_violation = Violation {
+            message: String::from("architecture: packs/bar/app/services/bar.rb:3 references ::Foo defined in packs/foo (whose layer is `product`) from packs/bar (whose layer is `utilities`)"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("architecture"),
+                file: String::from("packs/bar/app/services/bar.rb"),
+                constant_name: String::from("::Foo"),
+                referencing_pack_name: String::from("packs/bar"),
+                defining_pack_name: String::from("packs/foo"),
+            },
+        };
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
 
-    //     let mut visible_to = HashSet::new();
-    //     visible_to.insert(String::from("packs/bar"));
+    #[test]
+    fn reference_is_not_an_architecture_violation() {
+        let checker = Checker {
+            layers: Layers {
+                layers: vec![
+                    String::from("product"),
+                    String::from("utilities"),
+                ],
+            },
+        };
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            layer: Some(String::from("utilities")),
+            ..Pack::default()
+        };
+        let referencing_pack = Pack {
+            name: String::from("packs/bar"),
+            layer: Some(String::from("product")),
+            enforce_architecture: CheckerSetting::True,
+            ..Pack::default()
+        };
 
-    //     let defining_pack = Pack {
-    //         name: String::from("packs/foo"),
-    //         visible_to,
-    //         enforce_visibility: CheckerSetting::True,
-    //         ..Pack::default()
-    //     };
-    //     let referencing_pack = Pack {
-    //         name: String::from("packs/bar"),
-    //         ..Pack::default()
-    //     };
+        let reference = Reference {
+            constant_name: String::from("::Foo"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack: &referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/bar/app/services/bar.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/foo/app/services/foo.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
 
-    //     let reference = Reference {
-    //         constant_name: String::from("::Foo"),
-    //         defining_pack: Some(&defining_pack),
-    //         referencing_pack: &referencing_pack,
-    //         relative_referencing_file: String::from(
-    //             "packs/bar/app/services/bar.rb",
-    //         ),
-    //         relative_defining_file: Some(String::from(
-    //             "packs/foo/app/services/foo.rb",
-    //         )),
-    //         source_location: SourceLocation { line: 3, column: 1 },
-    //     };
-
-    //     assert_eq!(None, checker.check(&reference))
-    // }
+        assert_eq!(None, checker.check(&reference))
+    }
 }
