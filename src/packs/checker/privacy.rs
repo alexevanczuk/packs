@@ -176,4 +176,44 @@ mod tests {
 
         assert_eq!(None, checker.check(&reference))
     }
+
+    #[test]
+    fn test_public_folder_detection_works() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/public/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let expected_violation = Violation {
+            message: String::from("privacy: packs/foo/app/services/foo.rb:3 references private constant ::Bar from packs/bar"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("privacy"),
+                file: String::from("packs/foo/app/services/foo.rb"),
+                constant_name: String::from("::Bar"),
+                referencing_pack_name: String::from("packs/foo"),
+                defining_pack_name: String::from("packs/bar"),
+            },
+        };
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
 }
