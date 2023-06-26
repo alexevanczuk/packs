@@ -39,10 +39,13 @@ impl CheckerInterface for Checker {
 
         // This is a hack for now – we need to read package.yml file public_paths at some point,
         // and probably find a better way to check if the constant is public
+
+        let public_folder = &defining_pack.public_folder;
+
         let is_public = relative_defining_file
             .as_ref()
             .unwrap()
-            .contains("/public/");
+            .starts_with(public_folder.to_string_lossy().as_ref());
 
         if is_public {
             return None;
@@ -77,25 +80,25 @@ impl CheckerInterface for Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
-    use std::path::PathBuf;
 
     #[test]
     fn referencing_and_defining_pack_are_identical() {
         let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        );
+
+        let defining_pack = Pack {
+            name: String::from("packs/foo"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/foo")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -110,20 +113,22 @@ mod tests {
     #[test]
     fn test_check() {
         let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        );
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/app/public"),
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/bar")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -169,6 +174,78 @@ mod tests {
             ),
             relative_defining_file: Some(String::from(
                 "packs/foo/app/services/foo.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        assert_eq!(None, checker.check(&reference))
+    }
+
+    #[test]
+    fn test_public_folder_detection_works() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/app/public"),
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/public/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let expected_violation = Violation {
+            message: String::from("privacy: packs/foo/app/services/foo.rb:3 references private constant ::Bar from packs/bar"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("privacy"),
+                file: String::from("packs/foo/app/services/foo.rb"),
+                constant_name: String::from("::Bar"),
+                referencing_pack_name: String::from("packs/foo"),
+                defining_pack_name: String::from("packs/bar"),
+            },
+        };
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_custom_public_folder_detection_works() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            public_folder: PathBuf::from("packs/bar/app/api"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/api/bar.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
         };

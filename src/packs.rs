@@ -70,6 +70,8 @@ pub struct RawPack {
     visible_to: HashSet<String>,
     #[serde(default)]
     ignored_private_constants: HashSet<String>,
+    #[serde(default = "default_public_folder")]
+    public_folder: String,
     #[serde(default = "default_checker_setting")]
     enforce_dependencies: String,
     #[serde(default = "default_checker_setting")]
@@ -80,6 +82,10 @@ pub struct RawPack {
 
 fn default_checker_setting() -> String {
     "false".to_string()
+}
+
+fn default_public_folder() -> String {
+    "app/public".to_string()
 }
 
 // Make an enum for the configuration of a checker, which can be either false, true, or strict:
@@ -117,6 +123,7 @@ pub struct Pack {
     ignored_private_constants: HashSet<String>,
     package_todo: PackageTodo,
     visible_to: HashSet<String>,
+    public_folder: PathBuf,
     enforce_dependencies: CheckerSetting,
     enforce_privacy: CheckerSetting,
     enforce_visibility: CheckerSetting,
@@ -211,6 +218,7 @@ impl Pack {
 
         let dependencies = raw_pack.dependencies;
         let visible_to = raw_pack.visible_to;
+        let public_folder = relative_path.join(raw_pack.public_folder);
         let ignored_dependencies = raw_pack.ignored_dependencies;
         let ignored_private_constants = raw_pack.ignored_private_constants;
 
@@ -233,6 +241,7 @@ impl Pack {
             enforce_dependencies,
             enforce_privacy,
             enforce_visibility,
+            public_folder,
         };
 
         pack
