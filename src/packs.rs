@@ -85,7 +85,7 @@ fn default_checker_setting() -> String {
 }
 
 fn default_public_folder() -> String {
-    "public".to_string()
+    "app/public".to_string()
 }
 
 // Make an enum for the configuration of a checker, which can be either false, true, or strict:

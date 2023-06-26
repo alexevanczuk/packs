@@ -116,7 +116,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
-            public_folder: PathBuf::from("packs/bar/public"),
+            public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
 
@@ -187,7 +187,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
-            public_folder: PathBuf::from("packs/bar/public"),
+            public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
 
@@ -227,7 +227,7 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            public_folder: PathBuf::from("packs/bar/api"),
+            public_folder: PathBuf::from("packs/bar/app/api"),
             enforce_privacy: CheckerSetting::True,
             ..Pack::default()
         };
@@ -245,7 +245,7 @@ mod tests {
                 "packs/foo/app/services/foo.rb",
             ),
             relative_defining_file: Some(String::from(
-                "packs/bar/api/app/services/bar.rb",
+                "packs/bar/app/api/bar.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
         };

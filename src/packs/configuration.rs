@@ -260,7 +260,7 @@ mod tests {
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
-                public_folder: PathBuf::from("packs/bar/public"),
+                public_folder: PathBuf::from("packs/bar/app/public"),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
@@ -274,7 +274,7 @@ mod tests {
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
-                public_folder: PathBuf::from("packs/baz/public"),
+                public_folder: PathBuf::from("packs/baz/app/public"),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::True,
@@ -290,7 +290,7 @@ mod tests {
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
-                public_folder: PathBuf::from("packs/foo/public"),
+                public_folder: PathBuf::from("packs/foo/app/public"),
             },
             Pack {
                 enforce_dependencies: CheckerSetting::False,
@@ -304,7 +304,7 @@ mod tests {
                 package_todo: PackageTodo::default(),
                 ignored_dependencies: HashSet::new(),
                 ignored_private_constants: HashSet::new(),
-                public_folder: PathBuf::from("./public"),
+                public_folder: PathBuf::from("./app/public"),
             },
         ];
 
