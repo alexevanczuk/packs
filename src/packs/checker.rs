@@ -230,6 +230,9 @@ fn get_all_violations<T: Cache + Send + Sync>(
         Box::new(dependency::Checker {}),
         Box::new(privacy::Checker {}),
         Box::new(visibility::Checker {}),
+        Box::new(architecture::Checker {
+            layers: configuration.layers.clone(),
+        }),
     ];
     let violations: Vec<Violation> = references
         .into_par_iter()

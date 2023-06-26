@@ -2,8 +2,9 @@ use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::Violation;
 
-struct Layers {
-    layers: Vec<String>,
+#[derive(Default, Clone)]
+pub struct Layers {
+    pub layers: Vec<String>,
 }
 
 impl Layers {
@@ -15,20 +16,26 @@ impl Layers {
         let referencing_layer_index = self
             .layers
             .iter()
-            .position(|layer| &layer == &referencing_layer)
-            .unwrap();
+            .position(|layer| layer == referencing_layer);
 
-        let defining_layer_index = self
-            .layers
-            .iter()
-            .position(|layer| &layer == &defining_layer)
-            .unwrap();
+        let defining_layer_index =
+            self.layers.iter().position(|layer| layer == defining_layer);
 
-        referencing_layer_index <= defining_layer_index
+        match (referencing_layer_index, defining_layer_index) {
+            (Some(referencing_layer_index), Some(defining_layer_index)) => {
+                referencing_layer_index <= defining_layer_index
+            }
+            _ => {
+                panic!(
+                    "Could not find one of layer `{}` or layer `{}` in `packwerk.yml`",
+                    referencing_layer, defining_layer
+                )
+            }
+        }
     }
 }
 pub struct Checker {
-    layers: Layers,
+    pub layers: Layers,
 }
 
 impl CheckerInterface for Checker {
@@ -59,19 +66,22 @@ impl CheckerInterface for Checker {
 
         match (&referencing_pack.layer, &defining_pack.layer) {
             (Some(referencing_layer), Some(defining_layer)) => {
-                if !self.layers.can_depend_on(referencing_layer, defining_layer)
+                if self.layers.can_depend_on(referencing_layer, defining_layer)
                 {
                     return None;
                 }
+                // .stdout(predicate::str::contains("architecture: packs/feature_flags/app/services/feature_flags.rb:2 references ::Payments from packs/payments (whose layer is `product`) from packs/feature_flags (whose layer is `utilities`)"));
                 let message = format!(
-                    "visibility: {}:{} references {} from {}, which is not visible to {}",
+                    "architecture: {}:{} references {} defined in {} (whose layer is `{}`) from {} (whose layer is `{}`)",
                     reference.relative_referencing_file,
                     reference.source_location.line,
                     reference.constant_name,
                     defining_pack_name,
-                    referencing_pack_name
+                    defining_layer,
+                    referencing_pack_name,
+                    referencing_layer,
                 );
-                let violation_type = String::from("visibility");
+                let violation_type = String::from("architecture");
                 let file = reference.relative_referencing_file.clone();
                 let identifier = ViolationIdentifier {
                     violation_type,
@@ -86,15 +96,13 @@ impl CheckerInterface for Checker {
                     identifier,
                 })
             }
-            _ => return None,
+            _ => None,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::packs::*;
 
     // #[test]
     // fn referencing_and_defining_pack_are_identical() {

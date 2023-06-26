@@ -43,6 +43,10 @@ pub struct RawConfiguration {
     // Autoload paths used to resolve constants
     #[serde(default)]
     pub autoload_paths: Option<Vec<String>>,
+
+    // Architecture layers
+    #[serde(default)]
+    pub architecture_layers: Vec<String>,
 }
 
 fn default_include() -> Vec<String> {
@@ -81,6 +85,7 @@ pub struct Configuration {
     pub cache_directory: PathBuf,
     pub constant_resolver: ConstantResolver,
     pub pack_set: PackSet,
+    pub layers: crate::packs::checker::architecture::Layers,
 }
 
 impl Configuration {
@@ -173,6 +178,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let constant_resolver =
         ConstantResolver::create(&absolute_root, autoload_paths);
 
+    let layers = crate::packs::checker::architecture::Layers {
+        layers: raw_config.architecture_layers,
+    };
+
     debug!("Finished building configuration");
 
     Configuration {
@@ -182,6 +191,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         cache_directory,
         constant_resolver,
         pack_set,
+        layers,
     }
 }
 
