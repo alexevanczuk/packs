@@ -15,6 +15,10 @@ license = "MIT"
 name = "packs"
 path = "src/main.rs"
 
+[[bin]]
+name = "pks"
+path = "src/main-alt.rs"
+
 [lib]
 name = "packs"
 path = "src/lib.rs"

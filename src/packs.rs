@@ -11,6 +11,7 @@ use std::path::PathBuf;
 pub(crate) mod checker;
 pub mod cli;
 mod inflector_shim;
+pub mod logger;
 mod pack_set;
 pub mod package_todo;
 pub mod parser;
