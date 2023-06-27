@@ -13,7 +13,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
         .assert()
         .failure()
         .stdout(predicate::str::contains("1 violation(s) detected:"))
-        .stdout(predicate::str::contains("architecture: packs/feature_flags/app/services/feature_flags.rb:2 references ::Payments defined in packs/payments (whose layer is `product`) from packs/feature_flags (whose layer is `utilities`)"));
+        .stdout(predicate::str::contains("packs/feature_flags/app/services/feature_flags.rb:2:0\nArchitecture violation: `::Payments` belongs to `packs/payments` (whose layer is `product`) cannot be accessed from `packs/feature_flags` (whose layer is `utilities`)"));
 
     common::teardown();
     Ok(())

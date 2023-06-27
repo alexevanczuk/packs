@@ -70,17 +70,19 @@ impl CheckerInterface for Checker {
                 {
                     return None;
                 }
-                // .stdout(predicate::str::contains("architecture: packs/feature_flags/app/services/feature_flags.rb:2 references ::Payments from packs/payments (whose layer is `product`) from packs/feature_flags (whose layer is `utilities`)"));
+
                 let message = format!(
-                    "architecture: {}:{} references {} defined in {} (whose layer is `{}`) from {} (whose layer is `{}`)",
+                    "{}:{}:{}\nArchitecture violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
                     reference.relative_referencing_file,
                     reference.source_location.line,
+                    reference.source_location.column,
                     reference.constant_name,
                     defining_pack_name,
                     defining_layer,
                     referencing_pack_name,
                     referencing_layer,
                 );
+
                 let violation_type = String::from("architecture");
                 let file = reference.relative_referencing_file.clone();
                 let identifier = ViolationIdentifier {
@@ -175,7 +177,7 @@ mod tests {
         };
 
         let expected_violation = Violation {
-            message: String::from("architecture: packs/bar/app/services/bar.rb:3 references ::Foo defined in packs/foo (whose layer is `product`) from packs/bar (whose layer is `utilities`)"),
+            message: String::from("packs/bar/app/services/bar.rb:3:1\nArchitecture violation: `::Foo` belongs to `packs/foo` (whose layer is `product`) cannot be accessed from `packs/bar` (whose layer is `utilities`)"),
             identifier: ViolationIdentifier {
                 violation_type: String::from("architecture"),
                 file: String::from("packs/bar/app/services/bar.rb"),

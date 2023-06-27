@@ -143,6 +143,12 @@ impl Hash for Pack {
     }
 }
 
+impl Pack {
+    fn relative_yml(&self) -> PathBuf {
+        self.relative_path.join("package.yml")
+    }
+}
+
 fn convert_raw_checker_setting(raw_checker_setting: &str) -> CheckerSetting {
     match raw_checker_setting {
         "false" => CheckerSetting::False,

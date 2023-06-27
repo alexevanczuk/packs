@@ -158,7 +158,7 @@ pub(crate) fn check(
 
     if !unrecorded_violations.is_empty() {
         for violation in unrecorded_violations.iter() {
-            println!("{}", violation.message);
+            println!("{}\n", violation.message);
         }
 
         println!("{} violation(s) detected:", unrecorded_violations.len());

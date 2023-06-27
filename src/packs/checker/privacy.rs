@@ -51,14 +51,25 @@ impl CheckerInterface for Checker {
             return None;
         }
 
+        // START: Original packwerk message
+        // path/to/file.rb:36:0
+        // Privacy violation: '::Constant' is private to 'packs/defining_pack' but referenced from 'packs/referencing_pack'.
+        // Is there a public entrypoint in 'packs/defining_pack/app/public/' that you can use instead?
+
+        // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
+        // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+        // END: Original packwerk message
+
         let message = format!(
-            // "dependency: packs/foo/app/services/foo.rb:3 references Bar from packs/bar without an explicit dependency in packs/foo/package.yml"
-            "privacy: {}:{} references private constant {} from {}",
+            "{}:{}:{}\nPrivacy violation: `{}` is private to `{}`, but referenced from `{}`",
             reference.relative_referencing_file,
             reference.source_location.line,
+            reference.source_location.column,
             reference.constant_name,
             defining_pack_name,
+            referencing_pack_name,
         );
+
         let violation_type = String::from("privacy");
         let file = reference.relative_referencing_file.clone();
         let identifier = ViolationIdentifier {
@@ -139,7 +150,7 @@ mod tests {
         };
 
         let expected_violation = Violation {
-            message: String::from("privacy: packs/foo/app/services/foo.rb:3 references private constant ::Bar from packs/bar"),
+            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),
@@ -210,7 +221,7 @@ mod tests {
         };
 
         let expected_violation = Violation {
-            message: String::from("privacy: packs/foo/app/services/foo.rb:3 references private constant ::Bar from packs/bar"),
+            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),
