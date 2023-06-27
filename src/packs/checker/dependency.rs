@@ -35,15 +35,27 @@ impl CheckerInterface for Checker {
         if !referencing_pack_dependencies.contains(defining_pack_name)
             && !ignored_dependency
         {
+            // START: Original packwerk message
+            // path/to/file.rb:36:0
+            // Dependency violation: ::Constant belongs to 'packs/defining_pack', but 'packs/referencing_pack/package.yml' does not specify a dependency on 'packs/defining_pack'.
+            // Are we missing an abstraction?
+            // Is the code making the reference, and the referenced constant, in the right packages?
+
+            // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
+            // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+            // END: Original packwerk message
+
             let message = format!(
-                // "dependency: packs/foo/app/services/foo.rb:3 references Bar from packs/bar without an explicit dependency in packs/foo/package.yml"
-                "dependency: {}:{} references {} from {} without an explicit dependency in {}/package.yml",
+                "{}:{}:{}\nDependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
                 reference.relative_referencing_file,
                 reference.source_location.line,
+                reference.source_location.column,
                 reference.constant_name,
                 defining_pack_name,
-                referencing_pack_name,
+                referencing_pack.relative_yml().to_string_lossy(),
+                defining_pack_name,
             );
+
             let violation_type = String::from("dependency");
             let file = reference.relative_referencing_file.clone();
             let identifier = ViolationIdentifier {
@@ -125,7 +137,7 @@ mod tests {
         };
 
         let expected_violation = Violation {
-            message: String::from("dependency: packs/foo/app/services/foo.rb:3 references ::Bar from packs/bar without an explicit dependency in packs/foo/package.yml"),
+            message: String::from("packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."),
             identifier: ViolationIdentifier {
                 violation_type: String::from("dependency"),
                 file: String::from("packs/foo/app/services/foo.rb"),

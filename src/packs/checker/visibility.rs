@@ -38,13 +38,15 @@ impl CheckerInterface for Checker {
         }
 
         let message = format!(
-            "visibility: {}:{} references {} from {}, which is not visible to {}",
+            "{}:{}:{}\nVisibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
             reference.relative_referencing_file,
             reference.source_location.line,
+            reference.source_location.column,
             reference.constant_name,
             defining_pack_name,
-            referencing_pack_name
+            referencing_pack_name,
         );
+
         let violation_type = String::from("visibility");
         let file = reference.relative_referencing_file.clone();
         let identifier = ViolationIdentifier {
@@ -124,7 +126,7 @@ mod tests {
         };
 
         let expected_violation = Violation {
-            message: String::from("visibility: packs/bar/app/services/bar.rb:3 references ::Foo from packs/foo, which is not visible to packs/bar"),
+            message: String::from("packs/bar/app/services/bar.rb:3:1\nVisibility violation: `::Foo` belongs to `packs/foo`, which is not visible to `packs/bar`"),
             identifier: ViolationIdentifier {
                 violation_type: String::from("visibility"),
                 file: String::from("packs/bar/app/services/bar.rb"),

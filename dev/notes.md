@@ -20,7 +20,7 @@
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
 - [x] Parse ERB files
 - [x] `packs update`, which can be used to update `package_todo.yml`
-- [ ] `packs check`, which can be used as a drop-in replacement to the VSCode
+- [x] `packs check`, which can be used as a drop-in replacement to the VSCode
 
 # Profiling
 I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
