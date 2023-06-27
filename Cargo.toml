@@ -2,7 +2,7 @@
 
 [package]
 name = "pks"
-version = "0.1.34"
+version = "0.1.35"
 edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
@@ -14,6 +14,10 @@ license = "MIT"
 [[bin]]
 name = "packs"
 path = "src/main.rs"
+
+[[bin]]
+name = "pks"
+path = "src/main-alt.rs"
 
 [lib]
 name = "packs"
