@@ -1,17 +1,23 @@
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use jwalk::WalkDirGeneric;
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use super::configuration::RawConfiguration;
 use crate::packs::Pack;
 
-fn matches_globs(path: &Path, globs: &[String]) -> bool {
-    globs
-        .iter()
-        .any(|glob| glob_match::glob_match(glob, path.to_str().unwrap()))
+fn build_glob_set(globs: &[String]) -> GlobSet {
+    let mut builder = GlobSetBuilder::new();
+
+    for glob in globs {
+        let compiled_glob = GlobBuilder::new(glob)
+            .literal_separator(true)
+            .build()
+            .unwrap();
+
+        builder.add(compiled_glob);
+    }
+
+    builder.build().unwrap()
 }
 
 // We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
@@ -46,9 +52,14 @@ pub fn walk_directory(
     let excluded_globs = &raw.exclude;
     all_excluded_dirs.extend(excluded_globs.to_owned());
 
-    let excluded_dirs_ref = Arc::new(all_excluded_dirs);
+    let all_excluded_dirs_set = build_glob_set(&all_excluded_dirs);
+    let excluded_dirs_ref = Arc::new(all_excluded_dirs_set);
 
     let absolute_root_ref = Arc::new(absolute_root.clone());
+
+    let includes_set = build_glob_set(&raw.include);
+    let excludes_set = build_glob_set(&raw.exclude);
+    let package_paths_set = build_glob_set(&raw.package_paths);
 
     // TODO: Pull directory walker into separate module. Allow it to be called with implementations of a trait
     // so separate concerns can each be in their own place.
@@ -77,10 +88,7 @@ pub fn walk_directory(
                         .unwrap()
                         .to_owned();
 
-                    if matches_globs(
-                        &relative_path,
-                        cloned_excluded_dirs.as_ref(),
-                    ) {
+                    if cloned_excluded_dirs.as_ref().is_match(&relative_path) {
                         dir_entry.read_children_path = None;
                     }
                 }
@@ -110,8 +118,8 @@ pub fn walk_directory(
             .to_owned();
 
         // This could be one line, but I'm keeping it separate for debugging purposes
-        if matches_globs(&relative_path, &raw.include) {
-            if !matches_globs(&relative_path, &raw.exclude) {
+        if includes_set.is_match(&relative_path) {
+            if !excludes_set.is_match(&relative_path) {
                 included_paths.insert(absolute_path.clone());
             } else {
                 // println!("file excluded: {}", relative_path.display())
@@ -128,10 +136,8 @@ pub fn walk_directory(
             relative_path.file_name().expect("expected a file_name");
 
         if file_name.eq_ignore_ascii_case("package.yml")
-            && (matches_globs(
-                relative_path.parent().unwrap(),
-                &raw.package_paths,
-            ) || absolute_path.parent().unwrap() == absolute_root)
+            && (package_paths_set.is_match(relative_path.parent().unwrap())
+                || absolute_path.parent().unwrap() == absolute_root)
         {
             let pack = Pack::from_path(&absolute_path, &relative_path);
             included_packs.insert(pack);
