@@ -50,10 +50,15 @@ impl<'a> Reference<'a> {
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
-        let maybe_constant = configuration.constant_resolver.resolve(
-            &unresolved_reference.name,
-            &unresolved_reference.namespace_path,
-        );
+        let str_references: Vec<&str> = unresolved_reference
+            .namespace_path
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>();
+
+        let maybe_constant = configuration
+            .constant_resolver
+            .resolve(&unresolved_reference.name, &str_references);
 
         let (defining_pack, relative_defining_file) = if let Some(constant) =
             &maybe_constant

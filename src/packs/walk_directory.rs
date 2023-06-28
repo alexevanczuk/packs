@@ -111,11 +111,16 @@ pub fn walk_directory(
         //     .open("tmp/pks_log.txt")
         //     .unwrap();
         // writeln!(file, "{:?}", entry).unwrap();
-        let absolute_path = entry.unwrap().path();
+        let unwrapped_entry = entry.unwrap();
 
-        if absolute_path.is_dir() {
+        // Note that we could also get the dir from absolute_path.is_dir()
+        // However, this data appears to be cached on the FileType struct, so we'll use that instead,
+        // which is much faster!
+        if unwrapped_entry.file_type.is_dir() {
             continue;
         }
+
+        let absolute_path = unwrapped_entry.path();
 
         let relative_path = absolute_path
             .strip_prefix(&absolute_root)
