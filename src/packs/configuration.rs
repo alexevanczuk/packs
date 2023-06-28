@@ -1,4 +1,5 @@
 use super::PackSet;
+use crate::packs::walk_directory::WalkDirectoryResult;
 use crate::packs::Pack;
 use crate::packs::{
     parser::ruby::packwerk::constant_resolver::ConstantResolver, walk_directory,
@@ -164,8 +165,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     debug!("Beginning directory walk");
 
-    let (included_files, unsorted_packs) =
-        walk_directory(absolute_root.to_path_buf(), &raw_config);
+    let WalkDirectoryResult {
+        included_paths: included_files,
+        included_packs: unsorted_packs,
+    } = walk_directory(absolute_root.to_path_buf(), &raw_config);
     debug!("Finished directory walk");
 
     let absolute_root = absolute_root.to_path_buf();
