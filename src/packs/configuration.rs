@@ -207,7 +207,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
     let mut autoload_paths: Vec<PathBuf> = Vec::new();
 
-    debug!("Getting autoload paths");
+    debug!(
+        target: "perf_events",
+        "Getting autoload paths"
+    );
+
     for pack in packs {
         // App paths
         let app_paths = pack.yml.parent().unwrap().join("app").join("*");
@@ -227,7 +231,10 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
         process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
     }
 
-    debug!("Finished getting autoload paths");
+    debug!(
+        target: "perf_events",
+        "Finished getting autoload paths"
+    );
 
     autoload_paths
 }
