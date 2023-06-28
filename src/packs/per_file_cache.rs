@@ -236,7 +236,10 @@ pub(crate) fn write_cache_for_files(
 
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
     let file_count = absolute_paths.len();
-    debug!("Writing cache for {} files", file_count);
+    debug!(
+        target: "perf_events",
+        "Writing cache for {} files", file_count
+    );
 
     absolute_paths.par_iter().for_each(|path| {
         let cachable_file = CachableFile::from(
@@ -249,7 +252,10 @@ pub(crate) fn write_cache_for_files(
             write_cache(&cachable_file, references)
         }
     });
-    debug!("Finished writing cache for {} files", file_count);
+    debug!(
+        target: "perf_events",
+        "Finished writing cache for {} files", file_count
+    );
 }
 
 #[cfg(test)]

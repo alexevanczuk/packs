@@ -20,6 +20,11 @@ fn build_glob_set(globs: &[String]) -> GlobSet {
     builder.build().unwrap()
 }
 
+pub struct WalkDirectoryResult {
+    pub included_paths: HashSet<PathBuf>,
+    pub included_packs: HashSet<Pack>,
+}
+
 // We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
 // specified in the `RawConfiguration`
 // https://docs.rs/jwalk/0.8.1/jwalk/struct.WalkDirGeneric.html#method.process_read_dir
@@ -30,7 +35,7 @@ fn build_glob_set(globs: &[String]) -> GlobSet {
 pub fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
-) -> (HashSet<PathBuf>, HashSet<Pack>) {
+) -> WalkDirectoryResult {
     let mut included_paths: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
     // Create this vector outside of the closure to avoid reallocating it
@@ -144,7 +149,10 @@ pub fn walk_directory(
         }
     }
 
-    (included_paths, included_packs)
+    WalkDirectoryResult {
+        included_paths,
+        included_packs,
+    }
 }
 
 #[cfg(test)]
@@ -152,7 +160,8 @@ mod tests {
     use std::{error::Error, path::PathBuf};
 
     use crate::packs::{
-        configuration::RawConfiguration, walk_directory::walk_directory,
+        configuration::RawConfiguration,
+        walk_directory::{walk_directory, WalkDirectoryResult},
     };
 
     #[test]
@@ -166,8 +175,10 @@ mod tests {
             ..RawConfiguration::default()
         };
 
-        let (files, _packs) =
-            walk_directory(absolute_path.clone(), &raw_config);
+        let WalkDirectoryResult {
+            included_paths: files,
+            included_packs: _,
+        } = walk_directory(absolute_path.clone(), &raw_config);
 
         let node_module_file =
             absolute_path.join("node_modules/subfolder/file.rb");
