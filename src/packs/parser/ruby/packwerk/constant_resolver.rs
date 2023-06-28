@@ -134,36 +134,34 @@ impl ConstantResolver {
     pub fn resolve(
         &self,
         fully_or_partially_qualified_constant: &str,
-        namespace_path: &[String],
+        namespace_path: &[&str],
     ) -> Option<Constant> {
         // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
         let namespace_path =
             if fully_or_partially_qualified_constant.starts_with("::") {
-                vec![]
+                &[]
             } else {
-                namespace_path.to_vec()
+                namespace_path
             };
 
-        let const_name = fully_or_partially_qualified_constant
-            .trim_start_matches("::")
-            .to_owned();
+        let const_name =
+            fully_or_partially_qualified_constant.trim_start_matches("::");
 
-        self.resolve_constant(const_name.clone(), namespace_path, const_name)
+        self.resolve_constant(const_name, namespace_path, const_name)
     }
-
-    fn resolve_constant(
-        &self,
-        const_name: String,
-        current_namespace_path: Vec<String>,
-        original_name: String,
+    fn resolve_constant<'a>(
+        &'a self,
+        const_name: &'a str,
+        current_namespace_path: &'a [&str],
+        original_name: &'a str,
     ) -> Option<Constant> {
         let constant = self.resolve_traversing_namespace_path(
-            const_name.clone(),
-            current_namespace_path.clone(),
+            const_name,
+            current_namespace_path,
         );
         match constant {
             (Some(namespace), Some(absolute_path_of_definition)) => {
-                let mut fully_qualified_name_vec = vec![String::from("")];
+                let mut fully_qualified_name_vec = vec![""];
                 fully_qualified_name_vec.extend(namespace);
                 fully_qualified_name_vec.push(original_name);
                 let fully_qualified_name_guess =
@@ -171,7 +169,8 @@ impl ConstantResolver {
 
                 Some(Constant {
                     fully_qualified_name: fully_qualified_name_guess,
-                    absolute_path_of_definition,
+                    absolute_path_of_definition: absolute_path_of_definition
+                        .to_owned(),
                 })
             }
             (None, None) => {
@@ -192,7 +191,7 @@ impl ConstantResolver {
                 let parent_constant =
                     split_const[0..=split_const.len() - 2].join("::");
                 self.resolve_constant(
-                    parent_constant,
+                    &parent_constant,
                     current_namespace_path,
                     original_name,
                 )
@@ -212,13 +211,15 @@ impl ConstantResolver {
     // ::Boo
     // We need to check each of these possibilities in order, and return the first one that exists
     // If none of them exist, return None
-    fn resolve_traversing_namespace_path(
-        &self,
-        const_name: String,
-        current_namespace_path: Vec<String>,
-    ) -> (Option<Vec<String>>, Option<PathBuf>) {
-        let mut fully_qualified_name_guess_vec = current_namespace_path.clone();
-        fully_qualified_name_guess_vec.push(const_name.clone());
+    fn resolve_traversing_namespace_path<'a>(
+        &'a self,
+        const_name: &'a str,
+        current_namespace_path: &'a [&str],
+    ) -> (Option<&'a [&str]>, Option<&'a PathBuf>) {
+        let mut fully_qualified_name_guess_vec =
+            current_namespace_path.to_vec();
+        fully_qualified_name_guess_vec.push(const_name);
+
         let fully_qualified_name_guess =
             fully_qualified_name_guess_vec.join("::");
         // Join current_namespace_path and const_name with "::"
@@ -230,7 +231,7 @@ impl ConstantResolver {
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
             let x = current_namespace_path;
-            let y = constant.absolute_path_of_definition.clone();
+            let y = &constant.absolute_path_of_definition;
             (Some(x), Some(y))
         } else {
             // In this case, we couldn't find a constant with the given name under the given namespace.
@@ -238,11 +239,9 @@ impl ConstantResolver {
             let split_result = current_namespace_path.split_last();
             match split_result {
                 Some((_last, parent_namespace)) => {
-                    let (namespace, absolute_path_of_definition) = self
-                        .resolve_traversing_namespace_path(
-                            const_name,
-                            parent_namespace.to_vec(),
-                        );
+                    let vec = parent_namespace;
+                    let (namespace, absolute_path_of_definition) =
+                        self.resolve_traversing_namespace_path(const_name, vec);
                     (namespace, absolute_path_of_definition)
                 }
                 None => (None, None),
@@ -340,14 +339,7 @@ mod tests {
                     .join("packs/foo/app/services/foo.rb")
             },
             resolver
-                .resolve(
-                    &String::from("Foo"),
-                    &[
-                        String::from("Foo"),
-                        String::from("Bar"),
-                        String::from("Baz")
-                    ]
-                )
+                .resolve(&String::from("Foo"), &["Foo", "Bar", "Baz"])
                 .unwrap()
         )
     }
@@ -364,9 +356,7 @@ mod tests {
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
             },
-            resolver
-                .resolve(&String::from("Bar"), &[String::from("Foo")])
-                .unwrap()
+            resolver.resolve("Bar", &["Foo"]).unwrap()
         )
     }
 
@@ -382,9 +372,7 @@ mod tests {
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
             },
-            resolver
-                .resolve(&String::from("::Bar"), &[String::from("Foo")])
-                .unwrap()
+            resolver.resolve("::Bar", &["Foo"]).unwrap()
         )
     }
 
