@@ -93,8 +93,7 @@ impl ConstantResolver {
             .iter()
             .par_bridge()
             .flat_map(|absolute_autoload_path| {
-                let mut glob_path = absolute_autoload_path.clone();
-                glob_path.push("**/*.rb");
+                let glob_path = absolute_autoload_path.join("**/*.rb");
 
                 let files = glob::glob(glob_path.to_str().unwrap())
                     .expect("Failed to read glob pattern")
