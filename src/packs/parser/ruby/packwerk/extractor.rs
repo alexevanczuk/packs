@@ -4,13 +4,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-};
-
-use crate::packs::parser::ruby::namespace_calculator;
+use std::{collections::HashSet, fs, path::Path};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SuperclassReference {
@@ -24,25 +18,6 @@ pub struct UnresolvedReference {
     pub name: String,
     pub namespace_path: Vec<String>,
     pub location: Range,
-}
-
-impl UnresolvedReference {
-    fn possible_fully_qualified_constants(&self) -> Vec<String> {
-        if self.name.starts_with("::") {
-            return vec![self.name.to_owned()];
-        }
-
-        let mut possible_constants = vec![self.name.to_owned()];
-        let module_nesting = namespace_calculator::calculate_module_nesting(
-            &self.namespace_path,
-        );
-        for nesting in module_nesting {
-            let possible_constant = format!("::{}::{}", nesting, self.name);
-            possible_constants.push(possible_constant);
-        }
-
-        possible_constants
-    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -74,7 +49,6 @@ pub struct LocationRange {
 
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
-    pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
@@ -223,8 +197,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.current_namespaces.push(namespace);
 
         let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
-        self.definitions.push(definition);
+        let namespace_path = definition.namespace_path;
 
         // Packwerk also considers a definition to be a "reference"
         self.references.push(UnresolvedReference {
@@ -306,22 +279,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             return;
         }
 
-        // TODO: This can be extracted from on_class
-        let name = name_result.unwrap();
-        let fully_qualified_name = if !self.current_namespaces.is_empty() {
-            let mut name_components = self.current_namespaces.clone();
-            name_components.push(name);
-            format!("::{}", name_components.join("::"))
-        } else {
-            format!("::{}", name)
-        };
-
-        self.definitions.push(Definition {
-            fully_qualified_name,
-            namespace_path: self.current_namespaces.to_owned(),
-            location: loc_to_range(&node.expression_l, &self.line_col_lookup),
-        });
-
         if let Some(v) = node.value.to_owned() {
             self.visit(&v);
         } else {
@@ -349,8 +306,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.current_namespaces.push(namespace);
 
         let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
-        self.definitions.push(definition);
+        let namespace_path = definition.namespace_path;
 
         // Packwerk also considers a definition to be a "reference"
         self.references.push(UnresolvedReference {
@@ -437,36 +393,12 @@ pub(crate) fn extract_from_contents(
     let mut collector = ReferenceCollector {
         references: vec![],
         current_namespaces: vec![],
-        definitions: vec![],
         line_col_lookup: lookup,
         in_superclass: false,
         superclasses: vec![],
     };
 
     collector.visit(&ast);
-
-    let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
-
-    for d in collector.definitions {
-        let parts: Vec<&str> = d.fully_qualified_name.split("::").collect();
-        // We do this to handle nested constants, e.g.
-        // class Foo::Bar
-        // end
-        for (index, _) in parts.iter().enumerate() {
-            let combined = &parts[..=index].join("::");
-            // If the map already contains the key, skip it.
-            // This is helpful, e.g.
-            // class Foo::Bar
-            //  BAZ
-            // end
-            // The fully name for BAZ IS ::Foo::Bar::BAZ, so we do not want to overwrite
-            // the definition location for ::Foo or ::Foo::Bar
-            if !definition_to_location_map.contains_key(combined) {
-                definition_to_location_map
-                    .insert(combined.to_owned(), d.location.clone());
-            }
-        }
-    }
 
     collector.references.into_iter().collect()
 }
