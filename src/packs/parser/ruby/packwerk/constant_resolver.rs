@@ -226,9 +226,10 @@ impl ConstantResolver {
         if let Some(constant) =
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
-            let x = current_namespace_path;
-            let y = &constant.absolute_path_of_definition;
-            (Some(x), Some(y))
+            (
+                Some(current_namespace_path),
+                Some(&constant.absolute_path_of_definition),
+            )
         } else {
             // In this case, we couldn't find a constant with the given name under the given namespace.
             // However, it's possible the constant is defined within the parent namespace.
