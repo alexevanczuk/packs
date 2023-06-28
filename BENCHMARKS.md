@@ -10,9 +10,8 @@ hyperfine --runs=3 --export-markdown cold-cache-without-spring.md \
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `../pks/target/release/packs check` | 7.870 ± 0.379 | 7.468 | 8.222 | 1.00 |
-| `DISABLE_SPRING=1 bin/packwerk check` | 70.172 ± 5.335 | 66.240 | 76.246 | 8.92 ± 0.80 |
-
+| `../pks/target/release/packs check` | 7.413 ± 0.466 | 6.900 | 7.808 | 1.00 |
+| `DISABLE_SPRING=1 bin/packwerk check` | 88.359 ± 6.480 | 84.431 | 95.838 | 11.92 ± 1.15 |
 
 ## Hot Cache, without Spring
 ```
@@ -23,5 +22,5 @@ hyperfine --warmup=1 --runs=3 --export-markdown hot-cache-without-spring.md \
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `../pks/target/release/packs check` | 3.801 ± 0.046 | 3.771 | 3.854 | 1.00 |
-| `DISABLE_SPRING=1 bin/packwerk check` | 63.196 ± 18.210 | 42.169 | 73.746 | 16.63 ± 4.80 |
+| `../pks/target/release/packs check` | 3.429 ± 0.130 | 3.322 | 3.573 | 1.00 |
+| `DISABLE_SPRING=1 bin/packwerk check` | 40.475 ± 3.635 | 38.224 | 44.668 | 11.80 ± 1.15 |
