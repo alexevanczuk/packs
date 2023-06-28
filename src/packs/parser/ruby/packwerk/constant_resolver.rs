@@ -88,7 +88,7 @@ impl ConstantResolver {
         > = HashMap::new();
 
         debug!(target: "perf_events", "Building constant resolver");
-
+        let acronyms = &get_acronyms_from_disk(absolute_root);
         let constants: Vec<Constant> = autoload_paths
             .iter()
             .par_bridge()
@@ -105,7 +105,7 @@ impl ConstantResolver {
                         inferred_constant_from_file(
                             &file,
                             absolute_autoload_path,
-                            &get_acronyms_from_disk(absolute_root),
+                            acronyms,
                         )
                     })
                     .collect::<Vec<Constant>>()
