@@ -87,7 +87,7 @@ impl ConstantResolver {
             Constant,
         > = HashMap::new();
 
-        debug!("Building constant resolver");
+        debug!(target: "perf_events", "Building constant resolver");
 
         let constants: Vec<Constant> = autoload_paths
             .iter()
@@ -120,7 +120,10 @@ impl ConstantResolver {
                 .insert(fully_qualified_constant_name, constant);
         }
 
-        debug!("Finished building constant resolver");
+        debug!(
+            target: "perf_events",
+            "Finished building constant resolver"
+        );
 
         ConstantResolver {
             fully_qualified_constant_to_constant_map,

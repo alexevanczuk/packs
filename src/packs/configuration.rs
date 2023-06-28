@@ -128,7 +128,10 @@ impl Configuration {
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
-    debug!("Beginning to build configuration");
+    debug!(
+        target: "perf_events",
+        "Beginning to build configuration"
+    );
     let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
 
     let raw_config: RawConfiguration =
@@ -163,13 +166,13 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
             RawConfiguration::default()
         };
 
-    debug!("Beginning directory walk");
+    debug!(target: "perf_events", "Beginning directory walk");
 
     let WalkDirectoryResult {
         included_paths: included_files,
         included_packs: unsorted_packs,
     } = walk_directory(absolute_root.to_path_buf(), &raw_config);
-    debug!("Finished directory walk");
+    debug!(target: "perf_events", "Finished directory walk");
 
     let absolute_root = absolute_root.to_path_buf();
     let pack_set = PackSet::build(unsorted_packs);
@@ -185,7 +188,10 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         layers: raw_config.architecture_layers,
     };
 
-    debug!("Finished building configuration");
+    debug!(
+        target: "perf_events",
+        "Finished building configuration"
+    );
 
     Configuration {
         included_files,
