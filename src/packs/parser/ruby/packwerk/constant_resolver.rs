@@ -222,11 +222,7 @@ impl ConstantResolver {
 
         let fully_qualified_name_guess =
             fully_qualified_name_guess_vec.join("::");
-        // Join current_namespace_path and const_name with "::"
-        // current_namespace_path
-        //     .iter()
-        //     .chain(std::iter::once(const_name))
-        //     .join("::");
+
         if let Some(constant) =
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
