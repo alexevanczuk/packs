@@ -88,7 +88,7 @@ pub fn walk_directory(
                         .unwrap()
                         .to_owned();
 
-                    if cloned_excluded_dirs.as_ref().is_match(&relative_path) {
+                    if cloned_excluded_dirs.as_ref().is_match(relative_path) {
                         dir_entry.read_children_path = None;
                     }
                 }
