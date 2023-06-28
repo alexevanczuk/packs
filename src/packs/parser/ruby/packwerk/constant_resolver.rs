@@ -100,6 +100,7 @@ impl ConstantResolver {
                     .filter_map(Result::ok);
 
                 files
+                    .par_bridge()
                     .map(|file| {
                         inferred_constant_from_file(
                             &file,
