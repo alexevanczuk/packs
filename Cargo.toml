@@ -27,7 +27,6 @@ path = "src/lib.rs"
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] } # cli
 clap_derive = "4.2.0" # cli
-glob-match = "0.2.1"
 itertools = "0.10.5" # tools for iterating over iterable things
 jwalk = "0.8.1"
 path-clean = "1.0.1" # Pathname#cleaname in Ruby
@@ -46,6 +45,7 @@ line-col = "0.2.1"
 ruby_inflector = '0.0.8'
 serde_magnus = "0.2.2"
 dashmap = "5.4.0"
+globset = "0.4.10"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI
