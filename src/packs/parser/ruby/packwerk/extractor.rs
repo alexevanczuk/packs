@@ -468,31 +468,5 @@ pub(crate) fn extract_from_contents(
         }
     }
 
-    collector
-        .references
-        .into_iter()
-        .filter(|r| {
-            let mut should_ignore_local_reference = false;
-            let possible_constants = r.possible_fully_qualified_constants();
-            for constant_name in possible_constants {
-                if let Some(location) = definition_to_location_map
-                    .get(&constant_name)
-                    .or(definition_to_location_map
-                        .get(&format!("::{}", constant_name)))
-                {
-                    let reference_is_definition = location.start_row
-                        == r.location.start_row
-                        && location.start_col == r.location.start_col;
-                    // In lib/packwerk/parsed_constant_definitions.rb, we don't count references when the reference is in the same place as the definition
-                    // This is an idiosyncracy we are porting over here for behavioral alignment, although we might be doing some unnecessary work.
-                    if reference_is_definition {
-                        should_ignore_local_reference = false
-                    } else {
-                        should_ignore_local_reference = true
-                    }
-                }
-            }
-            !should_ignore_local_reference
-        })
-        .collect()
+    collector.references.into_iter().collect()
 }
