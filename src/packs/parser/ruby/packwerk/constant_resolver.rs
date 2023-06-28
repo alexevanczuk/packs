@@ -137,15 +137,15 @@ impl ConstantResolver {
         namespace_path: &[&str],
     ) -> Option<Constant> {
         // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
-        let namespace_path =
+        let (namespace_path, const_name) =
             if fully_or_partially_qualified_constant.starts_with("::") {
-                &[]
+                let const_name = fully_or_partially_qualified_constant
+                    .trim_start_matches("::");
+                let namespace_path: &[&str] = &[];
+                (namespace_path, const_name)
             } else {
-                namespace_path
+                (namespace_path, fully_or_partially_qualified_constant)
             };
-
-        let const_name =
-            fully_or_partially_qualified_constant.trim_start_matches("::");
 
         self.resolve_constant(const_name, namespace_path, const_name)
     }
