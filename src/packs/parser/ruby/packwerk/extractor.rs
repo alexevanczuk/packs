@@ -1,4 +1,6 @@
-use crate::packs::{inflector_shim::to_class_case, ProcessedFile};
+use crate::packs::{
+    inflector_shim::to_class_case, parser::UnresolvedReference, ProcessedFile,
+};
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
@@ -13,19 +15,10 @@ use std::{
 use crate::packs::parser::ruby::namespace_calculator;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SuperclassReference {
+struct SuperclassReference {
     pub name: String,
     pub namespace_path: Vec<String>,
 }
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
-// TODO: Move this to a more appropriate place
-pub struct UnresolvedReference {
-    pub name: String,
-    pub namespace_path: Vec<String>,
-    pub location: Range,
-}
-
 impl UnresolvedReference {
     fn possible_fully_qualified_constants(&self) -> Vec<String> {
         if self.name.starts_with("::") {

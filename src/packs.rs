@@ -25,9 +25,9 @@ pub use crate::packs::pack_set::PackSet;
 pub use configuration::Configuration;
 pub use package_todo::PackageTodo;
 pub use parser::ruby::packwerk::extractor::Range;
-pub use parser::ruby::packwerk::extractor::UnresolvedReference;
 
 use self::checker::ViolationIdentifier;
+use self::parser::UnresolvedReference;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
