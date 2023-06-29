@@ -17,7 +17,7 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn get_unresolved_references_with_cache(
+    fn process_file(
         &self,
         absolute_root: &Path,
         path: &Path,
