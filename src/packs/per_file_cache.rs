@@ -8,8 +8,8 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
 
-use super::parser::Cache;
-use super::{ProcessedFile, Range, UnresolvedReference};
+use super::parser::{Cache, Range};
+use super::{ProcessedFile, UnresolvedReference};
 
 pub struct PerFileCache {
     pub cache_dir: PathBuf,

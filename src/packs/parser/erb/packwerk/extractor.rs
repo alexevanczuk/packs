@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::packs::{ProcessedFile, Range, UnresolvedReference};
+use crate::packs::{parser::Range, ProcessedFile, UnresolvedReference};
 use std::{fs, path::Path};
 
 use crate::packs::parser::ruby::packwerk::extractor::process_from_contents as process_from_ruby_contents;

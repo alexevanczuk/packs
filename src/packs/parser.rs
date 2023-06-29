@@ -8,6 +8,7 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 pub(crate) use ruby::packwerk::extractor::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::process_from_path as process_from_erb_path;
+use serde::{Deserialize, Serialize};
 
 use super::{
     file_utils::{get_file_type, SupportedFileType},
@@ -29,6 +30,21 @@ pub fn process_file(path: &Path) -> ProcessedFile {
             unresolved_references: vec![],
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
+pub struct UnresolvedReference {
+    pub name: String,
+    pub namespace_path: Vec<String>,
+    pub location: Range,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Default)]
+pub struct Range {
+    pub start_row: usize,
+    pub start_col: usize,
+    pub end_row: usize,
+    pub end_col: usize,
 }
 
 pub trait Cache {
