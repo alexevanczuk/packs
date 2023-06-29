@@ -29,11 +29,11 @@ fn test_delete_cache() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
-        .arg("generate_cache")
+        .arg("check")
         .arg("packs/bar/app/services/bar.rb")
         .arg("packs/foo/app/services/foo.rb")
         .assert()
-        .success();
+        .failure();
 
     assert!(!is_tmp_cache_packwerk_empty().unwrap());
 

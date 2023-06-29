@@ -1,6 +1,5 @@
 use crate::packs;
 use crate::packs::checker;
-use crate::packs::per_file_cache;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -22,11 +21,6 @@ enum Command {
 
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
-
-    #[clap(
-        about = "Generate a cache to be used by the ruby implementation of packwerk"
-    )]
-    GenerateCache { files: Vec<String> },
 
     #[clap(about = "List packs based on configuration in packwerk.yml")]
     ListPacks,
@@ -87,14 +81,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::Check { files } => checker::check(configuration, files),
         Command::Update => checker::update(configuration),
         Command::Validate => Err("💡 This command is coming soon!".into()),
-        Command::GenerateCache { files } => {
-            if !configuration.cache_enabled {
-                return Err("Cache is disabled. Enable it in packwerk.yml to use this command.".into());
-            }
-
-            per_file_cache::write_cache_for_files(files, configuration);
-            Ok(())
-        }
         Command::DeleteCache => {
             packs::delete_cache(configuration);
             Ok(())

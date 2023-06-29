@@ -1,17 +1,14 @@
 use crate::packs::parser::get_unresolved_references;
 use crate::packs::parser::UnresolvedReference;
-use crate::packs::Configuration;
 use crate::packs::Range;
 use crate::packs::SourceLocation;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+
 use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
-use tracing::debug;
 
 use super::parser::Cache;
 
@@ -228,36 +225,6 @@ pub fn create_cache_dir_idempotently(cache_dir: &PathBuf) {
         .expect("Failed to create cache directory");
 }
 
-pub(crate) fn write_cache_for_files(
-    files: Vec<String>,
-    configuration: Configuration,
-) {
-    create_cache_dir_idempotently(&configuration.cache_directory);
-
-    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
-    let file_count = absolute_paths.len();
-    debug!(
-        target: "perf_events",
-        "Writing cache for {} files", file_count
-    );
-
-    absolute_paths.par_iter().for_each(|path| {
-        let cachable_file = CachableFile::from(
-            &configuration.absolute_root,
-            &configuration.cache_directory,
-            path,
-        );
-        if !cachable_file.cache_is_valid() {
-            let references = get_unresolved_references(path);
-            write_cache(&cachable_file, references)
-        }
-    });
-    debug!(
-        target: "perf_events",
-        "Finished writing cache for {} files", file_count
-    );
-}
-
 #[cfg(test)]
 mod tests {
     use crate::packs::{self, configuration};
@@ -279,75 +246,6 @@ mod tests {
         let digest = file_content_digest(&PathBuf::from(file_path));
 
         assert_eq!(digest, expected_digest);
-
-        teardown();
-    }
-
-    #[test]
-    fn test_write_cache_for_files() {
-        let absolute_root = &PathBuf::from("tests/fixtures/simple_app");
-
-        // Delete the existing cache directory
-        // TODO: This is a bit of a hack, we should probably use a temporary directory
-        // instead of the real one
-        let cache_dir = absolute_root.join("tmp");
-        if cache_dir.exists() {
-            std::fs::remove_dir_all(&cache_dir).unwrap();
-        }
-
-        let expected = CacheEntry {
-            file_contents_digest: String::from(
-                // This is the MD5 digest of the contents of "packs/foo/app/services/foo.rb"
-                // i.e. in ruby, it's:
-                // Digest::MD5.hexdigest(File.read('tests/fixtures/simple_app/packs/foo/app/services/foo.rb'))
-                "3037a89e7de80e7a0e9543cc1ca790f9",
-            ),
-            unresolved_references: vec![
-                ReferenceEntry {
-                    constant_name: String::from("::Foo"),
-                    namespace_path: vec![],
-                    relative_path: String::from(
-                        "packs/foo/app/services/foo.rb",
-                    ),
-                    source_location: SourceLocation { line: 1, column: 7 },
-                },
-                ReferenceEntry {
-                    constant_name: String::from("::Bar"),
-                    namespace_path: vec![String::from("Foo")],
-                    relative_path: String::from(
-                        "packs/foo/app/services/foo.rb",
-                    ),
-                    source_location: SourceLocation { line: 3, column: 4 },
-                },
-                ReferenceEntry {
-                    constant_name: String::from("Baz"),
-                    namespace_path: vec![String::from("Foo")],
-                    relative_path: String::from(
-                        "packs/foo/app/services/foo.rb",
-                    ),
-                    source_location: SourceLocation { line: 7, column: 4 },
-                },
-            ],
-        };
-
-        let file_to_cache = String::from("packs/foo/app/services/foo.rb");
-        let config = configuration::get(absolute_root);
-
-        let absolute_filepath = &PathBuf::from(
-            "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
-        );
-
-        let cachable_file = CachableFile::from(
-            absolute_root,
-            &config.cache_directory,
-            absolute_filepath,
-        );
-
-        write_cache_for_files(vec![file_to_cache], config);
-
-        let cache_file = cachable_file.cache_file_path;
-        let actual = read_json_file(&cache_file).unwrap();
-        assert_eq!(expected, actual);
 
         teardown();
     }
