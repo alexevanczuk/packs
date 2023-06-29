@@ -10,8 +10,22 @@ hyperfine --runs=3 --export-markdown cold-cache-without-spring.md \
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `../pks/target/release/packs check` | 7.413 ± 0.466 | 6.900 | 7.808 | 1.00 |
-| `DISABLE_SPRING=1 bin/packwerk check` | 88.359 ± 6.480 | 84.431 | 95.838 | 11.92 ± 1.15 |
+| `../pks/target/release/packs check` | 5.702 ± 0.285 | 5.426 | 5.996 | 1.00 |
+| `DISABLE_SPRING=1 bin/packwerk check` | 100.938 ± 11.907 | 88.480 | 112.204 | 17.70 ± 2.27 |
+
+```
+Benchmark 1: ../pks/target/release/packs check
+  Time (mean ± σ):      5.702 s ±  0.285 s    [User: 12.697 s, System: 6.937 s]
+  Range (min … max):    5.426 s …  5.996 s    3 runs
+
+Benchmark 2: DISABLE_SPRING=1 bin/packwerk check
+  Time (mean ± σ):     100.938 s ± 11.907 s    [User: 236.311 s, System: 77.248 s]
+  Range (min … max):   88.480 s … 112.204 s    3 runs
+
+Summary
+  ../pks/target/release/packs check ran
+   17.70 ± 2.27 times faster than DISABLE_SPRING=1 bin/packwerk check
+```
 
 ## Hot Cache, without Spring
 ```
