@@ -31,14 +31,6 @@ impl Cache for PerFileCache {
             })
             .unwrap()
     }
-
-    fn setup() -> Self {
-        todo!()
-    }
-
-    fn teardown(&self) -> std::thread::JoinHandle<()> {
-        todo!()
-    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {

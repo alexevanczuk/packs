@@ -2,7 +2,6 @@ pub(crate) mod ruby;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    thread::JoinHandle,
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -37,14 +36,8 @@ pub fn process_file(path: &Path) -> ProcessedFile {
 
 pub trait Cache {
     fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile;
-
-    fn setup() -> Self;
-
-    fn teardown(&self) -> JoinHandle<()>;
 }
 
-// TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
-// cache related activities within the implementation of the trait
 pub fn process_files_with_cache<T: Cache + Send + Sync>(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
@@ -56,7 +49,6 @@ pub fn process_files_with_cache<T: Cache + Send + Sync>(
             cache.process_file(absolute_root, absolute_path)
         })
         .collect()
-    // Down here, flush the cache
 }
 
 fn get_file_type(path: &Path) -> Option<SupportedFileType> {
