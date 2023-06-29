@@ -1,6 +1,6 @@
 //
 // This allows us to run the binary with timing and debug output, like so:
-// $ RUST_LOG=debug ../packs-rs/target/release/packs generate_cache
+// $ RUST_LOG=debug ../packs-rs/target/release/packs update
 //    0.001426500s DEBUG packs::packs::configuration: src/packs/configuration.rs:263: Beginning to read configuration
 //    0.843766458s DEBUG packs::packs::configuration: src/packs/configuration.rs:308: Finished reading configuration
 //    0.845547750s DEBUG packs::packs::cache: src/packs/cache.rs:243: Writing cache for 29078 files

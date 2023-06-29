@@ -2,51 +2,39 @@ pub(crate) mod ruby;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    thread::JoinHandle,
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
+pub(crate) use ruby::packwerk::extractor::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
-pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
-pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
+pub(crate) use erb::packwerk::extractor::process_from_path as process_from_erb_path;
 
-use super::ProcessedFile;
+use super::{
+    file_utils::{get_file_type, SupportedFileType},
+    ProcessedFile,
+};
 
-#[derive(PartialEq, Debug)]
-pub enum SupportedFileType {
-    Ruby,
-    Erb,
-}
-
-pub fn get_unresolved_references(path: &Path) -> Vec<UnresolvedReference> {
+pub fn process_file(path: &Path) -> ProcessedFile {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
-            SupportedFileType::Ruby => extract_from_ruby_path(path),
-            SupportedFileType::Erb => extract_from_erb_path(path),
+            SupportedFileType::Ruby => process_from_ruby_path(path),
+            SupportedFileType::Erb => process_from_erb_path(path),
         }
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
         // method should make sure we never get any files we can't handle.
-        vec![]
+        ProcessedFile {
+            absolute_path: path.to_path_buf(),
+            unresolved_references: vec![],
+        }
     }
 }
 
 pub trait Cache {
-    fn get_unresolved_references_with_cache(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-    ) -> Vec<UnresolvedReference>;
-
-    fn setup() -> Self;
-
-    fn teardown(&self) -> JoinHandle<()>;
+    fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile;
 }
 
-// TODO: parse_path_for_references should accept a cache trait type (default no-op) and process
-// cache related activities within the implementation of the trait
 pub fn process_files_with_cache<T: Cache + Send + Sync>(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
@@ -55,48 +43,15 @@ pub fn process_files_with_cache<T: Cache + Send + Sync>(
     paths
         .into_par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            let unresolved_references = cache
-                .get_unresolved_references_with_cache(
-                    absolute_root,
-                    absolute_path,
-                );
-
-            ProcessedFile {
-                absolute_path: absolute_path.to_owned(),
-                unresolved_references,
-            }
+            cache.process_file(absolute_root, absolute_path)
         })
         .collect()
-    // Down here, flush the cache
-}
-
-fn get_file_type(path: &Path) -> Option<SupportedFileType> {
-    let ruby_special_files = vec!["Gemfile", "Rakefile"];
-    let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
-
-    let extension = path.extension();
-    // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
-    // These would implement a packs::parser::interface::Parser trait and can
-    // hold the logic for determining if a parser can parse a file.
-
-    let is_ruby_file = ruby_extensions
-        .into_iter()
-        .any(|ext| extension.map_or(false, |e| e == ext))
-        || ruby_special_files.iter().any(|file| path.ends_with(file));
-
-    let is_erb_file = path.extension().map_or(false, |ext| ext == "erb");
-
-    if is_ruby_file {
-        Some(SupportedFileType::Ruby)
-    } else if is_erb_file {
-        Some(SupportedFileType::Erb)
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::packs::file_utils::get_file_type;
+
     use super::*;
 
     fn assert_is_ruby(filename: &str) {

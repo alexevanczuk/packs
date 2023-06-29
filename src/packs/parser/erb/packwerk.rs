@@ -2,7 +2,10 @@ pub(crate) mod extractor;
 
 #[cfg(test)]
 mod tests {
-    use crate::packs::parser::erb::packwerk::extractor::extract_from_contents;
+
+    use std::path::PathBuf;
+
+    use crate::packs::parser::erb::packwerk::extractor::process_from_contents;
     use crate::packs::Range;
     use crate::packs::UnresolvedReference;
 
@@ -15,7 +18,8 @@ mod tests {
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -35,7 +39,8 @@ mod tests {
                     location: Range::default()
                 }
             ],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
     #[test]
@@ -53,7 +58,8 @@ mod tests {
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -72,7 +78,8 @@ mod tests {
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -98,7 +105,8 @@ mod tests {
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -121,7 +129,8 @@ mod tests {
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -184,7 +193,8 @@ mod tests {
                     location: Range::default()
                 }
             ],
-            extract_from_contents(contents)
+            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 }

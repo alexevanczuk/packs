@@ -10,6 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 pub(crate) mod checker;
 pub mod cli;
+pub(crate) mod file_utils;
 mod inflector_shim;
 pub mod logger;
 mod pack_set;
@@ -49,7 +50,7 @@ pub fn delete_cache(configuration: Configuration) {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,

@@ -31,7 +31,6 @@ Commands:
   check                Look for violations in the codebase
   update               Update package_todo.yml files with the current violations
   validate             Look for validation errors in the codebase
-  generate_cache       Generate a cache to be used by the ruby implementation of packwerk
   list_packs           List packs based on configuration in packwerk.yml
   delete_cache         `rm -rf` on your cache directory, usually `tmp/cache/packwerk`
   list_included_files  List analyzed files based on configuration in packwerk.yml
