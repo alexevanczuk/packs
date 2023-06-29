@@ -69,18 +69,6 @@ pub(crate) fn file_content_digest(file: &Path) -> String {
     format!("{:x}", md5::compute(&file_content))
 }
 
-fn processed_file_to_cache_entry(
-    processed_file: ProcessedFile,
-    cachable_file: &CachableFile,
-) -> CacheEntry {
-    let file_contents_digest = cachable_file.file_contents_digest.to_owned();
-
-    CacheEntry {
-        file_contents_digest,
-        processed_file,
-    }
-}
-
 #[derive(Debug)]
 pub struct CachableFile {
     file_contents_digest: String,
@@ -140,8 +128,12 @@ impl CachableFile {
 }
 
 fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
-    let cache_entry =
-        processed_file_to_cache_entry(processed_file, cachable_file);
+    let file_contents_digest = cachable_file.file_contents_digest.to_owned();
+
+    let cache_entry = &CacheEntry {
+        file_contents_digest,
+        processed_file,
+    };
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");
