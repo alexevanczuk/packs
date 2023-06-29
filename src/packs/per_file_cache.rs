@@ -9,7 +9,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use super::parser::Cache;
-use super::ProcessedFile;
+use super::{ProcessedFile, Range, UnresolvedReference};
 
 pub struct PerFileCache {
     pub cache_dir: PathBuf,
@@ -20,22 +20,36 @@ impl Cache for PerFileCache {
         let cachable_file =
             CachableFile::from(absolute_root, &self.cache_dir, path);
 
-        cachable_file
-            .cache_entry_if_valid()
-            .map(|entry| entry.processed_file.clone())
-            .or_else(|| {
-                let processed_file = process_file(path);
-                write_cache(&cachable_file, processed_file.clone());
+        if cachable_file.cache_is_valid() {
+            cachable_file.cache_entry.unwrap().processed_file()
+        } else {
+            let processed_file = process_file(path);
+            write_cache(&cachable_file, processed_file.clone());
 
-                Some(processed_file)
-            })
-            .unwrap()
+            processed_file
+        }
     }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
-    pub processed_file: ProcessedFile,
+    pub absolute_path: PathBuf,
+    pub unresolved_references: Vec<ReferenceEntry>,
+}
+
+impl CacheEntry {
+    pub fn processed_file(self) -> ProcessedFile {
+        let unresolved_references = self
+            .unresolved_references
+            .iter()
+            .map(|reference| reference.to_unresolved_reference())
+            .collect();
+
+        ProcessedFile {
+            unresolved_references,
+            absolute_path: self.absolute_path,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -44,6 +58,24 @@ pub struct ReferenceEntry {
     namespace_path: Vec<String>,
     relative_path: String,
     source_location: SourceLocation,
+}
+
+impl ReferenceEntry {
+    fn to_unresolved_reference(&self) -> UnresolvedReference {
+        UnresolvedReference {
+            name: self.constant_name.to_owned(),
+            namespace_path: self.namespace_path.to_owned(),
+            location: Range {
+                start_row: self.source_location.line,
+                start_col: self.source_location.column,
+                // The end row and end col can be improved here but we are limited
+                // because the cache does not store this data.
+                // Instead, we might just return a (resolved) Reference
+                end_row: self.source_location.line,
+                end_col: self.source_location.column + self.constant_name.len(),
+            },
+        }
+    }
 }
 
 pub fn read_json_file(
@@ -71,6 +103,7 @@ pub(crate) fn file_content_digest(file: &Path) -> String {
 
 #[derive(Debug)]
 pub struct CachableFile {
+    relative_path: PathBuf,
     file_contents_digest: String,
     cache_file_path: PathBuf,
     cache_entry: Option<CacheEntry>,
@@ -104,18 +137,15 @@ impl CachableFile {
         };
 
         CachableFile {
+            relative_path,
             file_contents_digest,
             cache_file_path,
             cache_entry,
         }
     }
 
-    pub fn cache_entry_if_valid(&self) -> Option<&CacheEntry> {
-        if self.cache_is_valid() {
-            self.cache_entry.as_ref()
-        } else {
-            None
-        }
+    fn relative_path_string(&self) -> &str {
+        self.relative_path.to_str().unwrap()
     }
 
     pub fn cache_is_valid(&self) -> bool {
@@ -129,10 +159,25 @@ impl CachableFile {
 
 fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
     let file_contents_digest = cachable_file.file_contents_digest.to_owned();
-
+    let unresolved_references: Vec<ReferenceEntry> = processed_file
+        .unresolved_references
+        .iter()
+        .map(|r| -> ReferenceEntry {
+            ReferenceEntry {
+                constant_name: r.name.to_owned(),
+                namespace_path: r.namespace_path.to_owned(),
+                relative_path: cachable_file.relative_path_string().to_owned(),
+                source_location: SourceLocation {
+                    line: r.location.start_row,
+                    column: r.location.start_col,
+                },
+            }
+        })
+        .collect();
     let cache_entry = &CacheEntry {
         file_contents_digest,
-        processed_file,
+        unresolved_references,
+        absolute_path: processed_file.absolute_path,
     };
 
     let cache_data = serde_json::to_string(&cache_entry)
