@@ -37,11 +37,7 @@ pub fn get_unresolved_references(path: &Path) -> ProcessedFile {
 }
 
 pub trait Cache {
-    fn process_file(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-    ) -> Vec<UnresolvedReference>;
+    fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile;
 
     fn setup() -> Self;
 
@@ -58,13 +54,7 @@ pub fn process_files_with_cache<T: Cache + Send + Sync>(
     paths
         .into_par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            let unresolved_references =
-                cache.process_file(absolute_root, absolute_path);
-
-            ProcessedFile {
-                absolute_path: absolute_path.to_owned(),
-                unresolved_references,
-            }
+            cache.process_file(absolute_root, absolute_path)
         })
         .collect()
     // Down here, flush the cache

@@ -11,20 +11,17 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use super::parser::Cache;
+use super::ProcessedFile;
 
 pub struct PerFileCache {
     pub cache_dir: PathBuf,
 }
 
 impl Cache for PerFileCache {
-    fn process_file(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-    ) -> Vec<UnresolvedReference> {
+    fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile {
         let cachable_file =
             CachableFile::from(absolute_root, &self.cache_dir, path);
-        cachable_file
+        let unresolved_references = cachable_file
             .cache_entry_if_valid()
             .map(|entry| entry.get_unresolved_references())
             .or_else(|| {
@@ -35,7 +32,12 @@ impl Cache for PerFileCache {
 
                 Some(uncached_references)
             })
-            .unwrap()
+            .unwrap();
+
+        ProcessedFile {
+            absolute_path: path.to_path_buf(),
+            unresolved_references,
+        }
     }
 
     fn setup() -> Self {
