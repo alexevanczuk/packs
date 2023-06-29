@@ -19,7 +19,7 @@ pub enum SupportedFileType {
     Erb,
 }
 
-pub fn get_unresolved_references(path: &Path) -> Vec<UnresolvedReference> {
+pub fn get_unresolved_references(path: &Path) -> ProcessedFile {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
@@ -29,7 +29,10 @@ pub fn get_unresolved_references(path: &Path) -> Vec<UnresolvedReference> {
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
         // method should make sure we never get any files we can't handle.
-        vec![]
+        ProcessedFile {
+            absolute_path: path.to_path_buf(),
+            unresolved_references: vec![],
+        }
     }
 }
 

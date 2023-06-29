@@ -3,6 +3,8 @@ pub(crate) mod extractor;
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents;
     use crate::packs::Range;
     use crate::packs::UnresolvedReference;
@@ -21,7 +23,8 @@ mod tests {
                     end_col: 4
                 }
             }],
-            extract_from_contents(contents)
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -39,7 +42,8 @@ mod tests {
                     end_col: 9
                 }
             }],
-            extract_from_contents(contents)
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -57,7 +61,8 @@ mod tests {
                     end_col: 14
                 }
             }],
-            extract_from_contents(contents)
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -75,7 +80,8 @@ mod tests {
                     end_col: 19
                 }
             }],
-            extract_from_contents(contents)
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -99,7 +105,8 @@ end
                     end_col: 10
                 }
             }],
-            extract_from_contents(contents)
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
         );
     }
 
@@ -124,7 +131,10 @@ end
                     end_col: 6
                 }
             },
-            *extract_from_contents(contents).get(1).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(1)
+                .unwrap()
         );
     }
 
@@ -151,7 +161,10 @@ end
                     end_col: 8
                 }
             },
-            *extract_from_contents(contents).get(2).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(2)
+                .unwrap()
         );
     }
 
@@ -184,7 +197,10 @@ end
                     end_col: 10
                 }
             },
-            *extract_from_contents(contents).get(3).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(3)
+                .unwrap()
         );
     }
 
@@ -221,7 +237,8 @@ end
                     }
                 }
             ],
-            extract_from_contents(contents),
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references,
         );
     }
 
@@ -248,7 +265,10 @@ end
                     end_col: 8
                 }
             },
-            *extract_from_contents(contents).get(2).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(2)
+                .unwrap()
         );
     }
 
@@ -281,7 +301,10 @@ end
                     end_col: 10
                 }
             },
-            *extract_from_contents(contents).get(3).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(3)
+                .unwrap()
         );
     }
 
@@ -314,7 +337,10 @@ end
                     end_col: 10
                 },
             },
-            *extract_from_contents(contents).get(3).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(3)
+                .unwrap()
         );
     }
 
@@ -340,7 +366,10 @@ end
                     end_col: 6
                 }
             },
-            *extract_from_contents(contents).get(1).unwrap(),
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(1)
+                .unwrap(),
         );
     }
 
@@ -367,7 +396,10 @@ end
                     end_col: 13
                 }
             },
-            *extract_from_contents(contents).get(1).unwrap()
+            *extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references
+                .get(1)
+                .unwrap()
         );
     }
 
@@ -375,7 +407,9 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_constant() {
         let contents: String = String::from("[Foo]");
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
@@ -398,7 +432,9 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_multiple_constants() {
         let contents: String = String::from("[Foo, Bar]");
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let reference1 = references
             .get(0)
@@ -438,7 +474,9 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_nested_constant() {
         let contents: String = String::from("[Baz::Boo]");
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
@@ -462,7 +500,9 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn globally_referenced_constant() {
         let contents: String = String::from("::Foo");
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
@@ -486,7 +526,9 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn metaprogrammatically_referenced_constant() {
         let contents: String = String::from("described_class::Foo");
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 0);
     }
 
@@ -504,7 +546,8 @@ end
         );
 
         assert_eq!(
-            extract_from_contents(contents),
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references,
             vec![UnresolvedReference {
                 name: String::from("::Foo"),
                 namespace_path: vec![],
@@ -534,7 +577,8 @@ end
         );
 
         assert_eq!(
-            extract_from_contents(contents),
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references,
             vec![
                 UnresolvedReference {
                     name: String::from("::Foo"),
@@ -569,7 +613,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(0)
@@ -598,7 +644,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
@@ -630,7 +678,8 @@ end
         );
 
         let references: Vec<UnresolvedReference> =
-            extract_from_contents(contents);
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(
             references,
             vec![
@@ -665,7 +714,8 @@ FOO = BAR
 ",
         );
         let references: Vec<UnresolvedReference> =
-            extract_from_contents(contents);
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
 
         assert_eq!(references.len(), 1);
         let first_reference = references
@@ -696,7 +746,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -726,7 +778,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -756,7 +810,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -786,7 +842,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -816,7 +874,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -846,7 +906,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -876,7 +938,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -906,7 +970,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -937,7 +1003,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 3);
         let reference = references
             .get(2)
@@ -969,7 +1037,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(0)
@@ -992,7 +1062,9 @@ end
         ",
         );
 
-        let references = extract_from_contents(contents);
+        let references =
+            extract_from_contents(contents, &PathBuf::from("path/to/file.rb"))
+                .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)

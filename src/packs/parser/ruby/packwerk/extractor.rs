@@ -1,4 +1,4 @@
-use crate::packs::inflector_shim::to_class_case;
+use crate::packs::{inflector_shim::to_class_case, ProcessedFile};
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
@@ -407,17 +407,18 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 }
 
-pub(crate) fn extract_from_path(path: &Path) -> Vec<UnresolvedReference> {
+pub(crate) fn extract_from_path(path: &Path) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    extract_from_contents(contents)
+    extract_from_contents(contents, path)
 }
 
 pub(crate) fn extract_from_contents(
     contents: String,
-) -> Vec<UnresolvedReference> {
+    path: &Path,
+) -> ProcessedFile {
     let options = ParserOptions {
         buffer_name: "".to_string(),
         ..Default::default()
@@ -431,7 +432,12 @@ pub(crate) fn extract_from_contents(
 
     let ast = match ast_option {
         Some(some_ast) => some_ast,
-        None => return vec![],
+        None => {
+            return ProcessedFile {
+                absolute_path: path.to_owned(),
+                unresolved_references: vec![],
+            }
+        }
     };
 
     let mut collector = ReferenceCollector {
@@ -468,7 +474,7 @@ pub(crate) fn extract_from_contents(
         }
     }
 
-    collector
+    let references = collector
         .references
         .into_iter()
         .filter(|r| {
@@ -494,5 +500,10 @@ pub(crate) fn extract_from_contents(
             }
             !should_ignore_local_reference
         })
-        .collect()
+        .collect();
+
+    ProcessedFile {
+        absolute_path: path.to_owned(),
+        unresolved_references: references,
+    }
 }

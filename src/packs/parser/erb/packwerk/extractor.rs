@@ -1,21 +1,22 @@
 use regex::Regex;
 
-use crate::packs::{Range, UnresolvedReference};
+use crate::packs::{ProcessedFile, Range, UnresolvedReference};
 use std::{fs, path::Path};
 
 use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents as extract_from_ruby_contents;
 
-pub(crate) fn extract_from_path(path: &Path) -> Vec<UnresolvedReference> {
+pub(crate) fn extract_from_path(path: &Path) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    extract_from_contents(contents)
+    extract_from_contents(contents, path)
 }
 
 pub(crate) fn extract_from_contents(
     contents: String,
-) -> Vec<UnresolvedReference> {
+    path: &Path,
+) -> ProcessedFile {
     let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*-?%>"#;
     let regex = Regex::new(regex_pattern).unwrap();
 
@@ -25,7 +26,8 @@ pub(crate) fn extract_from_contents(
         .collect();
 
     let ruby_contents = extracted_contents.join("\n");
-    let references = extract_from_ruby_contents(ruby_contents);
+    let processed_file = extract_from_ruby_contents(ruby_contents, path);
+    let references = processed_file.unresolved_references;
     // let references_without_range = references
     let references_without_range = references
         .iter()
@@ -37,5 +39,9 @@ pub(crate) fn extract_from_contents(
             ..r.clone()
         })
         .collect();
-    references_without_range
+
+    ProcessedFile {
+        absolute_path: path.to_path_buf(),
+        unresolved_references: references_without_range,
+    }
 }

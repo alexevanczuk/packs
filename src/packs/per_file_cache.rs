@@ -28,7 +28,8 @@ impl Cache for PerFileCache {
             .cache_entry_if_valid()
             .map(|entry| entry.get_unresolved_references())
             .or_else(|| {
-                let uncached_references = get_unresolved_references(path);
+                let processed_file = get_unresolved_references(path);
+                let uncached_references = processed_file.unresolved_references;
                 let cloned_references = uncached_references.clone();
                 write_cache(&cachable_file, cloned_references);
 
