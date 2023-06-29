@@ -47,18 +47,6 @@ pub struct Range {
     pub end_col: usize,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Location {
-    pub begin: usize,
-    pub end: usize,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct LocationRange {
-    pub start: Location,
-    pub end: Location,
-}
-
 pub trait Cache {
     fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile;
 }
