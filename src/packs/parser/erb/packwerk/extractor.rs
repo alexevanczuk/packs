@@ -3,17 +3,17 @@ use regex::Regex;
 use crate::packs::{ProcessedFile, Range, UnresolvedReference};
 use std::{fs, path::Path};
 
-use crate::packs::parser::ruby::packwerk::extractor::extract_from_contents as extract_from_ruby_contents;
+use crate::packs::parser::ruby::packwerk::extractor::process_from_contents as process_from_ruby_contents;
 
-pub(crate) fn extract_from_path(path: &Path) -> ProcessedFile {
+pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    extract_from_contents(contents, path)
+    process_from_contents(contents, path)
 }
 
-pub(crate) fn extract_from_contents(
+pub(crate) fn process_from_contents(
     contents: String,
     path: &Path,
 ) -> ProcessedFile {
@@ -26,7 +26,7 @@ pub(crate) fn extract_from_contents(
         .collect();
 
     let ruby_contents = extracted_contents.join("\n");
-    let processed_file = extract_from_ruby_contents(ruby_contents, path);
+    let processed_file = process_from_ruby_contents(ruby_contents, path);
     let references = processed_file.unresolved_references;
     // let references_without_range = references
     let references_without_range = references

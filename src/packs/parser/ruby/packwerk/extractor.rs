@@ -407,15 +407,15 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 }
 
-pub(crate) fn extract_from_path(path: &Path) -> ProcessedFile {
+pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    extract_from_contents(contents, path)
+    process_from_contents(contents, path)
 }
 
-pub(crate) fn extract_from_contents(
+pub(crate) fn process_from_contents(
     contents: String,
     path: &Path,
 ) -> ProcessedFile {

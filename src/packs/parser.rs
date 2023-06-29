@@ -5,9 +5,9 @@ use std::{
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
+pub(crate) use ruby::packwerk::extractor::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
-pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
+pub(crate) use erb::packwerk::extractor::process_from_path as process_from_erb_path;
 
 use super::ProcessedFile;
 
@@ -21,8 +21,8 @@ pub fn process_file(path: &Path) -> ProcessedFile {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
-            SupportedFileType::Ruby => extract_from_ruby_path(path),
-            SupportedFileType::Erb => extract_from_erb_path(path),
+            SupportedFileType::Ruby => process_from_ruby_path(path),
+            SupportedFileType::Erb => process_from_erb_path(path),
         }
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
