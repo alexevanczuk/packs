@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     file_utils::{get_file_type, SupportedFileType},
-    ProcessedFile, Range,
+    ProcessedFile,
 };
 
 pub fn process_file(path: &Path) -> ProcessedFile {
@@ -37,6 +37,26 @@ pub struct UnresolvedReference {
     pub name: String,
     pub namespace_path: Vec<String>,
     pub location: Range,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Default)]
+pub struct Range {
+    pub start_row: usize,
+    pub start_col: usize,
+    pub end_row: usize,
+    pub end_col: usize,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Location {
+    pub begin: usize,
+    pub end: usize,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct LocationRange {
+    pub start: Location,
+    pub end: Location,
 }
 
 pub trait Cache {

@@ -24,7 +24,6 @@ pub use crate::packs::checker::Violation;
 pub use crate::packs::pack_set::PackSet;
 pub use configuration::Configuration;
 pub use package_todo::PackageTodo;
-pub use parser::ruby::packwerk::extractor::Range;
 
 use self::checker::ViolationIdentifier;
 use self::parser::UnresolvedReference;

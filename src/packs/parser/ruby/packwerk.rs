@@ -6,7 +6,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::packs::parser::ruby::packwerk::extractor::process_from_contents;
-    use crate::packs::Range;
+    use crate::packs::parser::Range;
     use crate::packs::UnresolvedReference;
 
     #[test]
