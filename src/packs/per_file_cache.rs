@@ -1,6 +1,4 @@
-use crate::packs::parser::get_unresolved_references;
-use crate::packs::parser::UnresolvedReference;
-use crate::packs::Range;
+use crate::packs::parser::process_file;
 use crate::packs::SourceLocation;
 use serde::{Deserialize, Serialize};
 
@@ -21,23 +19,17 @@ impl Cache for PerFileCache {
     fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile {
         let cachable_file =
             CachableFile::from(absolute_root, &self.cache_dir, path);
-        let unresolved_references = cachable_file
+
+        cachable_file
             .cache_entry_if_valid()
-            .map(|entry| entry.get_unresolved_references())
+            .map(|entry| entry.processed_file.clone())
             .or_else(|| {
-                let processed_file = get_unresolved_references(path);
-                let uncached_references = processed_file.unresolved_references;
-                let cloned_references = uncached_references.clone();
-                write_cache(&cachable_file, cloned_references);
+                let processed_file = process_file(path);
+                write_cache(&cachable_file, processed_file.clone());
 
-                Some(uncached_references)
+                Some(processed_file)
             })
-            .unwrap();
-
-        ProcessedFile {
-            absolute_path: path.to_path_buf(),
-            unresolved_references,
-        }
+            .unwrap()
     }
 
     fn setup() -> Self {
@@ -48,19 +40,10 @@ impl Cache for PerFileCache {
         todo!()
     }
 }
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
-    pub unresolved_references: Vec<ReferenceEntry>,
-}
-
-impl CacheEntry {
-    pub fn get_unresolved_references(&self) -> Vec<UnresolvedReference> {
-        self.unresolved_references
-            .iter()
-            .map(|r| -> UnresolvedReference { r.to_unresolved_reference() })
-            .collect()
-    }
+    pub processed_file: ProcessedFile,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -69,24 +52,6 @@ pub struct ReferenceEntry {
     namespace_path: Vec<String>,
     relative_path: String,
     source_location: SourceLocation,
-}
-
-impl ReferenceEntry {
-    fn to_unresolved_reference(&self) -> UnresolvedReference {
-        UnresolvedReference {
-            name: self.constant_name.to_owned(),
-            namespace_path: self.namespace_path.to_owned(),
-            location: Range {
-                start_row: self.source_location.line,
-                start_col: self.source_location.column,
-                // The end row and end col can be improved here but we are limited
-                // because the cache does not store this data.
-                // Instead, we might just return a (resolved) Reference
-                end_row: self.source_location.line,
-                end_col: self.source_location.column + self.constant_name.len(),
-            },
-        }
-    }
 }
 
 pub fn read_json_file(
@@ -112,36 +77,20 @@ pub(crate) fn file_content_digest(file: &Path) -> String {
     format!("{:x}", md5::compute(&file_content))
 }
 
-fn references_to_cache_entry(
-    references: Vec<UnresolvedReference>,
+fn processed_file_to_cache_entry(
+    processed_file: ProcessedFile,
     cachable_file: &CachableFile,
 ) -> CacheEntry {
-    let unresolved_references: Vec<ReferenceEntry> = references
-        .iter()
-        .map(|r| -> ReferenceEntry {
-            ReferenceEntry {
-                constant_name: r.name.to_owned(),
-                namespace_path: r.namespace_path.to_owned(),
-                relative_path: cachable_file.relative_path_string().to_owned(),
-                source_location: SourceLocation {
-                    line: r.location.start_row,
-                    column: r.location.start_col,
-                },
-            }
-        })
-        .collect();
-
     let file_contents_digest = cachable_file.file_contents_digest.to_owned();
 
     CacheEntry {
         file_contents_digest,
-        unresolved_references,
+        processed_file,
     }
 }
 
 #[derive(Debug)]
 pub struct CachableFile {
-    relative_path: PathBuf,
     file_contents_digest: String,
     cache_file_path: PathBuf,
     cache_entry: Option<CacheEntry>,
@@ -175,15 +124,10 @@ impl CachableFile {
         };
 
         CachableFile {
-            relative_path,
             file_contents_digest,
             cache_file_path,
             cache_entry,
         }
-    }
-
-    fn relative_path_string(&self) -> &str {
-        self.relative_path.to_str().unwrap()
     }
 
     pub fn cache_entry_if_valid(&self) -> Option<&CacheEntry> {
@@ -203,11 +147,9 @@ impl CachableFile {
     }
 }
 
-fn write_cache(
-    cachable_file: &CachableFile,
-    references: Vec<UnresolvedReference>,
-) {
-    let cache_entry = references_to_cache_entry(references, cachable_file);
+fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
+    let cache_entry =
+        processed_file_to_cache_entry(processed_file, cachable_file);
 
     let cache_data = serde_json::to_string(&cache_entry)
         .expect("Failed to serialize references");

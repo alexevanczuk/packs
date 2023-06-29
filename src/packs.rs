@@ -49,7 +49,7 @@ pub fn delete_cache(configuration: Configuration) {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,

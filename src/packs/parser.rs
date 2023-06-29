@@ -9,7 +9,6 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 pub(crate) use ruby::packwerk::extractor::extract_from_path as extract_from_ruby_path;
 pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::extract_from_path as extract_from_erb_path;
-pub(crate) use ruby::packwerk::extractor::UnresolvedReference;
 
 use super::ProcessedFile;
 
@@ -19,7 +18,7 @@ pub enum SupportedFileType {
     Erb,
 }
 
-pub fn get_unresolved_references(path: &Path) -> ProcessedFile {
+pub fn process_file(path: &Path) -> ProcessedFile {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
