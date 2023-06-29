@@ -9,13 +9,10 @@ pub(crate) use ruby::packwerk::extractor::process_from_path as process_from_ruby
 pub(crate) mod erb;
 pub(crate) use erb::packwerk::extractor::process_from_path as process_from_erb_path;
 
-use super::{file_utils::get_file_type, ProcessedFile};
-
-#[derive(PartialEq, Debug)]
-pub enum SupportedFileType {
-    Ruby,
-    Erb,
-}
+use super::{
+    file_utils::{get_file_type, SupportedFileType},
+    ProcessedFile,
+};
 
 pub fn process_file(path: &Path) -> ProcessedFile {
     let file_type_option = get_file_type(path);

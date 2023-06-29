@@ -1,24 +1,8 @@
-use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use jwalk::WalkDirGeneric;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
-use super::configuration::RawConfiguration;
+use super::{configuration::RawConfiguration, file_utils::build_glob_set};
 use crate::packs::Pack;
-
-fn build_glob_set(globs: &[String]) -> GlobSet {
-    let mut builder = GlobSetBuilder::new();
-
-    for glob in globs {
-        let compiled_glob = GlobBuilder::new(glob)
-            .literal_separator(true)
-            .build()
-            .unwrap();
-
-        builder.add(compiled_glob);
-    }
-
-    builder.build().unwrap()
-}
 
 pub struct WalkDirectoryResult {
     pub included_paths: HashSet<PathBuf>,

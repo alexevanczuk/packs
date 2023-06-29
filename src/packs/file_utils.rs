@@ -1,6 +1,12 @@
 use std::path::Path;
 
-use crate::packs::parser::SupportedFileType;
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
+
+#[derive(PartialEq, Debug)]
+pub enum SupportedFileType {
+    Ruby,
+    Erb,
+}
 
 pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
     let ruby_special_files = vec!["Gemfile", "Rakefile"];
@@ -25,4 +31,19 @@ pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
     } else {
         None
     }
+}
+
+pub fn build_glob_set(globs: &[String]) -> GlobSet {
+    let mut builder = GlobSetBuilder::new();
+
+    for glob in globs {
+        let compiled_glob = GlobBuilder::new(glob)
+            .literal_separator(true)
+            .build()
+            .unwrap();
+
+        builder.add(compiled_glob);
+    }
+
+    builder.build().unwrap()
 }
