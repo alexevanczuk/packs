@@ -1,3 +1,4 @@
+use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_autoload_paths;
 use crate::packs::raw_configuration::RawConfiguration;
@@ -35,30 +36,12 @@ impl Configuration {
         if input_files.is_empty() {
             self.included_files.clone()
         } else {
-            let input_paths = input_files
-                .iter()
-                .map(PathBuf::from)
-                .flat_map(|p| {
-                    if p.is_absolute() {
-                        vec![p]
-                    } else {
-                        let absolute_path = self.absolute_root.join(&p);
-                        if absolute_path.is_dir() {
-                            glob::glob(
-                                absolute_path.join("**/*.*").to_str().unwrap(),
-                            )
-                            .expect("Failed to read glob pattern")
-                            .filter_map(Result::ok)
-                            .collect::<Vec<_>>()
-                        } else {
-                            vec![absolute_path]
-                        }
-                    }
-                })
-                .collect::<HashSet<_>>();
-
+            let absolute_filepaths = user_inputted_paths_to_absolute_filepaths(
+                &self.absolute_root,
+                input_files,
+            );
             self.included_files
-                .intersection(&input_paths)
+                .intersection(&absolute_filepaths)
                 .cloned()
                 .collect::<HashSet<PathBuf>>()
         }

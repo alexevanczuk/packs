@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 
@@ -55,4 +58,29 @@ pub fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
     {
         paths.push(path);
     }
+}
+
+pub fn user_inputted_paths_to_absolute_filepaths(
+    absolute_root: &Path,
+    input_paths: Vec<String>,
+) -> HashSet<PathBuf> {
+    input_paths
+        .iter()
+        .map(PathBuf::from)
+        .flat_map(|p| {
+            if p.is_absolute() {
+                vec![p]
+            } else {
+                let absolute_path = absolute_root.join(&p);
+                if absolute_path.is_dir() {
+                    glob::glob(absolute_path.join("**/*.*").to_str().unwrap())
+                        .expect("Failed to read glob pattern")
+                        .filter_map(Result::ok)
+                        .collect::<Vec<_>>()
+                } else {
+                    vec![absolute_path]
+                }
+            }
+        })
+        .collect::<HashSet<_>>()
 }
