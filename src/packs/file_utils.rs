@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 
@@ -46,4 +46,13 @@ pub fn build_glob_set(globs: &[String]) -> GlobSet {
     }
 
     builder.build().unwrap()
+}
+
+pub fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
+    for path in glob::glob(pattern)
+        .expect("Failed to read glob pattern")
+        .flatten()
+    {
+        paths.push(path);
+    }
 }
