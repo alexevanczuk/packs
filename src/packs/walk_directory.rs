@@ -1,7 +1,7 @@
 use jwalk::WalkDirGeneric;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
-use super::{configuration::RawConfiguration, file_utils::build_glob_set};
+use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
 use crate::packs::Pack;
 
 pub struct WalkDirectoryResult {
@@ -16,7 +16,7 @@ pub struct WalkDirectoryResult {
 // which is faster than walking the directory multiple times.
 // Likely, we can organize this better by moving each piece of logic into its own function so this function
 // allows for a sort of "visitor pattern" for different things that need to walk the directory.
-pub fn walk_directory(
+pub(crate) fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
 ) -> WalkDirectoryResult {
@@ -149,7 +149,7 @@ mod tests {
     use std::{error::Error, path::PathBuf};
 
     use crate::packs::{
-        configuration::RawConfiguration,
+        raw_configuration::RawConfiguration,
         walk_directory::{walk_directory, WalkDirectoryResult},
     };
 

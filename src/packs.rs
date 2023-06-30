@@ -1,4 +1,5 @@
 mod configuration;
+mod raw_configuration;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
