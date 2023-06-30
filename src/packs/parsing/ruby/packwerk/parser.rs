@@ -198,16 +198,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // more efficient?
         self.current_namespaces.push(namespace);
 
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
         self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
 
         if let Some(inner) = &node.body {
             self.visit(inner);
@@ -323,17 +314,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
-
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
         self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
 
         if let Some(inner) = &node.body {
             self.visit(inner);
