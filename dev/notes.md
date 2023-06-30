@@ -38,3 +38,6 @@ RUST_LOG=perf_events=debug time cargo run --profile=release -- --project-root=..
 - Packwerk considers a definition to be a reference. I explored removing this in this branch: https://github.com/alexevanczuk/packs/pull/44
   - This results in a diff in violations, because if a class opens up a module defined by another class, its considered to be a reference to that other class.
   - I think this is actually a bug in packwerk, since a definition is not really a reference. Even though monkey patching / opening up other moduels is not great, we should surface that information through a different mechanism (such as allowing packs to have a monkey patches violation)
+
+# Abandoned Performance Improvement Attempts
+- In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver.
