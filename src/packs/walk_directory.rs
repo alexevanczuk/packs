@@ -5,7 +5,7 @@ use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
 use crate::packs::Pack;
 
 pub struct WalkDirectoryResult {
-    pub included_paths: HashSet<PathBuf>,
+    pub included_files: HashSet<PathBuf>,
     pub included_packs: HashSet<Pack>,
 }
 
@@ -20,7 +20,7 @@ pub(crate) fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
 ) -> WalkDirectoryResult {
-    let mut included_paths: HashSet<PathBuf> = HashSet::new();
+    let mut included_files: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
     // Create this vector outside of the closure to avoid reallocating it
     let default_excluded_dirs = vec![
@@ -114,7 +114,7 @@ pub(crate) fn walk_directory(
         // This could be one line, but I'm keeping it separate for debugging purposes
         if includes_set.is_match(&relative_path) {
             if !excludes_set.is_match(&relative_path) {
-                included_paths.insert(absolute_path.clone());
+                included_files.insert(absolute_path.clone());
             } else {
                 // println!("file excluded: {}", relative_path.display())
             }
@@ -139,7 +139,7 @@ pub(crate) fn walk_directory(
     }
 
     WalkDirectoryResult {
-        included_paths,
+        included_files,
         included_packs,
     }
 }
@@ -164,14 +164,12 @@ mod tests {
             ..RawConfiguration::default()
         };
 
-        let WalkDirectoryResult {
-            included_paths: files,
-            included_packs: _,
-        } = walk_directory(absolute_path.clone(), &raw_config);
+        let WalkDirectoryResult { included_files, .. } =
+            walk_directory(absolute_path.clone(), &raw_config);
 
         let node_module_file =
             absolute_path.join("node_modules/subfolder/file.rb");
-        let contains_bad_file = files.contains(&node_module_file);
+        let contains_bad_file = included_files.contains(&node_module_file);
         assert!(!contains_bad_file);
 
         // Although `node_modules/**/*` should probably exclude `node_modules/file.rb`,
@@ -180,7 +178,7 @@ mod tests {
         // To fix this bug, start by changing this test to:
         // assert!(!contains_bad_file); (instead of assert!(contains_bad_file);)
         let node_module_file = absolute_path.join("node_modules/file.rb");
-        let contains_bad_file = files.contains(&node_module_file);
+        let contains_bad_file = included_files.contains(&node_module_file);
         assert!(contains_bad_file);
 
         Ok(())

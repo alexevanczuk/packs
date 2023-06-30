@@ -59,13 +59,13 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     debug!(target: "perf_events", "Beginning directory walk");
 
     let WalkDirectoryResult {
-        included_paths: included_files,
-        included_packs: unsorted_packs,
+        included_files,
+        included_packs,
     } = walk_directory(absolute_root.to_path_buf(), &raw_config);
     debug!(target: "perf_events", "Finished directory walk");
 
     let absolute_root = absolute_root.to_path_buf();
-    let pack_set = PackSet::build(unsorted_packs);
+    let pack_set = PackSet::build(included_packs);
 
     let autoload_paths = get_autoload_paths(&pack_set.packs);
 
