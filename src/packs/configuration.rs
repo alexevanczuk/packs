@@ -1,7 +1,7 @@
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
-use crate::packs::parsing::ruby::zeitwerk_utils::get_autoload_paths;
+use crate::packs::parsing::ruby::zeitwerk_utils::inferred_constants_from_pack_set;
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
 
@@ -64,15 +64,14 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let absolute_root = absolute_root.to_path_buf();
     let pack_set = PackSet::build(included_packs);
 
-    let autoload_paths = get_autoload_paths(&pack_set.packs);
-
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
-    let constant_resolver = ConstantResolver::create(
+    let constants = inferred_constants_from_pack_set(
+        &pack_set,
         &absolute_root,
-        autoload_paths,
         &cache_directory,
     );
+    let constant_resolver = ConstantResolver::create(&absolute_root, constants);
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
@@ -97,8 +96,15 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 #[cfg(test)]
 mod tests {
 
+    use std::collections::HashMap;
+
     use super::*;
-    use crate::packs::{configuration, CheckerSetting, Pack, PackageTodo};
+    use crate::packs::{
+        configuration, parsing::ruby::packwerk::constant_resolver::Constant,
+        CheckerSetting, Pack, PackageTodo,
+    };
+
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn default_options() {
@@ -188,24 +194,62 @@ mod tests {
             },
         ];
 
-        let mut expected_autoload_paths = vec![
-            PathBuf::from("tests/fixtures/simple_app/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/models"),
-            PathBuf::from(
-                "tests/fixtures/simple_app/packs/bar/app/models/concerns",
-            ),
-            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/baz/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/views"),
-        ];
-        expected_autoload_paths.sort();
-        let mut actual_autoload_paths =
-            actual.constant_resolver.autoload_paths.clone();
-        actual_autoload_paths.sort();
-
-        assert_eq!(expected_autoload_paths, actual_autoload_paths);
         assert_eq!(expected_packs, actual.pack_set.packs);
+
+        let actual_constant_map = actual
+            .constant_resolver
+            .fully_qualified_constant_to_constant_map;
+
+        let mut expected_constant_map = HashMap::new();
+        expected_constant_map.insert(
+            String::from("Foo::Bar"),
+            Constant {
+                fully_qualified_name: "Foo::Bar".to_owned(),
+                absolute_path_of_definition: PathBuf::from("tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb"),
+            },
+        );
+
+        expected_constant_map.insert(
+            "Bar".to_owned(),
+            Constant {
+                fully_qualified_name: "Bar".to_owned(),
+                absolute_path_of_definition: PathBuf::from(
+                    "tests/fixtures/simple_app/packs/bar/app/services/bar.rb",
+                ),
+            },
+        );
+        expected_constant_map.insert(
+            "Baz".to_owned(),
+            Constant {
+                fully_qualified_name: "Baz".to_owned(),
+                absolute_path_of_definition: PathBuf::from(
+                    "tests/fixtures/simple_app/packs/baz/app/services/baz.rb",
+                ),
+            },
+        );
+        expected_constant_map.insert(
+            "Foo".to_owned(),
+            Constant {
+                fully_qualified_name: "Foo".to_owned(),
+                absolute_path_of_definition: PathBuf::from(
+                    "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
+                ),
+            },
+        );
+        expected_constant_map.insert("SomeConcern".to_owned(), Constant {
+        fully_qualified_name: "SomeConcern".to_owned(),
+        absolute_path_of_definition: PathBuf::from("tests/fixtures/simple_app/packs/bar/app/models/concerns/some_concern.rb"),
+    });
+        expected_constant_map.insert(
+            "SomeRootClass".to_owned(),
+            Constant {
+                fully_qualified_name: "SomeRootClass".to_owned(),
+                absolute_path_of_definition: PathBuf::from(
+                    "tests/fixtures/simple_app/app/services/some_root_class.rb",
+                ),
+            },
+        );
+        assert_eq!(expected_constant_map, actual_constant_map);
 
         assert!(actual.cache_enabled)
     }
