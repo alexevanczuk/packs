@@ -1,5 +1,44 @@
+use std::{fs::File, path::Path};
+
 use serde::{Deserialize, Serialize};
 
+const CONFIG_FILE_NAME: &str = "packwerk.yml";
+
+pub(crate) fn get(absolute_root: &Path) -> RawConfiguration {
+    let absolute_path_to_packwerk_yml = absolute_root.join(CONFIG_FILE_NAME);
+
+    if absolute_path_to_packwerk_yml.exists() {
+        let mut file = File::open(absolute_path_to_packwerk_yml.clone())
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Could not open packwerk.yml at: {} due to error: {:?}",
+                    absolute_path_to_packwerk_yml.display(),
+                    e
+                )
+            });
+
+        let mut contents = String::new();
+        std::io::Read::read_to_string(&mut file, &mut contents).unwrap_or_else(
+            |e| {
+                panic!(
+                    "Could not read packwerk.yml at: {} due to error: {:?}",
+                    absolute_path_to_packwerk_yml.display(),
+                    e
+                )
+            },
+        );
+
+        serde_yaml::from_str(&contents).unwrap_or_else(|e| {
+            panic!(
+                "Could not parse packwerk.yml at: {} due to error: {:?}",
+                absolute_path_to_packwerk_yml.display(),
+                e
+            )
+        })
+    } else {
+        RawConfiguration::default()
+    }
+}
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
 #[derive(Debug, Deserialize, Serialize, Default)]

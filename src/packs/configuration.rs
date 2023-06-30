@@ -2,7 +2,7 @@ use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_autoload_paths;
-use crate::packs::raw_configuration::RawConfiguration;
+use crate::packs::raw_configuration::{self};
 use crate::packs::walk_directory::WalkDirectoryResult;
 
 use crate::packs::{
@@ -12,7 +12,6 @@ use crate::packs::{
 
 use std::{
     collections::HashSet,
-    fs::File,
     path::{Path, PathBuf},
 };
 use tracing::debug;
@@ -54,39 +53,8 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         target: "perf_events",
         "Beginning to build configuration"
     );
-    let absolute_path_to_packwerk_yml = absolute_root.join("packwerk.yml");
 
-    let raw_config: RawConfiguration =
-        if absolute_path_to_packwerk_yml.exists() {
-            let mut file = File::open(absolute_path_to_packwerk_yml.clone())
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Could not open packwerk.yml at: {} due to error: {:?}",
-                        absolute_path_to_packwerk_yml.display(),
-                        e
-                    )
-                });
-
-            let mut contents = String::new();
-            std::io::Read::read_to_string(&mut file, &mut contents)
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Could not read packwerk.yml at: {} due to error: {:?}",
-                        absolute_path_to_packwerk_yml.display(),
-                        e
-                    )
-                });
-
-            serde_yaml::from_str(&contents).unwrap_or_else(|e| {
-                panic!(
-                    "Could not parse packwerk.yml at: {} due to error: {:?}",
-                    absolute_path_to_packwerk_yml.display(),
-                    e
-                )
-            })
-        } else {
-            RawConfiguration::default()
-        };
+    let raw_config = raw_configuration::get(absolute_root);
 
     debug!(target: "perf_events", "Beginning directory walk");
 
