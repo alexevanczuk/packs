@@ -1,6 +1,5 @@
 # TODO
-- Rename "extractor" to "parser"
-- Explore not counting definitions as references. This should not change the diff but should speed up serde. If it doesn't work, put this logic into the Experimental extractor
+- Explore not counting definitions as references. This should not change the diff but should speed up serde. If it doesn't work, put this logic into the Experimental parser
 - Explore alternate implementation that does not use constant resolver but instead actually gets definitions – implement it with an optional flag in packwerk.yml
   - This feature should have a "monkeypatches" key in packwerk.yml. This is a hash of constants and what file monkey patches them. "Validate" should check this. This can allow the alternate implementation to avoid violations on a monkey patched "String" class, for example.
 - Explore alternate caching mechanisms:
