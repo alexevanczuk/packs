@@ -1,12 +1,12 @@
-pub(crate) mod extractor;
+pub(crate) mod parser;
 
 #[cfg(test)]
 mod tests {
 
     use std::path::PathBuf;
 
-    use crate::packs::parser::erb::packwerk::extractor::process_from_contents;
-    use crate::packs::parser::Range;
+    use crate::packs::parsing::erb::packwerk::parser::process_from_contents;
+    use crate::packs::parsing::Range;
     use crate::packs::UnresolvedReference;
 
     #[test]

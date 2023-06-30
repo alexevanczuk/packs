@@ -13,8 +13,8 @@ pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
     let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
 
     let extension = path.extension();
-    // Eventually, we can have packs::parser::ruby, packs::parser::erb, etc.
-    // These would implement a packs::parser::interface::Parser trait and can
+    // Eventually, we can have packs::parsing::ruby, packs::parsing::erb, etc.
+    // These would implement a packs::parsing::interface::Parser trait and can
     // hold the logic for determining if a parser can parse a file.
 
     let is_ruby_file = ruby_extensions

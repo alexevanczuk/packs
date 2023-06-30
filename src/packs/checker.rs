@@ -1,5 +1,5 @@
 use crate::packs::package_todo;
-use crate::packs::parser::process_files_with_cache;
+use crate::packs::parsing::process_files_with_cache;
 use crate::packs::per_file_cache;
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
 use crate::packs::Configuration;
@@ -11,7 +11,7 @@ use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
-use super::parser::Cache;
+use super::parsing::Cache;
 use super::Pack;
 use super::UnresolvedReference;
 

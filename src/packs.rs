@@ -15,7 +15,7 @@ mod inflector_shim;
 pub mod logger;
 mod pack_set;
 pub mod package_todo;
-pub mod parser;
+pub mod parsing;
 pub(crate) mod per_file_cache;
 mod walk_directory;
 
@@ -26,7 +26,7 @@ pub use configuration::Configuration;
 pub use package_todo::PackageTodo;
 
 use self::checker::ViolationIdentifier;
-use self::parser::UnresolvedReference;
+use self::parsing::UnresolvedReference;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
