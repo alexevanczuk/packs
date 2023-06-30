@@ -1,7 +1,8 @@
 # TODO
-- Explore not counting definitions as references. This should not change the diff but should speed up serde. If it doesn't work, put this logic into the Experimental parser
-- Explore alternate implementation that does not use constant resolver but instead actually gets definitions – implement it with an optional flag in packwerk.yml
+- Explore alternate implementation of extractor that does not use constant resolver but instead actually gets definitions – implement it with an optional flag in packwerk.yml and/or CLI flag.
   - This feature should have a "monkeypatches" key in packwerk.yml. This is a hash of constants and what file monkey patches them. "Validate" should check this. This can allow the alternate implementation to avoid violations on a monkey patched "String" class, for example.
+  - This parser thinks a constant can be defined in many places. For each place, it establishes one reference.
+  - This parser does not consider definitions to be references. (This is a bug in the current implementation – see below.)
 - Explore alternate caching mechanisms:
   - Convert existing cache to be `PackwerkCompatibleCache`.
   - Consider using SQLite cache (for less file IO)
@@ -38,6 +39,7 @@ RUST_LOG=perf_events=debug time cargo run --profile=release -- --project-root=..
 - Packwerk considers a definition to be a reference. I explored removing this in this branch: https://github.com/alexevanczuk/packs/pull/44
   - This results in a diff in violations, because if a class opens up a module defined by another class, its considered to be a reference to that other class.
   - I think this is actually a bug in packwerk, since a definition is not really a reference. Even though monkey patching / opening up other moduels is not great, we should surface that information through a different mechanism (such as allowing packs to have a monkey patches violation)
+  - Note this logic can be moved into the experimental parser, since it does not need to preserve behavior.
 
 # Abandoned Performance Improvement Attempts
-- In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver.
+- In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
