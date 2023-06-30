@@ -7,7 +7,7 @@ use std::{
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 pub(crate) use ruby::packwerk::extractor::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
-pub(crate) use erb::packwerk::extractor::process_from_path as process_from_erb_path;
+pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
 use serde::{Deserialize, Serialize};
 
 use super::{
