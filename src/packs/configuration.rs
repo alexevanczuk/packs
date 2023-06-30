@@ -74,7 +74,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let constant_resolver =
         ConstantResolver::create(&absolute_root, autoload_paths);
 
-    let layers = crate::packs::checker::architecture::Layers {
+    let layers = Layers {
         layers: raw_config.architecture_layers,
     };
 
