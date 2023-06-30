@@ -1,4 +1,5 @@
 use rayon::prelude::{ParallelBridge, ParallelIterator};
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use std::{
@@ -8,6 +9,11 @@ use std::{
 
 use crate::packs::parsing::ruby::rails_utils::get_acronyms_from_disk;
 
+#[derive(Serialize, Deserialize)]
+struct ConstantResolverCache {
+    file_definition_map: HashMap<PathBuf, String>,
+}
+
 #[derive(Default)]
 pub struct ConstantResolver {
     fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
@@ -16,7 +22,7 @@ pub struct ConstantResolver {
     pub(crate) autoload_paths: Vec<PathBuf>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Constant {
     pub fully_qualified_name: String,
     pub absolute_path_of_definition: PathBuf,
@@ -42,12 +48,47 @@ fn inferred_constant_from_file(
     }
 }
 
+fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
+    let path = cache_dir.join("constant_resolver.json");
+    if path.exists() {
+        let file = std::fs::File::open(path).unwrap();
+        let reader = std::io::BufReader::new(file);
+        serde_json::from_reader(reader).unwrap()
+    } else {
+        ConstantResolverCache {
+            file_definition_map: HashMap::new(),
+        }
+    }
+}
+
+fn cache_constant_definitions(constants: &Vec<Constant>, cache_dir: &Path) {
+    let mut file_definition_map: HashMap<PathBuf, String> = HashMap::new();
+    for constant in constants {
+        file_definition_map.insert(
+            constant.absolute_path_of_definition.clone(),
+            constant.fully_qualified_name.clone(),
+        );
+    }
+
+    let cache_data_json = serde_json::to_string(&ConstantResolverCache {
+        file_definition_map,
+    })
+    .expect("Failed to serialize");
+
+    std::fs::create_dir_all(cache_dir).unwrap();
+    std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
+        .unwrap();
+}
+
 #[allow(unused_variables)]
 impl ConstantResolver {
     pub fn create(
         absolute_root: &Path,
         autoload_paths: Vec<PathBuf>,
+        cache_dir: &Path,
     ) -> ConstantResolver {
+        debug!(target: "perf_events", "Building constant resolver");
+
         // For each autoload path, do the following:
         // 1) Glob for the ruby files
         // 2) For each ruby file, remove the autoloaded portion of the path
@@ -57,42 +98,108 @@ impl ConstantResolver {
         // 6) Join the vector with ::
         // 7) Strip the leading "::" from the string
         // 8) Add the fully qualified constant name to the map, with the value being the absolute path of the file
+        debug!(target: "perf_events", "Get constant resolver cache");
+        let cache_data = get_constant_resolver_cache(cache_dir);
+
+        debug!(target: "perf_events", "Globbing out autoload paths");
+        // First, we get a map of each autoload path to the files they map to.
+        let autoload_paths_to_their_globbed_files = autoload_paths
+            .clone()
+            .into_iter()
+            .par_bridge()
+            .map(|absolute_autoload_path| {
+                let glob_path = absolute_autoload_path.join("**/*.rb");
+
+                let files = glob::glob(glob_path.to_str().unwrap())
+                    .expect("Failed to read glob pattern")
+                    .filter_map(Result::ok)
+                    .collect::<Vec<PathBuf>>();
+
+                (absolute_autoload_path, files)
+            })
+            .collect::<HashMap<PathBuf, Vec<PathBuf>>>();
+
+        debug!(target: "perf_events", "Finding autoload path for each file");
+        // Then, we want to know *which* autoload path is the one that defines a given constant.
+        // The longest autoload path should be the one that does this.
+        // For example, if we have two autoload paths:
+        // 1) packs/my_pack/app/models
+        // 2) packs/my_pack/app/models/concerns
+        // And we have a file at `packs/my_pack/app/models/concerns/foo.rb`, we want to say that the constant `Foo` is defined by the second autoload path.
+        // This is because the second autoload path is the longest path that contains the file.
+        // We do this by creating a map of each file to the longest autoload path that contains it.
+        let mut file_to_longest_path: HashMap<PathBuf, PathBuf> =
+            HashMap::new();
+
+        for (autoload_path, files) in &autoload_paths_to_their_globbed_files {
+            for file in files {
+                // Get the current longest path for this file, if it exists.
+                let current_longest_path = file_to_longest_path
+                    .entry(file.clone())
+                    .or_insert_with(|| autoload_path.clone());
+
+                // Update the longest path if the new path is longer.
+                if autoload_path.components().count()
+                    > current_longest_path.components().count()
+                {
+                    *current_longest_path = autoload_path.clone();
+                }
+            }
+        }
+
+        debug!(target: "perf_events", "Getting acronyms from disk");
+        let acronyms = &get_acronyms_from_disk(absolute_root);
+
+        debug!(target: "perf_events", "Inferring constants from file name (using cache)");
+        let constants: Vec<Constant> = file_to_longest_path
+            .into_iter()
+            .par_bridge()
+            .map(|(absolute_path_of_definition, absolute_autoload_path)| {
+                if let Some(fully_qualified_name) = cache_data
+                    .file_definition_map
+                    .get(&absolute_path_of_definition)
+                {
+                    Constant {
+                        fully_qualified_name: fully_qualified_name.to_owned(),
+                        absolute_path_of_definition,
+                    }
+                } else {
+                    inferred_constant_from_file(
+                        &absolute_path_of_definition,
+                        &absolute_autoload_path,
+                        acronyms,
+                    )
+                }
+            })
+            .collect::<Vec<Constant>>();
+
+        debug!(target: "perf_events", "Caching constant definitions");
+        cache_constant_definitions(&constants, cache_dir);
+
+        debug!(target: "perf_events", "Building constant resolver from constants vector");
+
         let mut fully_qualified_constant_to_constant_map: HashMap<
             String,
             Constant,
         > = HashMap::new();
 
-        debug!(target: "perf_events", "Building constant resolver");
-        let acronyms = &get_acronyms_from_disk(absolute_root);
-        let constants: Vec<Constant> = autoload_paths
-            .iter()
-            .par_bridge()
-            .flat_map(|absolute_autoload_path| {
-                let glob_path = absolute_autoload_path.join("**/*.rb");
-
-                let files = glob::glob(glob_path.to_str().unwrap())
-                    .expect("Failed to read glob pattern")
-                    .filter_map(Result::ok);
-
-                files
-                    .par_bridge()
-                    .map(|file| {
-                        inferred_constant_from_file(
-                            &file,
-                            absolute_autoload_path,
-                            acronyms,
-                        )
-                    })
-                    .collect::<Vec<Constant>>()
-            })
-            .collect();
-
+        // TODO: Do this in parallel?
         for constant in constants {
             let fully_qualified_constant_name =
                 constant.fully_qualified_name.clone();
 
-            fully_qualified_constant_to_constant_map
-                .insert(fully_qualified_constant_name, constant);
+            let existing_constant = fully_qualified_constant_to_constant_map
+                .get(&fully_qualified_constant_name);
+
+            if let Some(existing_constant) = existing_constant {
+                panic!(
+                    "Found two constants with the same name: {:?} and {:?}",
+                    existing_constant, constant
+                );
+            } else {
+                fully_qualified_constant_to_constant_map
+                    .insert(fully_qualified_constant_name, constant);
+            }
         }
 
         debug!(
@@ -253,7 +360,11 @@ mod tests {
             .canonicalize()
             .expect("Could not canonicalize path");
 
-        let resolver = ConstantResolver::create(&absolute_root, paths);
+        let resolver = ConstantResolver::create(
+            &absolute_root,
+            paths,
+            &absolute_root.join("tmp/cache/packwerk"),
+        );
 
         let mut expected_file_map: HashMap<String, Constant> = HashMap::new();
         expected_file_map.insert(
