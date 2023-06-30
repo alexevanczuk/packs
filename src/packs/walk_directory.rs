@@ -1,5 +1,6 @@
 use jwalk::WalkDirGeneric;
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use tracing::debug;
 
 use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
 use crate::packs::Pack;
@@ -20,6 +21,8 @@ pub(crate) fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
 ) -> WalkDirectoryResult {
+    debug!(target: "perf_events", "Beginning directory walk");
+
     let mut included_files: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
     // Create this vector outside of the closure to avoid reallocating it
@@ -137,6 +140,8 @@ pub(crate) fn walk_directory(
             included_packs.insert(pack);
         }
     }
+
+    debug!(target: "perf_events", "Finished directory walk");
 
     WalkDirectoryResult {
         included_files,
