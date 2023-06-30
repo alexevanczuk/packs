@@ -67,7 +67,7 @@ Instructions:
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
 
-Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile type checks on memory usage.
+Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile time checks on memory usage.
 
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
 
