@@ -1,6 +1,6 @@
 use crate::packs::{
     inflector_shim::to_class_case,
-    parser::{Range, UnresolvedReference},
+    parsing::{Range, UnresolvedReference},
     ProcessedFile,
 };
 use lib_ruby_parser::{
@@ -14,7 +14,7 @@ use std::{
     path::Path,
 };
 
-use crate::packs::parser::ruby::namespace_calculator;
+use crate::packs::parsing::ruby::namespace_calculator;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {

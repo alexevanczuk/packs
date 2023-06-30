@@ -1,4 +1,4 @@
-use crate::packs::parser::process_file;
+use crate::packs::parsing::process_file;
 use crate::packs::SourceLocation;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
 
-use super::parser::{Cache, Range};
+use super::parsing::{Cache, Range};
 use super::{ProcessedFile, UnresolvedReference};
 
 pub struct PerFileCache {

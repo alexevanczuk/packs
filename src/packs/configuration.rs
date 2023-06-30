@@ -2,7 +2,8 @@ use super::PackSet;
 use crate::packs::walk_directory::WalkDirectoryResult;
 use crate::packs::Pack;
 use crate::packs::{
-    parser::ruby::packwerk::constant_resolver::ConstantResolver, walk_directory,
+    parsing::ruby::packwerk::constant_resolver::ConstantResolver,
+    walk_directory,
 };
 use serde::{Deserialize, Serialize};
 use std::{
