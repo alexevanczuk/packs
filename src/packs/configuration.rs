@@ -2,7 +2,7 @@ use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_autoload_paths;
-use crate::packs::raw_configuration::{self};
+use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
 
 use crate::packs::{
