@@ -290,6 +290,6 @@ mod tests {
         assert_eq!(
             Some(String::from("packs/foo")),
             configuration.pack_set.for_file(&absolute_file_path)
-        )
+    )
     }
 }

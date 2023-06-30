@@ -1,15 +1,68 @@
 use jwalk::WalkDirGeneric;
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tracing::debug;
 
-use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
-use crate::packs::Pack;
+use super::{
+    file_utils::build_glob_set,
+    parsing::ruby::packwerk::constant_resolver::Constant,
+    raw_configuration::RawConfiguration,
+};
+use crate::packs::{
+    parsing::ruby::packwerk::constant_resolver::{
+        get_acronyms_from_disk, inferred_constant_from_file_given_autoload_path,
+    },
+    Pack,
+};
 
 pub struct WalkDirectoryResult {
     pub included_files: HashSet<PathBuf>,
     pub included_packs: HashSet<Pack>,
+    pub defined_constants: Vec<Constant>,
 }
 
+#[derive(Debug, Default, Clone)]
+struct ProcessReadDirState {
+    current_package_yml: PathBuf,
+    current_package_autoload_paths: HashSet<PathBuf>,
+    current_autoload_path: Option<PathBuf>,
+}
+
+impl jwalk::ClientState for ProcessReadDirState {
+    type ReadDirState = ProcessReadDirState;
+
+    type DirEntryState = ProcessReadDirState;
+}
+
+fn autoload_paths_for_package_yml(package_yml: &Path) -> HashSet<PathBuf> {
+    let mut autoload_paths: HashSet<PathBuf> = HashSet::new();
+
+    let package_path = package_yml.parent().unwrap();
+    // App paths
+    let app_paths = package_path.join("app").join("*");
+    let app_glob_pattern = app_paths.to_str().unwrap();
+    expand_globs(app_glob_pattern, &mut autoload_paths);
+
+    // Concerns paths
+    let concerns_paths = package_path.join("app").join("*").join("concerns");
+    let concerns_glob_pattern = concerns_paths.to_str().unwrap();
+
+    expand_globs(concerns_glob_pattern, &mut autoload_paths);
+
+    autoload_paths
+}
+
+fn expand_globs(pattern: &str, paths: &mut HashSet<PathBuf>) {
+    for path in glob::glob(pattern)
+        .expect("Failed to read glob pattern")
+        .flatten()
+    {
+        paths.insert(path);
+    }
+}
 // We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
 // specified in the `RawConfiguration`
 // https://docs.rs/jwalk/0.8.1/jwalk/struct.WalkDirGeneric.html#method.process_read_dir
@@ -25,6 +78,9 @@ pub(crate) fn walk_directory(
 
     let mut included_files: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
+    let mut defined_constants: Vec<Constant> = Vec::new();
+    let acronyms = &get_acronyms_from_disk(&absolute_root);
+
     // Create this vector outside of the closure to avoid reallocating it
     let default_excluded_dirs = vec![
         "node_modules/**/*",
@@ -64,28 +120,65 @@ pub(crate) fn walk_directory(
     // we'll save a lot of time by just skipping the entire directory.
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
-    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(&absolute_root)
-        .process_read_dir(move |_depth, _path, _read_dir_state, children| {
-            // We need to let the compiler know that we are using a reference and not the value itself.
-            // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
-            // (with an increase to the reference count).
-            let cloned_excluded_dirs = excluded_dirs_ref.clone();
-            let cloned_absolute_root = absolute_root_ref.clone();
+    let current_package_yml = PathBuf::from("package.yml");
+    let current_package_autoload_paths: HashSet<PathBuf> =
+        autoload_paths_for_package_yml(&current_package_yml);
+    let current_autoload_path = None;
 
-            children.iter_mut().for_each(|dir_entry_result| {
-                if let Ok(dir_entry) = dir_entry_result {
-                    let absolute_dirname = dir_entry.path();
-                    let relative_path = absolute_dirname
-                        .strip_prefix(cloned_absolute_root.as_ref())
-                        .unwrap()
-                        .to_owned();
+    let walk_dir = WalkDirGeneric::<ProcessReadDirState>::new(&absolute_root)
+        .root_read_dir_state(ProcessReadDirState {
+            current_package_yml,
+            current_package_autoload_paths,
+            current_autoload_path,
+        })
+        .process_read_dir(
+            move |_depth, absolute_dirname, read_dir_state, children| {
+                // We need to let the compiler know that we are using a reference and not the value itself.
+                // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
+                // (with an increase to the reference count).
+                let cloned_excluded_dirs = excluded_dirs_ref.clone();
+                let cloned_absolute_root = absolute_root_ref.clone();
+                let package_yml = absolute_dirname.join("package.yml");
 
-                    if cloned_excluded_dirs.as_ref().is_match(relative_path) {
-                        dir_entry.read_children_path = None;
-                    }
+                // Even if the parent has set this on children, the existence of a new
+                // package.yml file should override it.
+                if package_yml.exists() {
+                    read_dir_state.current_package_yml = package_yml;
+                    let current_package_yml =
+                        &read_dir_state.current_package_yml;
+                    let current_package_autoload_paths =
+                        autoload_paths_for_package_yml(current_package_yml);
+                    read_dir_state.current_package_autoload_paths =
+                        current_package_autoload_paths;
                 }
-            });
-        });
+
+                if read_dir_state
+                    .current_package_autoload_paths
+                    .contains(absolute_dirname)
+                {
+                    read_dir_state.current_autoload_path =
+                        Some(absolute_dirname.to_path_buf());
+                }
+
+                children.iter_mut().for_each(|child_dir_entry_result| {
+                    if let Ok(child_dir_entry) = child_dir_entry_result {
+                        let child_absolute_dirname = child_dir_entry.path();
+                        child_dir_entry.client_state.current_package_yml =
+                            read_dir_state.current_package_yml.clone();
+                        child_dir_entry.client_state.current_autoload_path =
+                            read_dir_state.current_autoload_path.clone();
+
+                        let relative_path = child_absolute_dirname
+                            .strip_prefix(cloned_absolute_root.as_ref())
+                            .unwrap();
+                        if cloned_excluded_dirs.as_ref().is_match(relative_path)
+                        {
+                            child_dir_entry.read_children_path = None;
+                        }
+                    }
+                });
+            },
+        );
 
     for entry in walk_dir {
         // I was using this to explore what directories were being walked to potentially
@@ -98,6 +191,7 @@ pub(crate) fn walk_directory(
         //     .open("tmp/pks_log.txt")
         //     .unwrap();
         // writeln!(file, "{:?}", entry).unwrap();
+
         let unwrapped_entry = entry.unwrap();
 
         // Note that we could also get the dir from absolute_path.is_dir()
@@ -114,10 +208,42 @@ pub(crate) fn walk_directory(
             .unwrap()
             .to_owned();
 
+        let current_package_yml =
+            &unwrapped_entry.client_state.current_package_yml;
+
+        if &absolute_path == current_package_yml
+            // Ideally, we don't need the second part of this conditional, but it's here
+            // because there is a bug where the root pack doesn't match package_paths.
+            // We know we always want the root pack to be registered, since it's the catch-all pack for
+            // where constants are defined if they are not in another pack.
+            // We can remove this once we fix the bug.
+            && (package_paths_set.is_match(relative_path.parent().unwrap()) || absolute_path.parent().unwrap() == absolute_root)
+        {
+            let pack = Pack::from_path(&absolute_path, &relative_path);
+            included_packs.insert(pack);
+        }
+
         // This could be one line, but I'm keeping it separate for debugging purposes
         if includes_set.is_match(&relative_path) {
             if !excludes_set.is_match(&relative_path) {
                 included_files.insert(absolute_path.clone());
+
+                let autoload_path =
+                    unwrapped_entry.client_state.current_autoload_path;
+                if let Some(autoload_path) = autoload_path {
+                    // dbg!(&absolute_path);
+
+                    let constant =
+                        inferred_constant_from_file_given_autoload_path(
+                            &absolute_path,
+                            &autoload_path,
+                            acronyms,
+                        );
+
+                    if let Some(constant) = constant {
+                        defined_constants.push(constant);
+                    }
+                }
             } else {
                 // println!("file excluded: {}", relative_path.display())
             }
@@ -128,17 +254,6 @@ pub(crate) fn walk_directory(
             //     &raw.include
             // )
         }
-
-        let file_name =
-            relative_path.file_name().expect("expected a file_name");
-
-        if file_name.eq_ignore_ascii_case("package.yml")
-            && (package_paths_set.is_match(relative_path.parent().unwrap())
-                || absolute_path.parent().unwrap() == absolute_root)
-        {
-            let pack = Pack::from_path(&absolute_path, &relative_path);
-            included_packs.insert(pack);
-        }
     }
 
     debug!(target: "perf_events", "Finished directory walk");
@@ -146,6 +261,7 @@ pub(crate) fn walk_directory(
     WalkDirectoryResult {
         included_files,
         included_packs,
+        defined_constants,
     }
 }
 

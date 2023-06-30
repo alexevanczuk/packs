@@ -1,10 +1,8 @@
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
-use crate::packs::parsing::ruby::zeitwerk_utils::get_autoload_paths;
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
-
 use crate::packs::{
     parsing::ruby::packwerk::constant_resolver::ConstantResolver,
     walk_directory,
@@ -59,17 +57,16 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let WalkDirectoryResult {
         included_files,
         included_packs,
+        defined_constants,
     } = walk_directory(absolute_root.to_path_buf(), &raw_config);
 
     let absolute_root = absolute_root.to_path_buf();
     let pack_set = PackSet::build(included_packs);
 
-    let autoload_paths = get_autoload_paths(&pack_set.packs);
-
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
     let constant_resolver =
-        ConstantResolver::create(&absolute_root, autoload_paths);
+        ConstantResolver::create_from_constants(defined_constants);
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
@@ -185,23 +182,6 @@ mod tests {
             },
         ];
 
-        let mut expected_autoload_paths = vec![
-            PathBuf::from("tests/fixtures/simple_app/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/models"),
-            PathBuf::from(
-                "tests/fixtures/simple_app/packs/bar/app/models/concerns",
-            ),
-            PathBuf::from("tests/fixtures/simple_app/packs/bar/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/baz/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/services"),
-            PathBuf::from("tests/fixtures/simple_app/packs/foo/app/views"),
-        ];
-        expected_autoload_paths.sort();
-        let mut actual_autoload_paths =
-            actual.constant_resolver.autoload_paths.clone();
-        actual_autoload_paths.sort();
-
-        assert_eq!(expected_autoload_paths, actual_autoload_paths);
         assert_eq!(expected_packs, actual.pack_set.packs);
 
         assert!(actual.cache_enabled)

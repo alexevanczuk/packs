@@ -1,4 +1,3 @@
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use regex::Regex;
 use tracing::debug;
 
@@ -10,9 +9,6 @@ use std::{
 #[derive(Default)]
 pub struct ConstantResolver {
     fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
-    // Just for testing
-    #[allow(dead_code)]
-    pub(crate) autoload_paths: Vec<PathBuf>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -21,24 +17,29 @@ pub struct Constant {
     pub absolute_path_of_definition: PathBuf,
 }
 
-fn inferred_constant_from_file(
+pub fn inferred_constant_from_file_given_autoload_path(
     absolute_path: &Path,
-    absolute_autoload_path: &PathBuf,
+    autoloaded_portion_of_path: &Path,
     acronyms: &HashSet<String>,
-) -> Constant {
-    let relative_path =
-        absolute_path.strip_prefix(absolute_autoload_path).unwrap();
+) -> Option<Constant> {
+    let relative_path = absolute_path
+        .strip_prefix(autoloaded_portion_of_path)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Could not strip prefix {:?} from {:?}",
+                autoloaded_portion_of_path, absolute_path
+            )
+        });
 
     let relative_path = relative_path.with_extension("");
 
     let relative_path_str = relative_path.to_str().unwrap();
     let fully_qualified_constant_name =
         crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
-
-    Constant {
+    Some(Constant {
         fully_qualified_name: fully_qualified_constant_name,
         absolute_path_of_definition: absolute_path.to_path_buf(),
-    }
+    })
 }
 
 // Load in config/initializers/inflections.rb
@@ -46,7 +47,7 @@ fn inferred_constant_from_file(
 // An inflection takes the form of "inflect.acronym 'API'", so "API" would be the acronym here
 // This is a bit of a hack, but it's the easiest way to get the inflections loaded in
 // TODO: Figure out a better way to do this
-fn get_acronyms_from_disk(absolute_root: &Path) -> HashSet<String> {
+pub fn get_acronyms_from_disk(absolute_root: &Path) -> HashSet<String> {
     let mut acronyms: HashSet<String> = HashSet::new();
 
     let inflections_path =
@@ -69,48 +70,13 @@ fn get_acronyms_from_disk(absolute_root: &Path) -> HashSet<String> {
 
 #[allow(unused_variables)]
 impl ConstantResolver {
-    pub fn create(
-        absolute_root: &Path,
-        autoload_paths: Vec<PathBuf>,
-    ) -> ConstantResolver {
-        // For each autoload path, do the following:
-        // 1) Glob for the ruby files
-        // 2) For each ruby file, remove the autoloaded portion of the path
-        // 3) For the remaining path, remove the .rb extension
-        // 4) For the remaining path, split it by "/"
-        // 5) Call packs::inflector::to_class_case on each element in the vector
-        // 6) Join the vector with ::
-        // 7) Strip the leading "::" from the string
-        // 8) Add the fully qualified constant name to the map, with the value being the absolute path of the file
+    pub fn create_from_constants(constants: Vec<Constant>) -> ConstantResolver {
         let mut fully_qualified_constant_to_constant_map: HashMap<
             String,
             Constant,
         > = HashMap::new();
 
         debug!(target: "perf_events", "Building constant resolver");
-        let acronyms = &get_acronyms_from_disk(absolute_root);
-        let constants: Vec<Constant> = autoload_paths
-            .iter()
-            .par_bridge()
-            .flat_map(|absolute_autoload_path| {
-                let glob_path = absolute_autoload_path.join("**/*.rb");
-
-                let files = glob::glob(glob_path.to_str().unwrap())
-                    .expect("Failed to read glob pattern")
-                    .filter_map(Result::ok);
-
-                files
-                    .par_bridge()
-                    .map(|file| {
-                        inferred_constant_from_file(
-                            &file,
-                            absolute_autoload_path,
-                            acronyms,
-                        )
-                    })
-                    .collect::<Vec<Constant>>()
-            })
-            .collect();
 
         for constant in constants {
             let fully_qualified_constant_name =
@@ -127,7 +93,6 @@ impl ConstantResolver {
 
         ConstantResolver {
             fully_qualified_constant_to_constant_map,
-            autoload_paths,
         }
     }
 
@@ -271,23 +236,38 @@ mod tests {
 
     #[test]
     fn test_file_map() {
-        let paths = vec![PathBuf::from(
-            "tests/fixtures/simple_app/packs/foo/app/services",
-        )];
         let absolute_root = PathBuf::from("tests/fixtures/simple_app")
             .canonicalize()
             .expect("Could not canonicalize path");
 
-        let resolver = ConstantResolver::create(&absolute_root, paths);
+        let resolver = configuration::get(&absolute_root).constant_resolver;
 
         let mut expected_file_map: HashMap<String, Constant> = HashMap::new();
+
+        expected_file_map.insert(
+            "SomeConcern".to_string(),
+            Constant {
+                fully_qualified_name: "SomeConcern".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/bar/app/models/concerns/some_concern.rb"),
+            },
+        );
+
+        expected_file_map.insert(
+            "SomeRootClass".to_string(),
+            Constant {
+                fully_qualified_name: "SomeRootClass".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("app/services/some_root_class.rb"),
+            },
+        );
+
         expected_file_map.insert(
             "Foo".to_string(),
             Constant {
                 fully_qualified_name: "Foo".to_string(),
-                absolute_path_of_definition: PathBuf::from(
-                    "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
-                ),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo.rb"),
             },
         );
 
@@ -295,10 +275,27 @@ mod tests {
             "Foo::Bar".to_string(),
             Constant {
                 fully_qualified_name: "Foo::Bar".to_string(),
-                absolute_path_of_definition: PathBuf::from(
-                    "tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb",
-                ),
-            }
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo/bar.rb"),
+            },
+        );
+
+        expected_file_map.insert(
+            "Bar".to_string(),
+            Constant {
+                fully_qualified_name: "Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/bar/app/services/bar.rb"),
+            },
+        );
+
+        expected_file_map.insert(
+            "Baz".to_string(),
+            Constant {
+                fully_qualified_name: "Baz".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/baz/app/services/baz.rb"),
+            },
         );
 
         let actual_file_map =
