@@ -68,8 +68,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
-    let constant_resolver =
-        ConstantResolver::create(&absolute_root, autoload_paths);
+    let constant_resolver = ConstantResolver::create(
+        &absolute_root,
+        autoload_paths,
+        &cache_directory,
+    );
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
