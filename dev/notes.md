@@ -42,3 +42,8 @@ RUST_LOG=perf_events=debug time cargo run --profile=release -- --project-root=..
 
 # Abandoned Performance Improvement Attempts
 - In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
+
+# Modular Architecture
+Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
+Eventually, I'd like to port this idea over to `packs`.
+We might consider how we can have specific checkers/validators be responsible for their own portion of the deserialized properties in `package.yml` files.
