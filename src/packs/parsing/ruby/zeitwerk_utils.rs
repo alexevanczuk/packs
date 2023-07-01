@@ -216,10 +216,7 @@ fn inferred_constants_from_autoload_paths(
 mod tests {
     use super::*;
     use crate::packs::{
-        configuration,
-        parsing::ruby::packwerk::constant_resolver::{
-            Constant, ConstantResolver,
-        },
+        configuration, parsing::ruby::packwerk::constant_resolver::Constant,
     };
 
     use pretty_assertions::assert_eq;

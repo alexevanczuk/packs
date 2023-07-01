@@ -1,4 +1,4 @@
-mod configuration;
+pub(crate) mod configuration;
 mod raw_configuration;
 use serde::Deserialize;
 use serde::Serialize;
