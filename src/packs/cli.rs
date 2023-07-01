@@ -22,21 +22,23 @@ enum Command {
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
 
-    #[clap(about = "List packs based on configuration in packwerk.yml")]
-    ListPacks,
-
     #[clap(
         about = "`rm -rf` on your cache directory, default `tmp/cache/packwerk`"
     )]
     DeleteCache,
 
     #[clap(
-        about = "List analyzed files based on configuration in packwerk.yml"
+        about = "List packs based on configuration in packwerk.yml (for debugging purposes)"
+    )]
+    ListPacks,
+
+    #[clap(
+        about = "List analyzed files based on configuration in packwerk.yml (for debugging purposes)"
     )]
     ListIncludedFiles,
 
     #[clap(
-        about = "List the constants that packs sees and where it sees them"
+        about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
     ListDefinitions,
 }
