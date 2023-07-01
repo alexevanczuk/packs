@@ -40,7 +40,7 @@ fn test_delete_cache() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
-        .arg("delete_cache")
+        .arg("delete-cache")
         .assert()
         .success();
     common::teardown();

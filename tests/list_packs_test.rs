@@ -7,7 +7,7 @@ fn lint_packs() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
-        .arg("list_packs")
+        .arg("list-packs")
         .assert()
         .success()
         .stdout(predicate::str::contains("package.yml"))

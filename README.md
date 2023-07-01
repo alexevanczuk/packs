@@ -60,7 +60,7 @@ As `packs` is still a work-in-progress, it's possible it will not produce the sa
 
 Instructions:
 - Follow directions above to install `packs`
-- Run `packs delete_cache`
+- Run `packs delete-cache`
 - Run `packs update`
 - Confirm the output of `git diff` is empty
 - Please file an issue if it's not!
