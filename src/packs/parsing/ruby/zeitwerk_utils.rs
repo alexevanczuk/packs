@@ -215,49 +215,83 @@ fn inferred_constants_from_autoload_paths(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::packs::parsing::ruby::packwerk::constant_resolver::{
-        Constant, ConstantResolver,
+    use crate::packs::{
+        configuration,
+        parsing::ruby::packwerk::constant_resolver::{
+            Constant, ConstantResolver,
+        },
     };
+
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn test_file_map() {
-        let paths = vec![PathBuf::from(
-            "tests/fixtures/simple_app/packs/foo/app/services",
-        )];
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
+        let absolute_root = &PathBuf::from("tests/fixtures/simple_app")
             .canonicalize()
             .expect("Could not canonicalize path");
 
-        let constants = inferred_constants_from_autoload_paths(
-            paths,
-            &absolute_root,
-            &absolute_root.join("tmp/cache/packwerk"),
-        );
-        let resolver = ConstantResolver::create(&absolute_root, constants);
+        let configuration = configuration::get(absolute_root);
 
-        let mut expected_file_map: HashMap<String, Constant> = HashMap::new();
-        expected_file_map.insert(
-            "Foo".to_string(),
+        let pack_set = configuration.pack_set;
+
+        let constant_resolver = get_zeitwerk_constant_resolver(
+            &pack_set,
+            absolute_root,
+            &configuration.cache_directory,
+        );
+        let actual_constant_map =
+            constant_resolver.fully_qualified_constant_to_constant_map;
+
+        let mut expected_constant_map = HashMap::new();
+        expected_constant_map.insert(
+            String::from("Foo::Bar"),
             Constant {
-                fully_qualified_name: "Foo".to_string(),
-                absolute_path_of_definition: PathBuf::from(
-                    "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
-                ),
+                fully_qualified_name: "Foo::Bar".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo/bar.rb"),
             },
         );
 
-        expected_file_map.insert(
-        "Foo::Bar".to_string(),
-        Constant {
-            fully_qualified_name: "Foo::Bar".to_string(),
-            absolute_path_of_definition: PathBuf::from(
-                "tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb",
-            ),
-        },
-    );
-
-        let actual_file_map =
-            &resolver.fully_qualified_constant_to_constant_map;
-
-        assert_eq!(&expected_file_map, actual_file_map);
+        expected_constant_map.insert(
+            "Bar".to_owned(),
+            Constant {
+                fully_qualified_name: "Bar".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/bar/app/services/bar.rb"),
+            },
+        );
+        expected_constant_map.insert(
+            "Baz".to_owned(),
+            Constant {
+                fully_qualified_name: "Baz".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/baz/app/services/baz.rb"),
+            },
+        );
+        expected_constant_map.insert(
+            "Foo".to_owned(),
+            Constant {
+                fully_qualified_name: "Foo".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/foo.rb"),
+            },
+        );
+        expected_constant_map.insert(
+            "SomeConcern".to_owned(),
+            Constant {
+                fully_qualified_name: "SomeConcern".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/bar/app/models/concerns/some_concern.rb"),
+            },
+        );
+        expected_constant_map.insert(
+            "SomeRootClass".to_owned(),
+            Constant {
+                fully_qualified_name: "SomeRootClass".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("app/services/some_root_class.rb"),
+            },
+        );
+        assert_eq!(expected_constant_map, actual_constant_map);
     }
 }
