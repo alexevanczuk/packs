@@ -14,98 +14,6 @@ use crate::packs::{
 
 use super::packwerk::constant_resolver::{Constant, ConstantResolver};
 
-#[derive(Serialize, Deserialize)]
-struct ConstantResolverCache {
-    file_definition_map: HashMap<PathBuf, String>,
-}
-
-fn inferred_constant_from_file(
-    absolute_path: &Path,
-    absolute_autoload_path: &PathBuf,
-    acronyms: &HashSet<String>,
-) -> Constant {
-    let relative_path =
-        absolute_path.strip_prefix(absolute_autoload_path).unwrap();
-
-    let relative_path = relative_path.with_extension("");
-
-    let relative_path_str = relative_path.to_str().unwrap();
-    let fully_qualified_constant_name =
-        crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
-
-    Constant {
-        fully_qualified_name: fully_qualified_constant_name,
-        absolute_path_of_definition: absolute_path.to_path_buf(),
-    }
-}
-
-fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
-    let path = cache_dir.join("constant_resolver.json");
-    if path.exists() {
-        let file = std::fs::File::open(path).unwrap();
-        let reader = std::io::BufReader::new(file);
-        serde_json::from_reader(reader).unwrap()
-    } else {
-        ConstantResolverCache {
-            file_definition_map: HashMap::new(),
-        }
-    }
-}
-
-fn cache_constant_definitions(constants: &Vec<Constant>, cache_dir: &Path) {
-    let mut file_definition_map: HashMap<PathBuf, String> = HashMap::new();
-    for constant in constants {
-        file_definition_map.insert(
-            constant.absolute_path_of_definition.clone(),
-            constant.fully_qualified_name.clone(),
-        );
-    }
-
-    let cache_data_json = serde_json::to_string(&ConstantResolverCache {
-        file_definition_map,
-    })
-    .expect("Failed to serialize");
-
-    std::fs::create_dir_all(cache_dir).unwrap();
-    std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
-        .unwrap();
-}
-
-fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
-    let mut autoload_paths: Vec<PathBuf> = Vec::new();
-
-    debug!(
-        target: "perf_events",
-        "Getting autoload paths"
-    );
-
-    for pack in packs {
-        // App paths
-        let app_paths = pack.yml.parent().unwrap().join("app").join("*");
-        let app_glob_pattern = app_paths.to_str().unwrap();
-        process_glob_pattern(app_glob_pattern, &mut autoload_paths);
-
-        // Concerns paths
-        let concerns_paths = pack
-            .yml
-            .parent()
-            .unwrap()
-            .join("app")
-            .join("*")
-            .join("concerns");
-        let concerns_glob_pattern = concerns_paths.to_str().unwrap();
-
-        process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
-    }
-
-    debug!(
-        target: "perf_events",
-        "Finished getting autoload paths"
-    );
-
-    autoload_paths
-}
-
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
     absolute_root: &Path,
@@ -128,6 +36,7 @@ fn inferred_constants_from_pack_set(
         cache_dir,
     )
 }
+
 fn inferred_constants_from_autoload_paths(
     autoload_paths: Vec<PathBuf>,
     absolute_root: &Path,
@@ -210,6 +119,98 @@ fn inferred_constants_from_autoload_paths(
     cache_constant_definitions(&constants, cache_dir);
 
     constants
+}
+
+fn inferred_constant_from_file(
+    absolute_path: &Path,
+    absolute_autoload_path: &PathBuf,
+    acronyms: &HashSet<String>,
+) -> Constant {
+    let relative_path =
+        absolute_path.strip_prefix(absolute_autoload_path).unwrap();
+
+    let relative_path = relative_path.with_extension("");
+
+    let relative_path_str = relative_path.to_str().unwrap();
+    let fully_qualified_constant_name =
+        crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
+
+    Constant {
+        fully_qualified_name: fully_qualified_constant_name,
+        absolute_path_of_definition: absolute_path.to_path_buf(),
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct ConstantResolverCache {
+    file_definition_map: HashMap<PathBuf, String>,
+}
+
+fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
+    let path = cache_dir.join("constant_resolver.json");
+    if path.exists() {
+        let file = std::fs::File::open(path).unwrap();
+        let reader = std::io::BufReader::new(file);
+        serde_json::from_reader(reader).unwrap()
+    } else {
+        ConstantResolverCache {
+            file_definition_map: HashMap::new(),
+        }
+    }
+}
+
+fn cache_constant_definitions(constants: &Vec<Constant>, cache_dir: &Path) {
+    let mut file_definition_map: HashMap<PathBuf, String> = HashMap::new();
+    for constant in constants {
+        file_definition_map.insert(
+            constant.absolute_path_of_definition.clone(),
+            constant.fully_qualified_name.clone(),
+        );
+    }
+
+    let cache_data_json = serde_json::to_string(&ConstantResolverCache {
+        file_definition_map,
+    })
+    .expect("Failed to serialize");
+
+    std::fs::create_dir_all(cache_dir).unwrap();
+    std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
+        .unwrap();
+}
+
+fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
+    let mut autoload_paths: Vec<PathBuf> = Vec::new();
+
+    debug!(
+        target: "perf_events",
+        "Getting autoload paths"
+    );
+
+    for pack in packs {
+        // App paths
+        let app_paths = pack.yml.parent().unwrap().join("app").join("*");
+        let app_glob_pattern = app_paths.to_str().unwrap();
+        process_glob_pattern(app_glob_pattern, &mut autoload_paths);
+
+        // Concerns paths
+        let concerns_paths = pack
+            .yml
+            .parent()
+            .unwrap()
+            .join("app")
+            .join("*")
+            .join("concerns");
+        let concerns_glob_pattern = concerns_paths.to_str().unwrap();
+
+        process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
+    }
+
+    debug!(
+        target: "perf_events",
+        "Finished getting autoload paths"
+    );
+
+    autoload_paths
 }
 
 #[cfg(test)]
