@@ -4,9 +4,6 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
-// We use snake_case as this is currently the conventon for the Ruby ecosystem,
-// and this is a Ruby tool (for now!)
-#[clap(rename_all = "snake_case")]
 enum Command {
     #[clap(about = "Just saying hi")]
     Greet,

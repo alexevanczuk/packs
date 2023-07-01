@@ -31,9 +31,10 @@ Commands:
   check                Look for violations in the codebase
   update               Update package_todo.yml files with the current violations
   validate             Look for validation errors in the codebase
-  list_packs           List packs based on configuration in packwerk.yml
-  delete_cache         `rm -rf` on your cache directory, usually `tmp/cache/packwerk`
-  list_included_files  List analyzed files based on configuration in packwerk.yml
+  delete-cache         `rm -rf` on your cache directory, default `tmp/cache/packwerk`
+  list-packs           List packs based on configuration in packwerk.yml (for debugging purposes)
+  list-included-files  List analyzed files based on configuration in packwerk.yml (for debugging purposes)
+  list-definitions     List the constants that packs sees and where it sees them (for debugging purposes)
   help                 Print this message or the help of the given subcommand(s)
 
 Options:
