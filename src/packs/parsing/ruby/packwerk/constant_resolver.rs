@@ -193,34 +193,26 @@ impl ConstantResolver {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
-    use crate::packs::configuration;
-
     use super::*;
-
+    use crate::test_util::{get_absolute_root, get_resolver, SIMPLE_APP};
     #[test]
     fn unnested_reference_to_unnested_constant() {
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-            .canonicalize()
-            .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
-
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Foo".to_string(),
-                absolute_path_of_definition: absolute_root
+                absolute_path_of_definition: get_absolute_root(SIMPLE_APP)
                     .join("packs/foo/app/services/foo.rb")
             },
-            resolver.resolve(&String::from("Foo"), &[]).unwrap()
+            get_resolver(SIMPLE_APP)
+                .resolve(&String::from("Foo"), &[])
+                .unwrap()
         )
     }
     #[test]
     fn nested_reference_to_unnested_constant() {
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-            .canonicalize()
-            .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
+        let absolute_root = get_absolute_root(SIMPLE_APP);
+        let resolver = get_resolver(SIMPLE_APP);
+
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Foo".to_string(),
@@ -235,10 +227,8 @@ mod tests {
 
     #[test]
     fn nested_reference_to_nested_constant() {
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-            .canonicalize()
-            .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
+        let absolute_root = get_absolute_root(SIMPLE_APP);
+        let resolver = get_resolver(SIMPLE_APP);
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Foo::Bar".to_string(),
@@ -251,10 +241,9 @@ mod tests {
 
     #[test]
     fn nested_reference_to_global_constant() {
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-            .canonicalize()
-            .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
+        let absolute_root = get_absolute_root(SIMPLE_APP);
+        let resolver = get_resolver(SIMPLE_APP);
+
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Bar".to_string(),
@@ -267,10 +256,8 @@ mod tests {
 
     #[test]
     fn nested_reference_to_constant_defined_within_another_file() {
-        let absolute_root = PathBuf::from("tests/fixtures/simple_app")
-            .canonicalize()
-            .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
+        let absolute_root = get_absolute_root(SIMPLE_APP);
+        let resolver = get_resolver(SIMPLE_APP);
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Bar::BAR".to_string(),
@@ -283,11 +270,9 @@ mod tests {
 
     #[test]
     fn inflected_constant() {
-        let absolute_root =
-            PathBuf::from("tests/fixtures/app_with_inflections")
-                .canonicalize()
-                .unwrap();
-        let resolver = configuration::get(&absolute_root).constant_resolver;
+        let app = "tests/fixtures/app_with_inflections";
+        let absolute_root = get_absolute_root(app);
+        let resolver = get_resolver(app);
 
         assert_eq!(
             Constant {
