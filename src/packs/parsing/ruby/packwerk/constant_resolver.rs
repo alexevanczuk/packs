@@ -194,7 +194,10 @@ impl ConstantResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::{get_absolute_root, get_resolver, SIMPLE_APP};
+    use crate::test_util::{
+        get_absolute_root, get_zeitwerk_constant_resolver_for_fixture,
+        SIMPLE_APP,
+    };
     #[test]
     fn unnested_reference_to_unnested_constant() {
         assert_eq!(
@@ -203,7 +206,7 @@ mod tests {
                 absolute_path_of_definition: get_absolute_root(SIMPLE_APP)
                     .join("packs/foo/app/services/foo.rb")
             },
-            get_resolver(SIMPLE_APP)
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
                 .resolve(&String::from("Foo"), &[])
                 .unwrap()
         )
@@ -212,7 +215,7 @@ mod tests {
     #[test]
     fn nested_reference_to_unnested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_resolver(SIMPLE_APP);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
             Constant {
@@ -229,7 +232,7 @@ mod tests {
     #[test]
     fn nested_reference_to_nested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_resolver(SIMPLE_APP);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Foo::Bar".to_string(),
@@ -243,7 +246,7 @@ mod tests {
     #[test]
     fn nested_reference_to_global_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_resolver(SIMPLE_APP);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
             Constant {
@@ -258,7 +261,7 @@ mod tests {
     #[test]
     fn nested_reference_to_constant_defined_within_another_file() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_resolver(SIMPLE_APP);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
             Constant {
                 fully_qualified_name: "::Bar::BAR".to_string(),
@@ -273,7 +276,7 @@ mod tests {
     fn inflected_constant() {
         let app = "tests/fixtures/app_with_inflections";
         let absolute_root = get_absolute_root(app);
-        let resolver = get_resolver(app);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(app);
 
         assert_eq!(
             Constant {

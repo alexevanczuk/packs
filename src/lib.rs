@@ -17,7 +17,9 @@ pub(crate) mod test_util {
         PathBuf::from(fixture_name).canonicalize().unwrap()
     }
 
-    pub fn get_resolver(fixture_name: &str) -> ConstantResolver {
+    pub fn get_zeitwerk_constant_resolver_for_fixture(
+        fixture_name: &str,
+    ) -> ConstantResolver {
         let absolute_root = get_absolute_root(fixture_name);
         let configuration = configuration::get(&absolute_root);
 
