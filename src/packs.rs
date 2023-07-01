@@ -268,6 +268,14 @@ impl Pack {
     }
 }
 
+pub(crate) fn list_definitions(configuration: Configuration) {
+    dbg!(
+        configuration
+            .constant_resolver
+            .fully_qualified_constant_to_constant_map
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

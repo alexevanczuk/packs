@@ -26,7 +26,7 @@ enum Command {
     ListPacks,
 
     #[clap(
-        about = "`rm -rf` on your cache directory, usually `tmp/cache/packwerk`"
+        about = "`rm -rf` on your cache directory, default `tmp/cache/packwerk`"
     )]
     DeleteCache,
 
@@ -34,6 +34,11 @@ enum Command {
         about = "List analyzed files based on configuration in packwerk.yml"
     )]
     ListIncludedFiles,
+
+    #[clap(
+        about = "List the constants that packs sees and where it sees them"
+    )]
+    ListDefinitions,
 }
 
 /// A CLI to interact with packs
@@ -83,6 +88,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::Validate => Err("💡 This command is coming soon!".into()),
         Command::DeleteCache => {
             packs::delete_cache(configuration);
+            Ok(())
+        }
+        Command::ListDefinitions => {
+            packs::list_definitions(configuration);
             Ok(())
         }
     }
