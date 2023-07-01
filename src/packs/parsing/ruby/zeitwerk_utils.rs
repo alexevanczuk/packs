@@ -12,7 +12,7 @@ use crate::packs::{
     parsing::ruby::rails_utils::get_acronyms_from_disk, Pack, PackSet,
 };
 
-use super::packwerk::constant_resolver::Constant;
+use super::packwerk::constant_resolver::{Constant, ConstantResolver};
 
 #[derive(Serialize, Deserialize)]
 struct ConstantResolverCache {
@@ -106,7 +106,17 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
     autoload_paths
 }
 
-pub fn inferred_constants_from_pack_set(
+pub fn get_zeitwerk_constant_resolver(
+    pack_set: &PackSet,
+    absolute_root: &Path,
+    cache_dir: &Path,
+) -> ConstantResolver {
+    let constants =
+        inferred_constants_from_pack_set(pack_set, absolute_root, cache_dir);
+    ConstantResolver::create(absolute_root, constants)
+}
+
+fn inferred_constants_from_pack_set(
     pack_set: &PackSet,
     absolute_root: &Path,
     cache_dir: &Path,

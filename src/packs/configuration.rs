@@ -1,7 +1,7 @@
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
-use crate::packs::parsing::ruby::zeitwerk_utils::inferred_constants_from_pack_set;
+use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
 
@@ -66,12 +66,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
-    let constants = inferred_constants_from_pack_set(
+    let constant_resolver = get_zeitwerk_constant_resolver(
         &pack_set,
         &absolute_root,
         &cache_directory,
     );
-    let constant_resolver = ConstantResolver::create(&absolute_root, constants);
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
