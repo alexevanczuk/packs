@@ -208,6 +208,7 @@ mod tests {
                 .unwrap()
         )
     }
+
     #[test]
     fn nested_reference_to_unnested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
