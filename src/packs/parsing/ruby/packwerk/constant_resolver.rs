@@ -23,9 +23,9 @@ impl ConstantResolver {
         absolute_root: &Path,
         constants: Vec<Constant>,
     ) -> ConstantResolver {
-        debug!(target: "perf_events", "Building constant resolver");
+        debug!("Building constant resolver");
 
-        debug!(target: "perf_events", "Building constant resolver from constants vector");
+        debug!("Building constant resolver from constants vector");
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
             String,
@@ -51,10 +51,7 @@ impl ConstantResolver {
             }
         }
 
-        debug!(
-            target: "perf_events",
-            "Finished building constant resolver"
-        );
+        debug!("Finished building constant resolver");
 
         ConstantResolver {
             fully_qualified_constant_to_constant_map,

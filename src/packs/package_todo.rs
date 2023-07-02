@@ -133,10 +133,7 @@ pub fn write_violations_to_disk(
     configuration: Configuration,
     violations: Vec<Violation>,
 ) {
-    debug!(
-        target: "perf_events",
-        "Starting writing violations to disk"
-    );
+    debug!("Starting writing violations to disk");
     // First we need to group the violations by the repsonsible pack, which today is always the referencing pack
     // Later if we change where a violation shows up, we should delegate to the checker
     // to decide what pack it should be in.
@@ -162,10 +159,7 @@ pub fn write_violations_to_disk(
         );
     }
 
-    debug!(
-        target: "perf_events",
-        "Finished writing violations to disk"
-    );
+    debug!("Finished writing violations to disk");
 }
 
 fn serialize_package_todo(

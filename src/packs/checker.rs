@@ -149,29 +149,20 @@ pub(crate) fn check(
         cache_dir: configuration.cache_directory.to_owned(),
     };
 
-    debug!(
-        target: "perf_events",
-        "Interecting input files with configuration included files"
-    );
+    debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let violations: Vec<Violation> =
         get_all_violations(&configuration, absolute_paths, cache);
     let recorded_violations = configuration.pack_set.all_violations;
 
-    debug!(
-        target: "perf_events",
-        "Filtering out recorded violations"
-    );
+    debug!("Filtering out recorded violations");
     let unrecorded_violations = violations
         .iter()
         .filter(|v| !recorded_violations.contains(&v.identifier))
         .collect::<Vec<&Violation>>();
 
-    debug!(
-        target: "perf_events",
-        "Finished filtering out recorded violations"
-    );
+    debug!("Finished filtering out recorded violations");
 
     if !unrecorded_violations.is_empty() {
         for violation in unrecorded_violations.iter() {
@@ -212,10 +203,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
     // TODO: Write a test that if this isn't here, it fails gracefully
     create_cache_dir_idempotently(&configuration.cache_directory);
 
-    debug!(
-        target: "perf_events",
-        "Getting unresolved references (using cache if possible)"
-    );
+    debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
         &absolute_paths,
@@ -228,10 +216,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
         &configuration.cache_directory,
     );
 
-    debug!(
-        target: "perf_events",
-        "Turning unresolved references into fully qualified references"
-    );
+    debug!("Turning unresolved references into fully qualified references");
     let references: Vec<Reference> = processed_files
         .into_par_iter()
         .flat_map(|processed_file| {
@@ -253,12 +238,9 @@ fn get_all_violations<T: Cache + Send + Sync>(
             references
         })
         .collect();
-    debug!(target: "perf_events", "Finished turning unresolved references into fully qualified references");
+    debug!("Finished turning unresolved references into fully qualified references");
 
-    debug!(
-        target: "perf_events",
-        "Running checkers on resolved references"
-    );
+    debug!("Running checkers on resolved references");
     let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
         Box::new(dependency::Checker {}),
         Box::new(privacy::Checker {}),
@@ -276,7 +258,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
                 .collect::<Vec<Violation>>()
         })
         .collect();
-    debug!(target: "perf_events", "Finished running checkers");
+    debug!("Finished running checkers");
 
     violations
 }
