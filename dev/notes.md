@@ -1,13 +1,20 @@
 # TODO
+
+## Refactors
+- do not use cache anywhere in tests
+
+## Features
 - Explore alternate extractor (below)
+- Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
+
+## Performance
 - Explore alternate caching mechanisms:
   - Convert existing cache to be `PackwerkCompatibleCache`.
   - Consider using SQLite cache (for less file IO)
   - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
 - Reduce cost of packs::for_file by building cache during directory walk, see https://github.com/alexevanczuk/packs/pull/46 for starter
-- Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
 
-## Distribution
+# Distribution Considerations
 - Sign the binary
 - Distribute with brew: https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
 - Add directions to download via some other tool, or ship as a native ruby gem extension.
