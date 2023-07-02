@@ -28,6 +28,7 @@ pub fn process_file(path: &Path) -> ProcessedFile {
         ProcessedFile {
             absolute_path: path.to_path_buf(),
             unresolved_references: vec![],
+            definitions: vec![], // TODO
         }
     }
 }

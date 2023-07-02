@@ -43,5 +43,6 @@ pub(crate) fn process_from_contents(
     ProcessedFile {
         absolute_path: path.to_path_buf(),
         unresolved_references: references_without_range,
+        definitions: vec![],
     }
 }

@@ -1,8 +1,5 @@
 # TODO
-- Explore alternate implementation of extractor that does not use constant resolver but instead actually gets definitions – implement it with an optional flag in packwerk.yml and/or CLI flag.
-  - This feature should have a "monkeypatches" key in packwerk.yml. This is a hash of constants and what file monkey patches them. "Validate" should check this. This can allow the alternate implementation to avoid violations on a monkey patched "String" class, for example.
-  - This parser thinks a constant can be defined in many places. For each place, it establishes one reference.
-  - This parser does not consider definitions to be references. (This is a bug in the current implementation – see below.)
+- Explore alternate extractor (below)
 - Explore alternate caching mechanisms:
   - Convert existing cache to be `PackwerkCompatibleCache`.
   - Consider using SQLite cache (for less file IO)
@@ -49,3 +46,16 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
 Eventually, I'd like to port this idea over to `packs`.
 We might consider how we can have specific checkers/validators be responsible for their own portion of the deserialized properties in `package.yml` files.
+
+# Alternate Extractor
+The alternate extractor is an experimental implementation of the extractor that does not infer constants from file names, but instead parses them directly.
+
+## Implementation Notes:
+- Allow it to be configured with cmd line argument, e.g. `--extractor=experimental` or packwerk.yml flag
+- This feature should have a "monkeypatches" key in packwerk.yml. This is a hash of constants and what file monkey patches them. "Validate" should check this. This can allow the alternate implementation to avoid violations on a monkey patched "String" class, for example.
+- This parser thinks a constant can be defined in many places. For each place, it establishes one reference.
+- This parser does not consider definitions to be references. (This is a bug in the current implementation – see above.)
+
+## Sequencing
+- Implement
+- Announce it, share learnings, and demo it at guild meeting

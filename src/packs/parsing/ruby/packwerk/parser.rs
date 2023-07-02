@@ -22,7 +22,7 @@ struct SuperclassReference {
     pub namespace_path: Vec<String>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Definition {
     pub fully_qualified_name: String,
     pub location: Range,
@@ -412,6 +412,7 @@ pub(crate) fn process_from_contents(
             return ProcessedFile {
                 absolute_path: path.to_owned(),
                 unresolved_references: vec![],
+                definitions: vec![],
             }
         }
     };
@@ -429,7 +430,7 @@ pub(crate) fn process_from_contents(
 
     let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
 
-    for d in collector.definitions {
+    for d in &collector.definitions {
         let parts: Vec<&str> = d.fully_qualified_name.split("::").collect();
         // We do this to handle nested constants, e.g.
         // class Foo::Bar
@@ -478,8 +479,12 @@ pub(crate) fn process_from_contents(
         })
         .collect();
 
+    // The packwerk parser uses a ConstantResolver constructed by constants inferred from the file system
+    // see zeitwerk_utils for more.
+    // For a parser that uses parsed constants, see the experimental parser
     ProcessedFile {
         absolute_path: path.to_owned(),
         unresolved_references: references,
+        definitions: vec![],
     }
 }
