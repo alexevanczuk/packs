@@ -16,14 +16,19 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile {
+    fn process_file(
+        &self,
+        absolute_root: &Path,
+        path: &Path,
+        experimental_parser: bool,
+    ) -> ProcessedFile {
         let cachable_file =
             CachableFile::from(absolute_root, &self.cache_dir, path);
 
         if cachable_file.cache_is_valid() {
             cachable_file.cache_entry.unwrap().processed_file()
         } else {
-            let processed_file = process_file(path);
+            let processed_file = process_file(path, experimental_parser);
             write_cache(&cachable_file, processed_file.clone());
 
             processed_file

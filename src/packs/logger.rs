@@ -30,11 +30,12 @@ pub fn install_logger(debug: bool) {
         .with_line_number(true);
 
     if debug {
-        // If debug mode is on, let's always show the full backtrace,
+        // If debug mode is on, let's always show the backtrace,
         // which helps make debugging panic messages simpler.
         // There may be a more standard way to do this than setting the backtrace,
         // but it works for now.
-        std::env::set_var("RUST_BACKTRACE", "full");
+        // Note another value instead of "1" is "FULL". For now, "1" is enough.
+        std::env::set_var("RUST_BACKTRACE", "1");
 
         // Let's also set the log level to be debug with this flag.
         let subscriber_builder =
