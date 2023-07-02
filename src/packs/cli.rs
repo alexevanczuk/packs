@@ -70,6 +70,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let absolute_root = args
         .absolute_project_root()
         .expect("Issue getting absolute_project_root!");
+
     install_logger(args.debug);
 
     let configuration = packs::configuration::get(&absolute_root);
@@ -98,6 +99,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::ListDefinitions => {
+            panic!("This command is not yet implemented");
             // TODO: This and other commands that fetch the constant resolver
             // Should respect the configuration flag.
             let constant_resolver = get_zeitwerk_constant_resolver(
