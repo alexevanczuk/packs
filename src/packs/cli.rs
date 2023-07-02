@@ -2,7 +2,6 @@ use crate::packs;
 use crate::packs::checker;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use tracing::debug;
 
 use super::logger::install_logger;
 use super::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
@@ -78,12 +77,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     install_logger(args.debug);
 
-    let mut configuration = packs::configuration::get(&absolute_root);
+    let configuration = packs::configuration::get(&absolute_root);
 
     if args.experimental_parser {
-        debug!("Using experimental parser");
-
-        configuration = configuration.with_experimental_parser();
+        // debug!("Using experimental parser");
+        // configuration = configuration.with_experimental_parser();
+        panic!("The experimental parser is coming soon!")
     }
 
     match args.command {

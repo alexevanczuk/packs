@@ -18,6 +18,7 @@ use super::{
 
 pub fn process_file(path: &Path, experimental_parser: bool) -> ProcessedFile {
     let file_type_option = get_file_type(path);
+
     if let Some(file_type) = file_type_option {
         match file_type {
             SupportedFileType::Ruby => {

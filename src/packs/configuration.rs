@@ -44,6 +44,7 @@ impl Configuration {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn with_experimental_parser(self) -> Configuration {
         Configuration {
             experimental_parser: true,
