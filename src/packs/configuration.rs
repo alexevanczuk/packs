@@ -22,6 +22,7 @@ pub struct Configuration {
     pub cache_directory: PathBuf,
     pub pack_set: PackSet,
     pub layers: Layers,
+    pub experimental_parser: bool,
 }
 
 impl Configuration {
@@ -59,6 +60,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
+    let experimental_parser = raw_config.experimental_parser;
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
@@ -73,6 +75,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         cache_directory,
         pack_set,
         layers,
+        experimental_parser,
     }
 }
 
