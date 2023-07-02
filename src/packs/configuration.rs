@@ -45,10 +45,7 @@ impl Configuration {
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
-    debug!(
-        target: "perf_events",
-        "Beginning to build configuration"
-    );
+    debug!("Beginning to build configuration");
 
     let raw_config = raw_configuration::get(absolute_root);
 
@@ -67,10 +64,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         layers: raw_config.architecture_layers,
     };
 
-    debug!(
-        target: "perf_events",
-        "Finished building configuration"
-    );
+    debug!("Finished building configuration");
 
     Configuration {
         included_files,

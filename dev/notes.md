@@ -33,7 +33,7 @@ For more, see: https://nnethercote.github.io/perf-book/profiling.html
 # Local Development
 ## Running the CLI in release mode against a target app
 ```
-RUST_LOG=perf_events=debug time cargo run --profile=release -- --project-root=../your_app check
+time cargo run --profile=release -- --debug --project-root=../your_app check
 ```
 
 # Packwerk Implementation Considerations

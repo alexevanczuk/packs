@@ -21,7 +21,7 @@ pub(crate) fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
 ) -> WalkDirectoryResult {
-    debug!(target: "perf_events", "Beginning directory walk");
+    debug!("Beginning directory walk");
 
     let mut included_files: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
@@ -141,7 +141,7 @@ pub(crate) fn walk_directory(
         }
     }
 
-    debug!(target: "perf_events", "Finished directory walk");
+    debug!("Finished directory walk");
 
     WalkDirectoryResult {
         included_files,

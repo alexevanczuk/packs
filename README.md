@@ -39,6 +39,7 @@ Commands:
 
 Options:
       --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]
+  -d, --debug                        Run with debug mode
   -h, --help                         Print help
   -V, --version                      Print version
 ```

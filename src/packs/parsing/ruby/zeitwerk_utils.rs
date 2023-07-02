@@ -42,10 +42,10 @@ fn inferred_constants_from_autoload_paths(
     absolute_root: &Path,
     cache_dir: &Path,
 ) -> Vec<Constant> {
-    debug!(target: "perf_events", "Get constant resolver cache");
+    debug!("Get constant resolver cache");
     let cache_data = get_constant_resolver_cache(cache_dir);
 
-    debug!(target: "perf_events", "Globbing out autoload paths");
+    debug!("Globbing out autoload paths");
     // First, we get a map of each autoload path to the files they map to.
     let autoload_paths_to_their_globbed_files = autoload_paths
         .into_iter()
@@ -62,7 +62,7 @@ fn inferred_constants_from_autoload_paths(
         })
         .collect::<HashMap<PathBuf, Vec<PathBuf>>>();
 
-    debug!(target: "perf_events", "Finding autoload path for each file");
+    debug!("Finding autoload path for each file");
     // Then, we want to know *which* autoload path is the one that defines a given constant.
     // The longest autoload path should be the one that does this.
     // For example, if we have two autoload paths:
@@ -89,10 +89,10 @@ fn inferred_constants_from_autoload_paths(
         }
     }
 
-    debug!(target: "perf_events", "Getting acronyms from disk");
+    debug!("Getting acronyms from disk");
     let acronyms = &get_acronyms_from_disk(absolute_root);
 
-    debug!(target: "perf_events", "Inferring constants from file name (using cache)");
+    debug!("Inferring constants from file name (using cache)");
     let constants: Vec<Constant> = file_to_longest_path
         .into_iter()
         .par_bridge()
@@ -115,7 +115,7 @@ fn inferred_constants_from_autoload_paths(
         })
         .collect::<Vec<Constant>>();
 
-    debug!(target: "perf_events", "Caching constant definitions");
+    debug!("Caching constant definitions");
     cache_constant_definitions(&constants, cache_dir);
 
     constants
@@ -181,10 +181,7 @@ fn cache_constant_definitions(constants: &Vec<Constant>, cache_dir: &Path) {
 fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
     let mut autoload_paths: Vec<PathBuf> = Vec::new();
 
-    debug!(
-        target: "perf_events",
-        "Getting autoload paths"
-    );
+    debug!("Getting autoload paths");
 
     for pack in packs {
         // App paths
@@ -205,10 +202,7 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
         process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
     }
 
-    debug!(
-        target: "perf_events",
-        "Finished getting autoload paths"
-    );
+    debug!("Finished getting autoload paths");
 
     autoload_paths
 }

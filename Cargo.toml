@@ -34,7 +34,7 @@ rayon = "1.7.0" # for parallel iteration
 regex = "1.7.3"
 serde = { version = "~1", features = ["derive"] } # de(serialization)
 serde_yaml = "0.9.19"
-tracing = "0.1.37" # observability tooling, may not be necessary!
+tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 glob = "0.3.1"
 lib-ruby-parser = "4.0.4"
