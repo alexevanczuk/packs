@@ -8,13 +8,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-};
-
-use crate::packs::parsing::ruby::namespace_calculator;
+use std::{collections::HashSet, fs, path::Path};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {
@@ -22,32 +16,11 @@ struct SuperclassReference {
     pub namespace_path: Vec<String>,
 }
 
-impl UnresolvedReference {
-    fn possible_fully_qualified_constants(&self) -> Vec<String> {
-        if self.name.starts_with("::") {
-            return vec![self.name.to_owned()];
-        }
-
-        let mut possible_constants = vec![self.name.to_owned()];
-        let module_nesting = namespace_calculator::calculate_module_nesting(
-            &self.namespace_path,
-        );
-        for nesting in module_nesting {
-            let possible_constant = format!("::{}::{}", nesting, self.name);
-            possible_constants.push(possible_constant);
-        }
-
-        possible_constants
-    }
-}
-
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
-    pub in_superclass: bool,
-    pub superclasses: Vec<SuperclassReference>,
 }
 
 #[derive(Debug)]
@@ -120,9 +93,9 @@ fn get_definition_from(
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
         let mut name_components = owned_namespace_path.clone();
         name_components.push(name);
-        format!("::{}", name_components.join("::"))
+        name_components.join("::")
     } else {
-        format!("::{}", name)
+        name
     };
 
     Definition {
@@ -172,10 +145,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let namespace = namespace_result.unwrap();
 
         if let Some(inner) = node.superclass.as_ref() {
-            // dbg!("Visiting superclass!: {:?}", inner);
-            self.in_superclass = true;
             self.visit(inner);
-            self.in_superclass = false;
         }
         let definition_loc = fetch_node_location(&node.name).unwrap();
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
@@ -190,24 +160,13 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
-
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
         self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
 
         if let Some(inner) = &node.body {
             self.visit(inner);
         }
 
         self.current_namespaces.pop();
-        self.superclasses.pop();
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
@@ -280,9 +239,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let fully_qualified_name = if !self.current_namespaces.is_empty() {
             let mut name_components = self.current_namespaces.clone();
             name_components.push(name);
-            format!("::{}", name_components.join("::"))
+            name_components.join("::")
         } else {
-            format!("::{}", name)
+            name
         };
 
         self.definitions.push(Definition {
@@ -316,17 +275,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // just keep current namespaces as a vector of string references or something else
         // more efficient?
         self.current_namespaces.push(namespace);
-
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
         self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
 
         if let Some(inner) = &node.body {
             self.visit(inner);
@@ -338,35 +287,12 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_const(&mut self, node: &nodes::Const) {
         let Ok(name) = fetch_const_const_name(node) else { return };
 
-        if self.in_superclass {
-            self.superclasses.push(SuperclassReference {
-                name: name.to_owned(),
-                namespace_path: self.current_namespaces.to_owned(),
-            })
-        }
-        // In packwerk, NodeHelpers.enclosing_namespace_path ignores
-        // namespaces where a superclass OR namespace is the same as the current reference name
-        let matching_superclass_option = self
-            .superclasses
-            .iter()
-            .find(|superclass| superclass.name == name);
-
-        let namespace_path =
-            if let Some(matching_superclass) = matching_superclass_option {
-                matching_superclass.namespace_path.to_owned()
-            } else {
-                self.current_namespaces
-                    .clone()
-                    .into_iter()
-                    .filter(|namespace| {
-                        namespace != &name
-                            || self
-                                .superclasses
-                                .iter()
-                                .any(|superclass| superclass.name == name)
-                    })
-                    .collect::<Vec<String>>()
-            };
+        let namespace_path = self
+            .current_namespaces
+            .clone()
+            .into_iter()
+            .filter(|namespace| namespace != &name)
+            .collect::<Vec<String>>();
 
         self.references.push(UnresolvedReference {
             name,
@@ -415,69 +341,15 @@ pub(crate) fn process_from_contents(
         current_namespaces: vec![],
         definitions: vec![],
         line_col_lookup: lookup,
-        in_superclass: false,
-        superclasses: vec![],
     };
 
     collector.visit(&ast);
 
-    let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
+    let references = collector.references;
 
-    for d in &collector.definitions {
-        let parts: Vec<&str> = d.fully_qualified_name.split("::").collect();
-        // We do this to handle nested constants, e.g.
-        // class Foo::Bar
-        // end
-        for (index, _) in parts.iter().enumerate() {
-            let combined = &parts[..=index].join("::");
-            // If the map already contains the key, skip it.
-            // This is helpful, e.g.
-            // class Foo::Bar
-            //  BAZ
-            // end
-            // The fully name for BAZ IS ::Foo::Bar::BAZ, so we do not want to overwrite
-            // the definition location for ::Foo or ::Foo::Bar
-            if !definition_to_location_map.contains_key(combined) {
-                definition_to_location_map
-                    .insert(combined.to_owned(), d.location.clone());
-            }
-        }
-    }
-
-    let references = collector
-        .references
-        .into_iter()
-        .filter(|r| {
-            let mut should_ignore_local_reference = false;
-            let possible_constants = r.possible_fully_qualified_constants();
-            for constant_name in possible_constants {
-                if let Some(location) = definition_to_location_map
-                    .get(&constant_name)
-                    .or(definition_to_location_map
-                        .get(&format!("::{}", constant_name)))
-                {
-                    let reference_is_definition = location.start_row
-                        == r.location.start_row
-                        && location.start_col == r.location.start_col;
-                    // In lib/packwerk/parsed_constant_definitions.rb, we don't count references when the reference is in the same place as the definition
-                    // This is an idiosyncracy we are porting over here for behavioral alignment, although we might be doing some unnecessary work.
-                    if reference_is_definition {
-                        should_ignore_local_reference = false
-                    } else {
-                        should_ignore_local_reference = true
-                    }
-                }
-            }
-            !should_ignore_local_reference
-        })
-        .collect();
-
-    // The packwerk parser uses a ConstantResolver constructed by constants inferred from the file system
-    // see zeitwerk_utils for more.
-    // For a parser that uses parsed constants, see the experimental parser
     ProcessedFile {
         absolute_path: path.to_owned(),
         unresolved_references: references,
-        definitions: vec![],
+        definitions: collector.definitions,
     }
 }

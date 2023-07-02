@@ -4,7 +4,7 @@ use crate::packs::{
 };
 use std::{fs, path::Path};
 
-use crate::packs::parsing::ruby::packwerk::parser::process_from_contents as process_from_ruby_contents;
+use crate::packs::parsing::ruby::experimental::parser::process_from_contents as process_from_ruby_contents;
 
 pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {

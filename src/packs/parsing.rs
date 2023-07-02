@@ -5,9 +5,12 @@ use std::{
 };
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+pub(crate) use ruby::experimental::parser::process_from_path as process_from_ruby_path_experimental;
 pub(crate) use ruby::packwerk::parser::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
+pub(crate) use erb::experimental::parser::process_from_path as process_from_erb_path_experimental;
 pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
+
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -15,12 +18,24 @@ use super::{
     ProcessedFile,
 };
 
-pub fn process_file(path: &Path) -> ProcessedFile {
+pub fn process_file(path: &Path, experimental_parser: bool) -> ProcessedFile {
     let file_type_option = get_file_type(path);
     if let Some(file_type) = file_type_option {
         match file_type {
-            SupportedFileType::Ruby => process_from_ruby_path(path),
-            SupportedFileType::Erb => process_from_erb_path(path),
+            SupportedFileType::Ruby => {
+                if experimental_parser {
+                    process_from_ruby_path_experimental(path)
+                } else {
+                    process_from_ruby_path(path)
+                }
+            }
+            SupportedFileType::Erb => {
+                if experimental_parser {
+                    process_from_erb_path_experimental(path)
+                } else {
+                    process_from_erb_path(path)
+                }
+            }
         }
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
@@ -48,19 +63,36 @@ pub struct Range {
     pub end_col: usize,
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct Definition {
+    pub fully_qualified_name: String,
+    pub location: Range,
+    pub namespace_path: Vec<String>,
+}
+
 pub trait Cache {
-    fn process_file(&self, absolute_root: &Path, path: &Path) -> ProcessedFile;
+    fn process_file(
+        &self,
+        absolute_root: &Path,
+        path: &Path,
+        experimental_parser: bool,
+    ) -> ProcessedFile;
 }
 
 pub fn process_files_with_cache<T: Cache + Send + Sync>(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
     cache: T,
+    experimental_parser: bool,
 ) -> Vec<ProcessedFile> {
     paths
         .into_par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            cache.process_file(absolute_root, absolute_path)
+            cache.process_file(
+                absolute_root,
+                absolute_path,
+                experimental_parser,
+            )
         })
         .collect()
 }

@@ -7,11 +7,13 @@ use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
 use rayon::prelude::IntoParallelIterator;
+use rayon::prelude::ParallelBridge;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
+use super::parsing::ruby::packwerk::constant_resolver::Constant;
 use super::parsing::{
     ruby::packwerk::constant_resolver::ConstantResolver, Cache,
 };
@@ -208,15 +210,26 @@ fn get_all_violations<T: Cache + Send + Sync>(
         &configuration.absolute_root,
         &absolute_paths,
         cache,
-    );
-
-    let constant_resolver = get_zeitwerk_constant_resolver(
-        &configuration.pack_set,
-        &configuration.absolute_root,
-        &configuration.cache_directory,
+        configuration.experimental_parser,
     );
 
     debug!("Turning unresolved references into fully qualified references");
+    // TODO: This and other places should change how they create the constant resolver
+    // based on configuration
+    // We might want to return this in a thread that joins before we use it. Might not make any sense though
+
+    let constant_resolver = if configuration.experimental_parser {
+        let constants = get_defined_constants_from(&processed_files);
+
+        ConstantResolver::create(&configuration.absolute_root, constants)
+    } else {
+        get_zeitwerk_constant_resolver(
+            &configuration.pack_set,
+            &configuration.absolute_root,
+            &configuration.cache_directory,
+        )
+    };
+
     let references: Vec<Reference> = processed_files
         .into_par_iter()
         .flat_map(|processed_file| {
@@ -261,4 +274,28 @@ fn get_all_violations<T: Cache + Send + Sync>(
     debug!("Finished running checkers");
 
     violations
+}
+
+fn get_defined_constants_from(
+    processed_files: &[ProcessedFile],
+) -> Vec<Constant> {
+    processed_files
+        .iter()
+        .par_bridge()
+        .flat_map(|processed_file| {
+            // Convert definition to Constant
+            processed_file
+                .definitions
+                .iter()
+                .par_bridge()
+                .map(|definition| Constant {
+                    fully_qualified_name: definition
+                        .fully_qualified_name
+                        .clone(),
+                    absolute_path_of_definition: processed_file
+                        .absolute_path
+                        .to_owned(),
+                })
+        })
+        .collect()
 }

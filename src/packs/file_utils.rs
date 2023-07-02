@@ -4,6 +4,7 @@ use std::{
 };
 
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
+use regex::Regex;
 
 #[derive(PartialEq, Debug)]
 pub enum SupportedFileType {
@@ -83,4 +84,16 @@ pub fn user_inputted_paths_to_absolute_filepaths(
             }
         })
         .collect::<HashSet<_>>()
+}
+
+pub(crate) fn convert_erb_to_mangled_ruby(contents: String) -> String {
+    let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*-?%>"#;
+    let regex = Regex::new(regex_pattern).unwrap();
+
+    let extracted_contents: Vec<&str> = regex
+        .captures_iter(&contents)
+        .map(|capture| capture.get(1).unwrap().as_str())
+        .collect();
+
+    extracted_contents.join("\n")
 }
