@@ -2,6 +2,7 @@ use crate::packs;
 use crate::packs::checker;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use tracing::debug;
 
 use super::logger::install_logger;
 use super::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
@@ -77,7 +78,13 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     install_logger(args.debug);
 
-    let configuration = packs::configuration::get(&absolute_root);
+    let mut configuration = packs::configuration::get(&absolute_root);
+
+    if args.experimental_parser {
+        debug!("Using experimental parser");
+
+        configuration = configuration.with_experimental_parser();
+    }
 
     match args.command {
         Command::Greet => {
@@ -95,7 +102,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .for_each(|f| println!("{}", f.display()));
             Ok(())
         }
-        Command::Check { files } => checker::check(configuration, files),
+        Command::Check { files } => checker::check_all(configuration, files),
         Command::Update => checker::update(configuration),
         Command::Validate => Err("💡 This command is coming soon!".into()),
         Command::DeleteCache => {
@@ -103,13 +110,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::ListDefinitions => {
-            // TODO: This and other commands that fetch the constant resolver
-            // Should respect the configuration flag.
-            let constant_resolver = get_zeitwerk_constant_resolver(
-                &configuration.pack_set,
-                &absolute_root,
-                &configuration.cache_directory,
-            );
+            let constant_resolver = if configuration.experimental_parser {
+                panic!("The experimental parser is coming soon!")
+            } else {
+                get_zeitwerk_constant_resolver(
+                    &configuration.pack_set,
+                    &configuration.absolute_root,
+                    &configuration.cache_directory,
+                )
+            };
+
             packs::list_definitions(&constant_resolver);
             Ok(())
         }

@@ -1,6 +1,6 @@
 use crate::packs::{
     inflector_shim::to_class_case,
-    parsing::{Range, UnresolvedReference},
+    parsing::{Definition, Range, UnresolvedReference},
     ProcessedFile,
 };
 use lib_ruby_parser::{
@@ -19,13 +19,6 @@ use crate::packs::parsing::ruby::namespace_calculator;
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {
     pub name: String,
-    pub namespace_path: Vec<String>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub struct Definition {
-    pub fully_qualified_name: String,
-    pub location: Range,
     pub namespace_path: Vec<String>,
 }
 
@@ -451,7 +444,7 @@ pub(crate) fn process_from_contents(
         }
     }
 
-    let references = collector
+    let unresolved_references = collector
         .references
         .into_iter()
         .filter(|r| {
@@ -479,12 +472,16 @@ pub(crate) fn process_from_contents(
         })
         .collect();
 
+    let absolute_path = path.to_owned();
+
     // The packwerk parser uses a ConstantResolver constructed by constants inferred from the file system
     // see zeitwerk_utils for more.
     // For a parser that uses parsed constants, see the experimental parser
+    let definitions = vec![];
+
     ProcessedFile {
-        absolute_path: path.to_owned(),
-        unresolved_references: references,
-        definitions: vec![],
+        absolute_path,
+        unresolved_references,
+        definitions,
     }
 }

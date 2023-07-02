@@ -141,7 +141,7 @@ pub(crate) trait CheckerInterface {
 }
 
 // TODO: Break this function up into smaller functions
-pub(crate) fn check(
+pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -152,8 +152,12 @@ pub(crate) fn check(
     debug!("Interecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    let violations: Vec<Violation> =
-        get_all_violations(&configuration, absolute_paths, cache);
+    let violations: Vec<Violation> = get_all_violations(
+        &configuration,
+        absolute_paths,
+        cache,
+        configuration.experimental_parser,
+    );
     let recorded_violations = configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
@@ -188,6 +192,7 @@ pub(crate) fn update(
         &configuration,
         configuration.intersect_files(vec![]),
         cache,
+        configuration.experimental_parser,
     );
 
     package_todo::write_violations_to_disk(configuration, violations);
@@ -199,6 +204,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
     configuration: &Configuration,
     absolute_paths: HashSet<PathBuf>,
     cache: T,
+    experimental_parser: bool,
 ) -> Vec<Violation> {
     // TODO: Write a test that if this isn't here, it fails gracefully
     create_cache_dir_idempotently(&configuration.cache_directory);
@@ -208,6 +214,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
         &configuration.absolute_root,
         &absolute_paths,
         cache,
+        experimental_parser,
     );
 
     let constant_resolver = get_zeitwerk_constant_resolver(

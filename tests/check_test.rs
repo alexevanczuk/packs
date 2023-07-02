@@ -42,3 +42,19 @@ fn test_check_with_package_todo_file() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+#[serial]
+#[should_panic(expected = "The experimental parser is coming soon!")]
+fn test_check_with_experimental_parser() {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("--experimental-parser")
+        .arg("check")
+        .assert()
+        .success();
+
+    common::teardown();
+}
