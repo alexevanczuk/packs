@@ -1,6 +1,7 @@
-use regex::Regex;
-
-use crate::packs::{parsing::Range, ProcessedFile, UnresolvedReference};
+use crate::packs::{
+    file_utils::convert_erb_to_ruby_without_sourcemaps, parsing::Range,
+    ProcessedFile, UnresolvedReference,
+};
 use std::{fs, path::Path};
 
 use crate::packs::parsing::ruby::packwerk::parser::process_from_contents as process_from_ruby_contents;
@@ -17,15 +18,7 @@ pub(crate) fn process_from_contents(
     contents: String,
     path: &Path,
 ) -> ProcessedFile {
-    let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*-?%>"#;
-    let regex = Regex::new(regex_pattern).unwrap();
-
-    let extracted_contents: Vec<&str> = regex
-        .captures_iter(&contents)
-        .map(|capture| capture.get(1).unwrap().as_str())
-        .collect();
-
-    let ruby_contents = extracted_contents.join("\n");
+    let ruby_contents = convert_erb_to_ruby_without_sourcemaps(contents);
     let processed_file = process_from_ruby_contents(ruby_contents, path);
     let references = processed_file.unresolved_references;
     // let references_without_range = references
