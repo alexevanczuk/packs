@@ -1,14 +1,11 @@
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::PackSet;
-use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
 
-use crate::packs::{
-    parsing::ruby::packwerk::constant_resolver::ConstantResolver,
-    walk_directory,
-};
+use crate::packs::walk_directory;
 
 use std::{
     collections::HashSet,
@@ -23,7 +20,6 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
-    pub constant_resolver: ConstantResolver,
     pub pack_set: PackSet,
     pub layers: Layers,
 }
@@ -66,11 +62,6 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
-    let constant_resolver = get_zeitwerk_constant_resolver(
-        &pack_set,
-        &absolute_root,
-        &cache_directory,
-    );
 
     let layers = Layers {
         layers: raw_config.architecture_layers,
@@ -86,7 +77,6 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         absolute_root,
         cache_enabled,
         cache_directory,
-        constant_resolver,
         pack_set,
         layers,
     }

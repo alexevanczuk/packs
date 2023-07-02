@@ -27,6 +27,7 @@ pub use configuration::Configuration;
 pub use package_todo::PackageTodo;
 
 use self::checker::ViolationIdentifier;
+use self::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
 use self::parsing::UnresolvedReference;
 
 pub fn greet() {
@@ -268,12 +269,8 @@ impl Pack {
     }
 }
 
-pub(crate) fn list_definitions(configuration: Configuration) {
-    dbg!(
-        configuration
-            .constant_resolver
-            .fully_qualified_constant_to_constant_map
-    );
+pub(crate) fn list_definitions(constant_resolver: &ConstantResolver) {
+    dbg!(&constant_resolver.fully_qualified_constant_to_constant_map);
 }
 
 #[cfg(test)]

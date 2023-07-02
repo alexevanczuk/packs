@@ -3,6 +3,8 @@ use crate::packs::checker;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+use super::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+
 #[derive(Subcommand, Debug)]
 enum Command {
     #[clap(about = "Just saying hi")]
@@ -90,7 +92,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::ListDefinitions => {
-            packs::list_definitions(configuration);
+            // TODO: This and other commands that fetch the constant resolver
+            // Should respect the configuration flag.
+            let constant_resolver = get_zeitwerk_constant_resolver(
+                &configuration.pack_set,
+                &absolute_root,
+                &configuration.cache_directory,
+            );
+            packs::list_definitions(&constant_resolver);
             Ok(())
         }
     }
