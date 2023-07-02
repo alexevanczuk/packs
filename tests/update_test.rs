@@ -44,3 +44,18 @@ packs/bar:
 
     Ok(())
 }
+
+#[test]
+#[should_panic(expected = "The experimental parser is coming soon!")]
+fn test_check_with_experimental_parser() {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("--experimental-parser")
+        .arg("update")
+        .assert()
+        .success();
+
+    common::teardown();
+}
