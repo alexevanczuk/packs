@@ -99,7 +99,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::ListDefinitions => {
-            panic!("This command is not yet implemented");
             // TODO: This and other commands that fetch the constant resolver
             // Should respect the configuration flag.
             let constant_resolver = get_zeitwerk_constant_resolver(
