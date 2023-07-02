@@ -1,5 +1,6 @@
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
+use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 use crate::packs::per_file_cache;
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
 use crate::packs::Configuration;
@@ -11,7 +12,9 @@ use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
-use super::parsing::Cache;
+use super::parsing::{
+    ruby::packwerk::constant_resolver::ConstantResolver, Cache,
+};
 use super::Pack;
 use super::UnresolvedReference;
 
@@ -47,6 +50,7 @@ pub struct Reference<'a> {
 impl<'a> Reference<'a> {
     fn from_unresolved_reference(
         configuration: &'a Configuration,
+        constant_resolver: &'a ConstantResolver,
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
@@ -56,8 +60,7 @@ impl<'a> Reference<'a> {
             .map(|s| s.as_str())
             .collect::<Vec<&str>>();
 
-        let maybe_constant = configuration
-            .constant_resolver
+        let maybe_constant = constant_resolver
             .resolve(&unresolved_reference.name, &str_references);
 
         let (defining_pack, relative_defining_file) = if let Some(constant) =
@@ -219,6 +222,12 @@ fn get_all_violations<T: Cache + Send + Sync>(
         cache,
     );
 
+    let constant_resolver = get_zeitwerk_constant_resolver(
+        &configuration.pack_set,
+        &configuration.absolute_root,
+        &configuration.cache_directory,
+    );
+
     debug!(
         target: "perf_events",
         "Turning unresolved references into fully qualified references"
@@ -234,6 +243,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
                         processed_file.absolute_path.clone();
                     Reference::from_unresolved_reference(
                         configuration,
+                        &constant_resolver,
                         unresolved_ref,
                         &absolute_path_of_referring_file,
                     )

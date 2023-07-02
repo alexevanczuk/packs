@@ -216,9 +216,16 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::packs;
     use crate::packs::{
         configuration, parsing::ruby::packwerk::constant_resolver::Constant,
     };
+
+    fn teardown() {
+        packs::delete_cache(configuration::get(&PathBuf::from(
+            "tests/fixtures/simple_app",
+        )));
+    }
 
     use crate::test_util::{
         get_absolute_root, get_zeitwerk_constant_resolver_for_fixture,
@@ -237,7 +244,9 @@ mod tests {
             get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
                 .resolve(&String::from("Foo"), &[])
                 .unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -254,7 +263,9 @@ mod tests {
             resolver
                 .resolve(&String::from("Foo"), &["Foo", "Bar", "Baz"])
                 .unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -268,7 +279,9 @@ mod tests {
                     .join("packs/foo/app/services/foo/bar.rb")
             },
             resolver.resolve("Bar", &["Foo"]).unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -283,7 +296,9 @@ mod tests {
                     .join("packs/bar/app/services/bar.rb")
             },
             resolver.resolve("::Bar", &["Foo"]).unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -297,7 +312,9 @@ mod tests {
                     .join("packs/bar/app/services/bar.rb")
             },
             resolver.resolve(&String::from("::Bar::BAR"), &[]).unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -326,7 +343,9 @@ mod tests {
             resolver
                 .resolve(&String::from("::MyModule::SomeCSVClass"), &[])
                 .unwrap()
-        )
+        );
+
+        teardown();
     }
 
     #[test]
@@ -398,5 +417,7 @@ mod tests {
             },
         );
         assert_eq!(expected_constant_map, actual_constant_map);
+
+        teardown();
     }
 }
