@@ -57,6 +57,10 @@ struct Args {
     /// Run with performance debug mode
     #[arg(short, long)]
     debug: bool,
+
+    /// Run with the experimental parser, which gets constant definitions directly from the AST
+    #[arg(short, long)]
+    experimental_parser: bool,
 }
 
 impl Args {

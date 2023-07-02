@@ -28,6 +28,7 @@ pub use package_todo::PackageTodo;
 
 use self::checker::ViolationIdentifier;
 use self::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
+use self::parsing::ruby::packwerk::parser::Definition;
 use self::parsing::UnresolvedReference;
 
 pub fn greet() {
@@ -55,6 +56,7 @@ pub fn delete_cache(configuration: Configuration) {
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
+    pub definitions: Vec<Definition>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
