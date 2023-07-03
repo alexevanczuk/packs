@@ -7,14 +7,7 @@ use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
-use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, fs, path::Path};
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct SuperclassReference {
-    pub name: String,
-    pub namespace_path: Vec<String>,
-}
 
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
