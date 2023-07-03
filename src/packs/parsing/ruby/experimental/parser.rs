@@ -8,11 +8,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-};
+use std::{collections::HashSet, fs, path::Path};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {
@@ -368,29 +364,6 @@ pub(crate) fn process_from_contents(
     };
 
     collector.visit(&ast);
-
-    let mut definition_to_location_map: HashMap<String, Range> = HashMap::new();
-
-    for d in &collector.definitions {
-        let parts: Vec<&str> = d.fully_qualified_name.split("::").collect();
-        // We do this to handle nested constants, e.g.
-        // class Foo::Bar
-        // end
-        for (index, _) in parts.iter().enumerate() {
-            let combined = &parts[..=index].join("::");
-            // If the map already contains the key, skip it.
-            // This is helpful, e.g.
-            // class Foo::Bar
-            //  BAZ
-            // end
-            // The fully name for BAZ IS ::Foo::Bar::BAZ, so we do not want to overwrite
-            // the definition location for ::Foo or ::Foo::Bar
-            if !definition_to_location_map.contains_key(combined) {
-                definition_to_location_map
-                    .insert(combined.to_owned(), d.location.clone());
-            }
-        }
-    }
 
     let unresolved_references = collector.references;
 
