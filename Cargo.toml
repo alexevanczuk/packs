@@ -6,10 +6,11 @@ version = "0.1.37"
 edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
+default-run = "pks"
 # This runs all of the optimizations, but doesn't strip debug symbols,
 # such as the name of the methods
 # This meaningfully increases the size of the binary
-# debug = true
+debug = true
 
 [[bin]]
 name = "packs"
