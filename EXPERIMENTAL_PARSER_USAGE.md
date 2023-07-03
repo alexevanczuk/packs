@@ -1,5 +1,12 @@
 # Experimental Parser Usage
 
+TLDR:
+- `packs --experimental-parser update` and `packs --experimental-parser check` OR use `experimental_parser: true` in your `packwerk.yml`.
+- When switching between the `experimental` and `packwerk` parser, run `packs delete-cache` – the two caches are not compatible!
+- `packwerk` infers constant definitions based on file names
+- The `experimental` parser explicitly parses constant definitions from files
+- There are some limitations still that might produce unexpected behavior. Please share your feedback!
+
 ## What's the difference?
 First, some context:
 - Packs builds a graph of each package, the files within those packages, the constants (i.e. class, modules, or CONSTANTS) referenced within those files, and the constants defined within those files.
