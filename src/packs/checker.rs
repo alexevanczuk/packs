@@ -251,8 +251,6 @@ fn get_all_violations(
         })
         .collect();
 
-    dbg!(&references);
-
     debug!("Finished turning unresolved references into fully qualified references");
 
     debug!("Running checkers on resolved references");
