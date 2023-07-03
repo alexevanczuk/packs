@@ -10,7 +10,7 @@ pub(crate) mod erb;
 pub(crate) use erb::experimental::parser::process_from_path as process_from_erb_path_experimental;
 pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
 
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -87,7 +87,7 @@ pub fn process_files_with_cache(
     experimental_parser: bool,
 ) -> Vec<ProcessedFile> {
     paths
-        .into_par_iter()
+        .par_iter()
         .map(|absolute_path| -> ProcessedFile {
             cache.process_file(
                 absolute_root,
