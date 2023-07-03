@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     file_utils::{get_file_type, SupportedFileType},
+    per_file_cache::process_file_with_cache,
     ProcessedFile,
 };
 
@@ -71,29 +72,32 @@ pub struct Definition {
     pub namespace_path: Vec<String>,
 }
 
-pub trait Cache {
-    fn process_file(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-        experimental_parser: bool,
-    ) -> ProcessedFile;
+pub enum Cache {
+    PerFileCache,
+    NoopCache,
 }
 
 pub fn process_files_with_cache(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
-    cache: Box<dyn Cache + Send + Sync>,
+    cache: Cache,
     experimental_parser: bool,
+    cache_dir: &Path,
 ) -> Vec<ProcessedFile> {
     paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            cache.process_file(
-                absolute_root,
-                absolute_path,
-                experimental_parser,
-            )
+            match cache {
+                Cache::PerFileCache => process_file_with_cache(
+                    absolute_root,
+                    absolute_path,
+                    experimental_parser,
+                    cache_dir,
+                ),
+                Cache::NoopCache => {
+                    process_file(absolute_path, experimental_parser)
+                }
+            }
         })
         .collect()
 }

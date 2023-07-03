@@ -193,7 +193,7 @@ pub(crate) fn update(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: HashSet<PathBuf>,
-    cache: Box<dyn Cache + Send + Sync>,
+    cache: Cache,
     experimental_parser: bool,
 ) -> Vec<Violation> {
     // TODO: Write a test that if this isn't here, it fails gracefully
@@ -205,6 +205,7 @@ fn get_all_violations(
         &absolute_paths,
         cache,
         experimental_parser,
+        &configuration.cache_directory,
     );
 
     let constant_resolver = if configuration.experimental_parser {

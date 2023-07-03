@@ -1,7 +1,7 @@
+use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::parsing::Cache;
-use super::{checker::architecture::Layers, per_file_cache};
-use super::{noop_cache, PackSet};
+use super::PackSet;
 
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
@@ -45,13 +45,11 @@ impl Configuration {
         }
     }
 
-    pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
+    pub(crate) fn get_cache(&self) -> Cache {
         if self.cache_enabled {
-            Box::new(per_file_cache::PerFileCache {
-                cache_dir: self.cache_directory.to_owned(),
-            })
+            Cache::PerFileCache
         } else {
-            Box::new(noop_cache::NoopCache {})
+            Cache::NoopCache
         }
     }
 

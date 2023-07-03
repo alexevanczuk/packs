@@ -10,33 +10,27 @@ use std::path::PathBuf;
 
 use super::file_utils::file_content_digest;
 use super::parsing::Definition;
-use super::parsing::{Cache, Range};
+use super::parsing::Range;
 use super::{ProcessedFile, UnresolvedReference};
 
-pub struct PerFileCache {
-    pub cache_dir: PathBuf,
-}
+pub fn process_file_with_cache(
+    absolute_root: &Path,
+    path: &Path,
+    experimental_parser: bool,
+    cache_dir: &Path,
+) -> ProcessedFile {
+    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
 
-impl Cache for PerFileCache {
-    fn process_file(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-        experimental_parser: bool,
-    ) -> ProcessedFile {
-        let cachable_file =
-            CachableFile::from(absolute_root, &self.cache_dir, path);
+    if cachable_file.cache_is_valid() {
+        cachable_file.cache_entry.unwrap().processed_file(path)
+    } else {
+        let processed_file = process_file(path, experimental_parser);
 
-        if cachable_file.cache_is_valid() {
-            cachable_file.cache_entry.unwrap().processed_file(path)
-        } else {
-            let processed_file = process_file(path, experimental_parser);
-
-            write_cache(&cachable_file, &processed_file);
-            processed_file
-        }
+        write_cache(&cachable_file, &processed_file);
+        processed_file
     }
 }
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
