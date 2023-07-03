@@ -9,6 +9,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use super::file_utils::file_content_digest;
+use super::parsing::Definition;
 use super::parsing::{Cache, Range};
 use super::{ProcessedFile, UnresolvedReference};
 
@@ -36,10 +37,12 @@ impl Cache for PerFileCache {
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
     pub unresolved_references: Vec<ReferenceEntry>,
+    #[serde(default)]
+    pub definitions: Vec<Definition>,
 }
 
 impl CacheEntry {
@@ -58,7 +61,7 @@ impl CacheEntry {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct ReferenceEntry {
     constant_name: String,
     namespace_path: Vec<String>,
@@ -167,9 +170,12 @@ fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
         })
         .collect();
 
+    let definitions = processed_file.definitions;
+
     let cache_entry = &CacheEntry {
         file_contents_digest,
         unresolved_references,
+        definitions,
     };
 
     let cache_data = serde_json::to_string(&cache_entry)
@@ -212,6 +218,93 @@ mod tests {
         let digest = file_content_digest(&PathBuf::from(file_path));
 
         assert_eq!(digest, expected_digest);
+
+        teardown();
+    }
+
+    #[test]
+    fn test_compatible_with_packwerk() {
+        let contents: String = String::from(
+            r#"{
+    "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
+    "unresolved_references": [
+        {
+            "constant_name": "Bar",
+            "namespace_path": [
+                "Foo",
+                "Bar"
+            ],
+            "relative_path": "packs/foo/app/services/bar/foo.rb",
+            "source_location": {
+                "line": 8,
+                "column": 22
+            }
+        }
+    ]
+}"#,
+        );
+
+        let actual_serialized =
+            serde_json::from_str::<CacheEntry>(&contents).unwrap();
+        let expected_serialized = CacheEntry {
+            file_contents_digest: "8f9efdcf2caa22fb7b1b4a8274e68d11".to_owned(),
+            unresolved_references: vec![ReferenceEntry {
+                constant_name: "Bar".to_owned(),
+                namespace_path: vec!["Foo".to_owned(), "Bar".to_owned()],
+                relative_path: "packs/foo/app/services/bar/foo.rb".to_owned(),
+                source_location: SourceLocation {
+                    line: 8,
+                    column: 22,
+                },
+            }],
+            definitions: vec![],
+        };
+
+        assert_eq!(expected_serialized, actual_serialized);
+
+        teardown();
+    }
+
+    #[test]
+    fn test_compatible_with_alternate_extractor() {
+        let contents: String = String::from(
+            r#"{
+    "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
+    "unresolved_references": [
+        {
+            "constant_name": "Bar",
+            "namespace_path": [
+                "Foo",
+                "Bar"
+            ],
+            "relative_path": "packs/foo/app/services/bar/foo.rb",
+            "source_location": {
+                "line": 8,
+                "column": 22
+            }
+        }
+    ],
+    "definitions": []
+}"#,
+        );
+
+        let actual_serialized =
+            serde_json::from_str::<CacheEntry>(&contents).unwrap();
+        let expected_serialized = CacheEntry {
+            file_contents_digest: "8f9efdcf2caa22fb7b1b4a8274e68d11".to_owned(),
+            unresolved_references: vec![ReferenceEntry {
+                constant_name: "Bar".to_owned(),
+                namespace_path: vec!["Foo".to_owned(), "Bar".to_owned()],
+                relative_path: "packs/foo/app/services/bar/foo.rb".to_owned(),
+                source_location: SourceLocation {
+                    line: 8,
+                    column: 22,
+                },
+            }],
+            definitions: vec![],
+        };
+
+        assert_eq!(expected_serialized, actual_serialized);
 
         teardown();
     }
