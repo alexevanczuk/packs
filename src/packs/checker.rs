@@ -56,14 +56,14 @@ impl<'a> Reference<'a> {
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
-        let str_references: Vec<&str> = unresolved_reference
+        let str_namespace_path: Vec<&str> = unresolved_reference
             .namespace_path
             .iter()
             .map(|s| s.as_str())
             .collect::<Vec<&str>>();
 
         let maybe_constant = constant_resolver
-            .resolve(&unresolved_reference.name, &str_references);
+            .resolve(&unresolved_reference.name, &str_namespace_path);
 
         let (defining_pack, relative_defining_file) = if let Some(constant) =
             &maybe_constant
