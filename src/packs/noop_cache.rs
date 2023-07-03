@@ -1,4 +1,9 @@
-use std::path::Path;
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
+
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
     parsing::{process_file, Cache},
@@ -8,12 +13,17 @@ use super::{
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn process_file(
+    fn process_files_with_cache(
         &self,
         _absolute_root: &Path,
-        path: &Path,
+        paths: &HashSet<PathBuf>,
         experimental_parser: bool,
-    ) -> ProcessedFile {
-        process_file(path, experimental_parser)
+    ) -> Vec<ProcessedFile> {
+        paths
+            .par_iter()
+            .map(|absolute_path| -> ProcessedFile {
+                process_file(absolute_path, experimental_parser)
+            })
+            .collect()
     }
 }

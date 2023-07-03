@@ -24,7 +24,6 @@ mod walk_directory;
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use crate::packs::checker::Violation;
 pub use crate::packs::pack_set::PackSet;
-use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
@@ -281,12 +280,12 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
     create_cache_dir_idempotently(&configuration.cache_directory);
 
     let constant_resolver = if configuration.experimental_parser {
-        let processed_files: Vec<ProcessedFile> = process_files_with_cache(
-            &configuration.absolute_root,
-            &configuration.included_files,
-            configuration.get_cache(),
-            true,
-        );
+        let processed_files: Vec<ProcessedFile> =
+            configuration.get_cache().process_files_with_cache(
+                &configuration.absolute_root,
+                &configuration.included_files,
+                true,
+            );
 
         get_experimental_constant_resolver(
             &configuration.absolute_root,

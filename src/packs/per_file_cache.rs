@@ -1,7 +1,10 @@
 use crate::packs::parsing::process_file;
 use crate::packs::SourceLocation;
+use rayon::prelude::IntoParallelRefIterator;
+use rayon::prelude::ParallelIterator;
 use serde::{Deserialize, Serialize};
 
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -18,23 +21,41 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn process_file(
+    fn process_files_with_cache(
         &self,
         absolute_root: &Path,
-        path: &Path,
+        paths: &HashSet<PathBuf>,
         experimental_parser: bool,
-    ) -> ProcessedFile {
-        let cachable_file =
-            CachableFile::from(absolute_root, &self.cache_dir, path);
+    ) -> Vec<ProcessedFile> {
+        paths
+            .par_iter()
+            .map(|absolute_path| -> ProcessedFile {
+                process_file_with_cache(
+                    absolute_root,
+                    absolute_path,
+                    experimental_parser,
+                    &self.cache_dir,
+                )
+            })
+            .collect()
+    }
+}
 
-        if cachable_file.cache_is_valid() {
-            cachable_file.cache_entry.unwrap().processed_file(path)
-        } else {
-            let processed_file = process_file(path, experimental_parser);
+fn process_file_with_cache(
+    absolute_root: &Path,
+    path: &Path,
+    experimental_parser: bool,
+    cache_dir: &PathBuf,
+) -> ProcessedFile {
+    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
 
-            write_cache(&cachable_file, &processed_file);
-            processed_file
-        }
+    if cachable_file.cache_is_valid() {
+        cachable_file.cache_entry.unwrap().processed_file(path)
+    } else {
+        let processed_file = process_file(path, experimental_parser);
+
+        write_cache(&cachable_file, &processed_file);
+        processed_file
     }
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

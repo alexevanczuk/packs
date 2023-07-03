@@ -72,30 +72,12 @@ pub struct Definition {
 }
 
 pub trait Cache {
-    fn process_file(
+    fn process_files_with_cache(
         &self,
         absolute_root: &Path,
-        path: &Path,
+        paths: &HashSet<PathBuf>,
         experimental_parser: bool,
-    ) -> ProcessedFile;
-}
-
-pub fn process_files_with_cache(
-    absolute_root: &Path,
-    paths: &HashSet<PathBuf>,
-    cache: Box<dyn Cache + Send + Sync>,
-    experimental_parser: bool,
-) -> Vec<ProcessedFile> {
-    paths
-        .par_iter()
-        .map(|absolute_path| -> ProcessedFile {
-            cache.process_file(
-                absolute_root,
-                absolute_path,
-                experimental_parser,
-            )
-        })
-        .collect()
+    ) -> Vec<ProcessedFile>;
 }
 
 #[cfg(test)]
