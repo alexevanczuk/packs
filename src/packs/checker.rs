@@ -8,6 +8,7 @@ use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
 use rayon::prelude::IntoParallelIterator;
+use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
@@ -254,12 +255,13 @@ fn get_all_violations(
             layers: configuration.layers.clone(),
         }),
     ];
-    let violations: Vec<Violation> = references
+
+    let violations: Vec<Violation> = checkers
         .into_par_iter()
-        .flat_map(|r| {
-            checkers
-                .iter()
-                .flat_map(|c| c.check(&r))
+        .flat_map(|c| {
+            references
+                .par_iter()
+                .flat_map(|r| c.check(r))
                 .collect::<Vec<Violation>>()
         })
         .collect();
