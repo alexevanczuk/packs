@@ -207,7 +207,7 @@ mod tests {
     fn test_file_content_digest() {
         let file_path =
             "tests/fixtures/simple_app/packs/bar/app/services/bar.rb";
-        let expected_digest = "f2af2fc657b71331ff3a8c39b48365eb";
+        let expected_digest = "305bc58696c2e664057b6751064cf2e3";
 
         let digest = file_content_digest(&PathBuf::from(file_path));
 

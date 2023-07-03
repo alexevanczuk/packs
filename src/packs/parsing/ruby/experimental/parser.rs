@@ -87,9 +87,9 @@ fn get_definition_from(
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
         let mut name_components = owned_namespace_path.clone();
         name_components.push(name);
-        format!("::{}", name_components.join("::"))
+        name_components.join("::")
     } else {
-        format!("::{}", name)
+        name
     };
 
     Definition {
@@ -240,9 +240,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let fully_qualified_name = if !self.current_namespaces.is_empty() {
             let mut name_components = self.current_namespaces.clone();
             name_components.push(name);
-            format!("::{}", name_components.join("::"))
+            name_components.join("::")
         } else {
-            format!("::{}", name)
+            name
         };
 
         self.definitions.push(Definition {

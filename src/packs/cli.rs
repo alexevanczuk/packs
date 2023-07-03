@@ -86,9 +86,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut configuration = packs::configuration::get(&absolute_root);
 
     if args.experimental_parser {
-        // debug!("Using experimental parser");
-        // configuration = configuration.with_experimental_parser();
-        panic!("The experimental parser is coming soon!")
+        debug!("Using experimental parser");
+        configuration = configuration.with_experimental_parser();
     }
 
     if args.no_cache {
@@ -124,7 +123,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::ListDefinitions => {
             let constant_resolver = if configuration.experimental_parser {
-                panic!("The experimental parser is coming soon!")
+                panic!("List definitions is not yet supported with the experimental parser")
             } else {
                 get_zeitwerk_constant_resolver(
                     &configuration.pack_set,
