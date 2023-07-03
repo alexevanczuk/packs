@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ConstantResolver {
     pub fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
 }

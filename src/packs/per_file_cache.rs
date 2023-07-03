@@ -56,7 +56,7 @@ impl CacheEntry {
         ProcessedFile {
             unresolved_references,
             absolute_path: absolute_path.to_owned(),
-            definitions: vec![], // TODO
+            definitions: self.definitions,
         }
     }
 }
