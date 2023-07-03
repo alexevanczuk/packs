@@ -228,8 +228,6 @@ fn get_all_violations(
         )
     };
 
-    dbg!(&constant_resolver.fully_qualified_constant_to_constant_map);
-
     debug!("Turning unresolved references into fully qualified references");
     let references: Vec<Reference> = processed_files
         .into_par_iter()
