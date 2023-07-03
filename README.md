@@ -39,7 +39,9 @@ Commands:
 
 Options:
       --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]
-  -d, --debug                        Run with debug mode
+  -d, --debug                        Run with performance debug mode
+  -e, --experimental-parser          Run with the experimental parser, which gets constant definitions directly from the AST
+      --no-cache                     Run without the cache (good for CI, testing)
   -h, --help                         Print help
   -V, --version                      Print version
 ```
