@@ -31,8 +31,8 @@ impl Cache for PerFileCache {
             cachable_file.cache_entry.unwrap().processed_file(path)
         } else {
             let processed_file = process_file(path, experimental_parser);
-            write_cache(&cachable_file, processed_file.clone());
 
+            write_cache(&cachable_file, &processed_file);
             processed_file
         }
     }
@@ -152,7 +152,7 @@ impl CachableFile {
     }
 }
 
-fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
+fn write_cache(cachable_file: &CachableFile, processed_file: &ProcessedFile) {
     let file_contents_digest = cachable_file.file_contents_digest.to_owned();
     let unresolved_references: Vec<ReferenceEntry> = processed_file
         .unresolved_references
@@ -170,7 +170,7 @@ fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
         })
         .collect();
 
-    let definitions = processed_file.definitions;
+    let definitions = processed_file.definitions.clone();
 
     let cache_entry = &CacheEntry {
         file_contents_digest,
