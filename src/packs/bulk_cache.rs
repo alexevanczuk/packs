@@ -27,6 +27,14 @@ impl Cache for BulkCache {
         paths: &HashSet<PathBuf>,
         experimental_parser: bool,
     ) -> Vec<ProcessedFile> {
+        let loaded_cache = read_json_file(&self.cache_dir.join("cache.json"))
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to read cache file {:?}",
+                    self.cache_dir.join("cache.json")
+                )
+            });
+
         paths
             .par_iter()
             .map(|absolute_path| -> ProcessedFile {
@@ -34,7 +42,7 @@ impl Cache for BulkCache {
                     absolute_root,
                     absolute_path,
                     experimental_parser,
-                    &self.cache_dir,
+                    loaded_cache,
                 )
             })
             .collect()
@@ -45,11 +53,9 @@ fn process_file_with_cache(
     absolute_root: &Path,
     path: &Path,
     experimental_parser: bool,
-    cache_dir: &PathBuf,
+    loaded_cache: CacheEntry,
 ) -> ProcessedFile {
-    let cachable_file = CachableFile::from(absolute_root, cache_dir, path);
-
-    if cachable_file.cache_is_valid() {
+    if loaded_cache.cache_is_valid(path) {
         cachable_file.cache_entry.unwrap().processed_file(path)
     } else {
         let processed_file = process_file(path, experimental_parser);
