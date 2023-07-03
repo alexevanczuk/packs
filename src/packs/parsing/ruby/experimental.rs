@@ -32,7 +32,7 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<Constant>>();
 
-    ConstantResolver::create(absolute_root, constants)
+    ConstantResolver::create(absolute_root, constants, false)
 }
 
 #[cfg(test)]

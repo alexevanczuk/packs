@@ -22,6 +22,7 @@ impl ConstantResolver {
     pub fn create(
         absolute_root: &Path,
         constants: Vec<Constant>,
+        disallow_multiple_definitions: bool,
     ) -> ConstantResolver {
         debug!("Building constant resolver");
 
@@ -47,11 +48,12 @@ impl ConstantResolver {
 
                 // Later, we can allow the checkers to skip over constants where it's pointing at a pack that defines it as an ignored_monkeypatch: path/to/definition.rb
                 // We should be sure to validate that ignored_monkeypatch paths match the absolute_path_to_definition of the constant.
-                //
-                // panic!(
-                //     "Found two constants with the same name: {:?} and {:?}",
-                //     existing_constant, constant
-                // );
+                if disallow_multiple_definitions {
+                    panic!(
+                        "Found two constants with the same name: {:?} and {:?}",
+                        existing_constant, constant
+                    );
+                }
             } else {
                 fully_qualified_constant_to_constant_map
                     .insert(fully_qualified_constant_name, constant);
