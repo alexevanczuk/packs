@@ -1,8 +1,5 @@
 # TODO
 
-## Refactors
-- do not use cache anywhere in tests
-
 ## Features
 - Explore alternate extractor (below)
 - Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
