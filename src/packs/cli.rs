@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use tracing::debug;
 
 use super::logger::install_logger;
-use super::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+
 use super::Configuration;
 
 #[derive(Subcommand, Debug)]
@@ -122,18 +122,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::ListDefinitions => {
-            let constant_resolver = if configuration.experimental_parser {
-                panic!("List definitions is not yet supported with the experimental parser")
-            } else {
-                get_zeitwerk_constant_resolver(
-                    &configuration.pack_set,
-                    &configuration.absolute_root,
-                    &configuration.cache_directory,
-                    !configuration.cache_enabled,
-                )
-            };
-
-            packs::list_definitions(&constant_resolver);
+            packs::list_definitions(&configuration);
             Ok(())
         }
     }

@@ -24,11 +24,14 @@ mod walk_directory;
 // Re-exports: Eventually, these may be part of the public API for packs
 pub use crate::packs::checker::Violation;
 pub use crate::packs::pack_set::PackSet;
+use crate::packs::parsing::process_files_with_cache;
+use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
+use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 pub use configuration::Configuration;
 pub use package_todo::PackageTodo;
 
 use self::checker::ViolationIdentifier;
-use self::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
+
 use self::parsing::Definition;
 use self::parsing::UnresolvedReference;
 
@@ -272,7 +275,28 @@ impl Pack {
     }
 }
 
-pub(crate) fn list_definitions(constant_resolver: &ConstantResolver) {
+pub(crate) fn list_definitions(configuration: &Configuration) {
+    let constant_resolver = if configuration.experimental_parser {
+        let processed_files: Vec<ProcessedFile> = process_files_with_cache(
+            &configuration.absolute_root,
+            &configuration.included_files,
+            configuration.get_cache(),
+            true,
+        );
+
+        get_experimental_constant_resolver(
+            &configuration.absolute_root,
+            &processed_files,
+        )
+    } else {
+        get_zeitwerk_constant_resolver(
+            &configuration.pack_set,
+            &configuration.absolute_root,
+            &configuration.cache_directory,
+            !configuration.cache_enabled,
+        )
+    };
+
     dbg!(&constant_resolver.fully_qualified_constant_to_constant_map);
 }
 
