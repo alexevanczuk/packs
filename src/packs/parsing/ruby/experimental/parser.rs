@@ -20,32 +20,11 @@ struct SuperclassReference {
     pub namespace_path: Vec<String>,
 }
 
-// impl UnresolvedReference {
-//     fn possible_fully_qualified_constants(&self) -> Vec<String> {
-//         if self.name.starts_with("::") {
-//             return vec![self.name.to_owned()];
-//         }
-
-//         let mut possible_constants = vec![self.name.to_owned()];
-//         let module_nesting = namespace_calculator::calculate_module_nesting(
-//             &self.namespace_path,
-//         );
-//         for nesting in module_nesting {
-//             let possible_constant = format!("::{}::{}", nesting, self.name);
-//             possible_constants.push(possible_constant);
-//         }
-
-//         possible_constants
-//     }
-// }
-
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
-    pub in_superclass: bool,
-    pub superclasses: Vec<SuperclassReference>,
 }
 
 #[derive(Debug)]
@@ -170,10 +149,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let namespace = namespace_result.unwrap();
 
         if let Some(inner) = node.superclass.as_ref() {
-            // dbg!("Visiting superclass!: {:?}", inner);
-            self.in_superclass = true;
             self.visit(inner);
-            self.in_superclass = false;
         }
         let definition_loc = fetch_node_location(&node.name).unwrap();
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
@@ -205,7 +181,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         }
 
         self.current_namespaces.pop();
-        self.superclasses.pop();
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
@@ -336,35 +311,12 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     fn on_const(&mut self, node: &nodes::Const) {
         let Ok(name) = fetch_const_const_name(node) else { return };
 
-        if self.in_superclass {
-            self.superclasses.push(SuperclassReference {
-                name: name.to_owned(),
-                namespace_path: self.current_namespaces.to_owned(),
-            })
-        }
-        // In packwerk, NodeHelpers.enclosing_namespace_path ignores
-        // namespaces where a superclass OR namespace is the same as the current reference name
-        let matching_superclass_option = self
-            .superclasses
-            .iter()
-            .find(|superclass| superclass.name == name);
-
-        let namespace_path =
-            if let Some(matching_superclass) = matching_superclass_option {
-                matching_superclass.namespace_path.to_owned()
-            } else {
-                self.current_namespaces
-                    .clone()
-                    .into_iter()
-                    .filter(|namespace| {
-                        namespace != &name
-                            || self
-                                .superclasses
-                                .iter()
-                                .any(|superclass| superclass.name == name)
-                    })
-                    .collect::<Vec<String>>()
-            };
+        let namespace_path = self
+            .current_namespaces
+            .clone()
+            .into_iter()
+            .filter(|namespace| namespace != &name)
+            .collect::<Vec<String>>();
 
         self.references.push(UnresolvedReference {
             name,
@@ -413,8 +365,6 @@ pub(crate) fn process_from_contents(
         current_namespaces: vec![],
         definitions: vec![],
         line_col_lookup: lookup,
-        in_superclass: false,
-        superclasses: vec![],
     };
 
     collector.visit(&ast);
