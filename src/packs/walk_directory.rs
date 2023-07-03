@@ -1,5 +1,9 @@
 use jwalk::WalkDirGeneric;
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::Arc,
+};
 use tracing::debug;
 
 use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
@@ -8,6 +12,18 @@ use crate::packs::Pack;
 pub struct WalkDirectoryResult {
     pub included_files: HashSet<PathBuf>,
     pub included_packs: HashSet<Pack>,
+    pub owning_package_yml_for_file: HashMap<PathBuf, PathBuf>,
+}
+
+#[derive(Debug, Default, Clone)]
+struct ProcessReadDirState {
+    current_package_yml: PathBuf,
+}
+
+impl jwalk::ClientState for ProcessReadDirState {
+    type ReadDirState = ProcessReadDirState;
+
+    type DirEntryState = ProcessReadDirState;
 }
 
 // We use jwalk to walk directories in parallel and compare them to the `include` and `exclude` patterns
@@ -25,6 +41,9 @@ pub(crate) fn walk_directory(
 
     let mut included_files: HashSet<PathBuf> = HashSet::new();
     let mut included_packs: HashSet<Pack> = HashSet::new();
+    let mut owning_package_yml_for_file: HashMap<PathBuf, PathBuf> =
+        HashMap::new();
+
     // Create this vector outside of the closure to avoid reallocating it
     let default_excluded_dirs = vec![
         "node_modules/**/*",
@@ -64,28 +83,44 @@ pub(crate) fn walk_directory(
     // we'll save a lot of time by just skipping the entire directory.
     //
     // For more information, check out the docs: https://docs.rs/jwalk/0.8.1/jwalk/#extended-example
-    let walk_dir = WalkDirGeneric::<(usize, bool)>::new(&absolute_root)
-        .process_read_dir(move |_depth, _path, _read_dir_state, children| {
-            // We need to let the compiler know that we are using a reference and not the value itself.
-            // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
-            // (with an increase to the reference count).
-            let cloned_excluded_dirs = excluded_dirs_ref.clone();
-            let cloned_absolute_root = absolute_root_ref.clone();
+    let current_package_yml = PathBuf::from("package.yml");
 
-            children.iter_mut().for_each(|dir_entry_result| {
-                if let Ok(dir_entry) = dir_entry_result {
-                    let absolute_dirname = dir_entry.path();
-                    let relative_path = absolute_dirname
-                        .strip_prefix(cloned_absolute_root.as_ref())
-                        .unwrap()
-                        .to_owned();
+    let walk_dir = WalkDirGeneric::<ProcessReadDirState>::new(&absolute_root)
+        .root_read_dir_state(ProcessReadDirState {
+            current_package_yml,
+        })
+        .process_read_dir(
+            move |_depth, absolute_dirname, read_dir_state, children| {
+                // We need to let the compiler know that we are using a reference and not the value itself.
+                // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
+                // (with an increase to the reference count).
+                let cloned_excluded_dirs = excluded_dirs_ref.clone();
+                let cloned_absolute_root = absolute_root_ref.clone();
+                let package_yml = absolute_dirname.join("package.yml");
 
-                    if cloned_excluded_dirs.as_ref().is_match(relative_path) {
-                        dir_entry.read_children_path = None;
-                    }
+                // Even if the parent has set this on children, the existence of a new
+                // package.yml file should override it.
+                if package_yml.exists() {
+                    read_dir_state.current_package_yml = package_yml;
                 }
-            });
-        });
+
+                children.iter_mut().for_each(|child_dir_entry_result| {
+                    if let Ok(child_dir_entry) = child_dir_entry_result {
+                        let child_absolute_dirname = child_dir_entry.path();
+                        child_dir_entry.client_state.current_package_yml =
+                            read_dir_state.current_package_yml.clone();
+
+                        let relative_path = child_absolute_dirname
+                            .strip_prefix(cloned_absolute_root.as_ref())
+                            .unwrap();
+                        if cloned_excluded_dirs.as_ref().is_match(relative_path)
+                        {
+                            child_dir_entry.read_children_path = None;
+                        }
+                    }
+                });
+            },
+        );
 
     for entry in walk_dir {
         // I was using this to explore what directories were being walked to potentially
@@ -98,6 +133,7 @@ pub(crate) fn walk_directory(
         //     .open("tmp/pks_log.txt")
         //     .unwrap();
         // writeln!(file, "{:?}", entry).unwrap();
+
         let unwrapped_entry = entry.unwrap();
 
         // Note that we could also get the dir from absolute_path.is_dir()
@@ -114,10 +150,27 @@ pub(crate) fn walk_directory(
             .unwrap()
             .to_owned();
 
+        let current_package_yml =
+            &unwrapped_entry.client_state.current_package_yml;
+
+        if &absolute_path == current_package_yml
+            // Ideally, we don't need the second part of this conditional, but it's here
+            // because there is a bug where the root pack doesn't match package_paths.
+            // We know we always want the root pack to be registered, since it's the catch-all pack for
+            // where constants are defined if they are not in another pack.
+            // We can remove this once we fix the bug.
+            && (package_paths_set.is_match(relative_path.parent().unwrap()) || absolute_path.parent().unwrap() == absolute_root)
+        {
+            let pack = Pack::from_path(&absolute_path, &relative_path);
+            included_packs.insert(pack);
+        }
+
         // This could be one line, but I'm keeping it separate for debugging purposes
         if includes_set.is_match(&relative_path) {
             if !excludes_set.is_match(&relative_path) {
                 included_files.insert(absolute_path.clone());
+                owning_package_yml_for_file
+                    .insert(absolute_path, current_package_yml.clone());
             } else {
                 // println!("file excluded: {}", relative_path.display())
             }
@@ -128,17 +181,6 @@ pub(crate) fn walk_directory(
             //     &raw.include
             // )
         }
-
-        let file_name =
-            relative_path.file_name().expect("expected a file_name");
-
-        if file_name.eq_ignore_ascii_case("package.yml")
-            && (package_paths_set.is_match(relative_path.parent().unwrap())
-                || absolute_path.parent().unwrap() == absolute_root)
-        {
-            let pack = Pack::from_path(&absolute_path, &relative_path);
-            included_packs.insert(pack);
-        }
     }
 
     debug!("Finished directory walk");
@@ -146,6 +188,7 @@ pub(crate) fn walk_directory(
     WalkDirectoryResult {
         included_files,
         included_packs,
+        owning_package_yml_for_file,
     }
 }
 

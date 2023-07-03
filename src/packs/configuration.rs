@@ -72,10 +72,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     let WalkDirectoryResult {
         included_files,
         included_packs,
+        owning_package_yml_for_file,
     } = walk_directory(absolute_root.to_path_buf(), &raw_config);
 
     let absolute_root = absolute_root.to_path_buf();
-    let pack_set = PackSet::build(included_packs);
+    let pack_set = PackSet::build(included_packs, owning_package_yml_for_file);
 
     let cache_directory = absolute_root.join(raw_config.cache_directory);
     let cache_enabled = raw_config.cache;
