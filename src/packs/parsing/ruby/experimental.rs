@@ -61,4 +61,58 @@ mod tests {
         };
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn deeply_nested_constant() {
+        let contents: String = String::from("Foo::Bar::Baz");
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![UnresolvedReference {
+            name: String::from("Foo::Bar::Baz"),
+            namespace_path: vec![],
+            location: Range {
+                start_row: 1,
+                start_col: 0,
+                end_row: 1,
+                end_col: 14,
+            },
+        }];
+
+        let definitions = vec![];
+
+        let actual = process_from_contents(contents, &absolute_path);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn very_deeply_nested_constant() {
+        let contents: String = String::from("Foo::Bar::Baz::Boo");
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![UnresolvedReference {
+            name: String::from("Foo::Bar::Baz::Boo"),
+            namespace_path: vec![],
+            location: Range {
+                start_row: 1,
+                start_col: 0,
+                end_row: 1,
+                end_col: 19,
+            },
+        }];
+
+        let definitions = vec![];
+
+        let actual = process_from_contents(contents, &absolute_path);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+        assert_eq!(expected, actual);
+    }
 }
