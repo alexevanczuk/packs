@@ -14,6 +14,7 @@ struct ReferenceCollector<'a> {
     pub definitions: Vec<Definition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
+    pub behavioral_change_in_namespace: bool,
 }
 
 #[derive(Debug)]
@@ -154,25 +155,22 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // more efficient?
         self.current_namespaces.push(namespace);
 
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
-        self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
-
         if let Some(inner) = &node.body {
             self.visit(inner);
         }
+
+        if self.behavioral_change_in_namespace {
+            self.definitions.push(definition);
+        }
+
+        self.behavioral_change_in_namespace = false;
 
         self.current_namespaces.pop();
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
+        self.behavioral_change_in_namespace = true;
+
         // TODO: Read in args, process associations as a separate class
         // These can get complicated! e.g. we can specify a class name
         // dbg!(&node);
@@ -279,20 +277,15 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // more efficient?
         self.current_namespaces.push(namespace);
 
-        let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
-        self.definitions.push(definition);
-
-        // Packwerk also considers a definition to be a "reference"
-        self.references.push(UnresolvedReference {
-            name,
-            namespace_path,
-            location,
-        });
-
         if let Some(inner) = &node.body {
             self.visit(inner);
         }
+
+        if self.behavioral_change_in_namespace {
+            self.definitions.push(definition);
+        }
+
+        self.behavioral_change_in_namespace = false;
 
         self.current_namespaces.pop();
     }
@@ -312,6 +305,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             namespace_path,
             location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         })
+    }
+
+    fn on_def(&mut self, node: &nodes::Def) {
+        self.behavioral_change_in_namespace = true;
+        lib_ruby_parser::traverse::visitor::visit_def(self, node);
     }
 }
 
@@ -354,6 +352,7 @@ pub(crate) fn process_from_contents(
         current_namespaces: vec![],
         definitions: vec![],
         line_col_lookup: lookup,
+        behavioral_change_in_namespace: false,
     };
 
     collector.visit(&ast);
@@ -365,7 +364,7 @@ pub(crate) fn process_from_contents(
     // The packwerk parser uses a ConstantResolver constructed by constants inferred from the file system
     // see zeitwerk_utils for more.
     // For a parser that uses parsed constants, see the experimental parser
-    let definitions = vec![];
+    let definitions = collector.definitions;
 
     ProcessedFile {
         absolute_path,

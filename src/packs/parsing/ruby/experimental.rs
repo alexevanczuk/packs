@@ -7,6 +7,7 @@ mod tests {
     use crate::packs::parsing::ruby::experimental::parser::process_from_contents;
     use crate::packs::parsing::{Definition, Range};
     use crate::packs::{ProcessedFile, UnresolvedReference};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn trivial_case() {
@@ -154,12 +155,12 @@ end
         let unresolved_references = vec![];
 
         let definitions = vec![Definition {
-            fully_qualified_name: String::from("Foo"),
+            fully_qualified_name: String::from("::Foo"),
             location: Range {
                 start_row: 1,
-                start_col: 0,
-                end_row: 4,
-                end_col: 3,
+                start_col: 6,
+                end_row: 1,
+                end_col: 10,
             },
             namespace_path: vec![],
         }];
