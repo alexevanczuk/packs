@@ -1,5 +1,5 @@
 use assert_cmd::prelude::*;
-use std::{error::Error, fs, process::Command};
+use std::{error::Error, fs, path::PathBuf, process::Command};
 mod common;
 
 fn is_tmp_cache_packwerk_empty() -> Result<bool, std::io::Error> {
@@ -24,16 +24,13 @@ fn test_delete_cache() -> Result<(), Box<dyn Error>> {
     // Make sure all tests are calling `teardown()` from `tests/common/mod.rs`
     assert!(is_tmp_cache_packwerk_empty().unwrap());
 
-    // First, use the public API to generate the cache. That way we can verify our `delete_cache`
-    // command under test is doing real work.
-    Command::cargo_bin("packs")?
-        .arg("--project-root")
-        .arg("tests/fixtures/simple_app")
-        .arg("check")
-        .arg("packs/bar/app/services/bar.rb")
-        .arg("packs/foo/app/services/foo.rb")
-        .assert()
-        .failure();
+    // Write some dummy file to `tmp/cache/packwerk` to simulate a cache.
+    let cache_dir =
+        PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk");
+    // Write cache_dir dir
+    fs::create_dir_all(&cache_dir)?;
+    let dummy_file = cache_dir.join("dummy_file");
+    fs::write(dummy_file, "dummy file")?;
 
     assert!(!is_tmp_cache_packwerk_empty().unwrap());
 

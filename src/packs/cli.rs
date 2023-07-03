@@ -2,9 +2,11 @@ use crate::packs;
 use crate::packs::checker;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use tracing::debug;
 
 use super::logger::install_logger;
 use super::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+use super::Configuration;
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -61,6 +63,10 @@ struct Args {
     /// Run with the experimental parser, which gets constant definitions directly from the AST
     #[arg(short, long)]
     experimental_parser: bool,
+
+    /// Run without the cache (good for CI, testing)
+    #[arg(long)]
+    no_cache: bool,
 }
 
 impl Args {
@@ -77,12 +83,20 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     install_logger(args.debug);
 
-    let configuration = packs::configuration::get(&absolute_root);
+    let mut configuration = packs::configuration::get(&absolute_root);
 
     if args.experimental_parser {
         // debug!("Using experimental parser");
         // configuration = configuration.with_experimental_parser();
         panic!("The experimental parser is coming soon!")
+    }
+
+    if args.no_cache {
+        debug!("Cache is disabled");
+        configuration = Configuration {
+            cache_enabled: false,
+            ..configuration
+        };
     }
 
     match args.command {
@@ -116,6 +130,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     &configuration.pack_set,
                     &configuration.absolute_root,
                     &configuration.cache_directory,
+                    !configuration.cache_enabled,
                 )
             };
 

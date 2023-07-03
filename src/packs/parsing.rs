@@ -78,10 +78,10 @@ pub trait Cache {
     ) -> ProcessedFile;
 }
 
-pub fn process_files_with_cache<T: Cache + Send + Sync>(
+pub fn process_files_with_cache(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
-    cache: T,
+    cache: Box<dyn Cache + Send + Sync>,
     experimental_parser: bool,
 ) -> Vec<ProcessedFile> {
     paths

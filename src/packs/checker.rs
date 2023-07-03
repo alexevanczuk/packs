@@ -1,7 +1,7 @@
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
-use crate::packs::per_file_cache;
+
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
@@ -145,9 +145,7 @@ pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cache = per_file_cache::PerFileCache {
-        cache_dir: configuration.cache_directory.to_owned(),
-    };
+    let cache = configuration.get_cache();
 
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
@@ -184,9 +182,7 @@ pub(crate) fn check_all(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cache = per_file_cache::PerFileCache {
-        cache_dir: configuration.cache_directory.to_owned(),
-    };
+    let cache = configuration.get_cache();
 
     let violations = get_all_violations(
         &configuration,
@@ -200,10 +196,10 @@ pub(crate) fn update(
     Ok(())
 }
 
-fn get_all_violations<T: Cache + Send + Sync>(
+fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: HashSet<PathBuf>,
-    cache: T,
+    cache: Box<dyn Cache + Send + Sync>,
     experimental_parser: bool,
 ) -> Vec<Violation> {
     // TODO: Write a test that if this isn't here, it fails gracefully
@@ -221,6 +217,7 @@ fn get_all_violations<T: Cache + Send + Sync>(
         &configuration.pack_set,
         &configuration.absolute_root,
         &configuration.cache_directory,
+        !configuration.cache_enabled,
     );
 
     debug!("Turning unresolved references into fully qualified references");

@@ -27,6 +27,7 @@ pub(crate) mod test_util {
             &configuration.pack_set,
             &absolute_root,
             &configuration.cache_directory,
+            true,
         )
     }
 }

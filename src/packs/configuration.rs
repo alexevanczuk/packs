@@ -1,6 +1,7 @@
-use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
-use super::PackSet;
+use super::parsing::Cache;
+use super::{checker::architecture::Layers, per_file_cache};
+use super::{noop_cache, PackSet};
 
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
@@ -41,6 +42,16 @@ impl Configuration {
                 .intersection(&absolute_filepaths)
                 .cloned()
                 .collect::<HashSet<PathBuf>>()
+        }
+    }
+
+    pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
+        if self.cache_enabled {
+            Box::new(per_file_cache::PerFileCache {
+                cache_dir: self.cache_directory.to_owned(),
+            })
+        } else {
+            Box::new(noop_cache::NoopCache {})
         }
     }
 
@@ -185,7 +196,7 @@ mod tests {
 
         assert_eq!(expected_packs, actual.pack_set.packs);
 
-        assert!(actual.cache_enabled)
+        assert!(!actual.cache_enabled)
     }
 
     #[test]

@@ -18,9 +18,14 @@ pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
     absolute_root: &Path,
     cache_dir: &Path,
+    cache_disabled: bool,
 ) -> ConstantResolver {
-    let constants =
-        inferred_constants_from_pack_set(pack_set, absolute_root, cache_dir);
+    let constants = inferred_constants_from_pack_set(
+        pack_set,
+        absolute_root,
+        cache_dir,
+        cache_disabled,
+    );
     ConstantResolver::create(absolute_root, constants)
 }
 
@@ -28,12 +33,14 @@ fn inferred_constants_from_pack_set(
     pack_set: &PackSet,
     absolute_root: &Path,
     cache_dir: &Path,
+    cache_disabled: bool,
 ) -> Vec<Constant> {
     let autoload_paths = get_autoload_paths(&pack_set.packs);
     inferred_constants_from_autoload_paths(
         autoload_paths,
         absolute_root,
         cache_dir,
+        cache_disabled,
     )
 }
 
@@ -41,6 +48,7 @@ fn inferred_constants_from_autoload_paths(
     autoload_paths: Vec<PathBuf>,
     absolute_root: &Path,
     cache_dir: &Path,
+    cache_disabled: bool,
 ) -> Vec<Constant> {
     debug!("Get constant resolver cache");
     let cache_data = get_constant_resolver_cache(cache_dir);
@@ -116,7 +124,7 @@ fn inferred_constants_from_autoload_paths(
         .collect::<Vec<Constant>>();
 
     debug!("Caching constant definitions");
-    cache_constant_definitions(&constants, cache_dir);
+    cache_constant_definitions(&constants, cache_dir, cache_disabled);
 
     constants
 }
@@ -159,7 +167,15 @@ fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
     }
 }
 
-fn cache_constant_definitions(constants: &Vec<Constant>, cache_dir: &Path) {
+fn cache_constant_definitions(
+    constants: &Vec<Constant>,
+    cache_dir: &Path,
+    cache_disabled: bool,
+) {
+    if cache_disabled {
+        return;
+    }
+
     let mut file_definition_map: HashMap<PathBuf, String> = HashMap::new();
     for constant in constants {
         file_definition_map.insert(
@@ -356,6 +372,7 @@ mod tests {
             &pack_set,
             absolute_root,
             &configuration.cache_directory,
+            !configuration.cache_enabled,
         );
         let actual_constant_map =
             constant_resolver.fully_qualified_constant_to_constant_map;

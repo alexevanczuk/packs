@@ -52,8 +52,4 @@ globset = "0.4.10"
 assert_cmd = "2.0.10" # testing CLI
 rusty-hook = "^0.11.2" # git hooks
 predicates = "3.0.2" # kind of like rspec assertions
-# serial_test allows us to run some tests in serial
-# see #[serial] tag for more info
-# more info: https://fdeantoni.medium.com/running-tests-sequentially-in-rust-eed7566f63f0
-serial_test = "2.0.0"
 pretty_assertions = "1.3.0" # Shows a more readable diff when comparing objects

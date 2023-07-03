@@ -14,6 +14,7 @@ pub mod cli;
 pub(crate) mod file_utils;
 mod inflector_shim;
 pub mod logger;
+pub(crate) mod noop_cache;
 mod pack_set;
 pub mod package_todo;
 pub mod parsing;
