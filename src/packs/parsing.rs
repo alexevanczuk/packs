@@ -4,8 +4,10 @@ use std::{
 };
 
 pub(crate) mod ruby;
+pub(crate) use ruby::experimental::parser::process_from_path as process_from_ruby_path_experimental;
 pub(crate) use ruby::packwerk::parser::process_from_path as process_from_ruby_path;
 pub(crate) mod erb;
+pub(crate) use erb::experimental::parser::process_from_path as process_from_erb_path_experimental;
 pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
@@ -23,14 +25,14 @@ pub fn process_file(path: &Path, experimental_parser: bool) -> ProcessedFile {
         match file_type {
             SupportedFileType::Ruby => {
                 if experimental_parser {
-                    panic!("The experimental parser is coming soon!")
+                    process_from_ruby_path_experimental(path)
                 } else {
                     process_from_ruby_path(path)
                 }
             }
             SupportedFileType::Erb => {
                 if experimental_parser {
-                    panic!("The experimental parser is coming soon!")
+                    process_from_erb_path_experimental(path)
                 } else {
                     process_from_erb_path(path)
                 }

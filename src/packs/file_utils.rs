@@ -1,5 +1,7 @@
 use std::{
     collections::HashSet,
+    fs,
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -98,4 +100,18 @@ pub(crate) fn convert_erb_to_ruby_without_sourcemaps(
         .collect();
 
     extracted_contents.join("\n")
+}
+
+pub(crate) fn file_content_digest(file: &Path) -> String {
+    let mut file_content = Vec::new();
+
+    // Read the file content
+    let mut file_handle = fs::File::open(file)
+        .unwrap_or_else(|_| panic!("Failed to open file {:?}", file));
+    file_handle
+        .read_to_end(&mut file_content)
+        .expect("Failed to read file");
+
+    // Compute the MD5 digest
+    format!("{:x}", md5::compute(&file_content))
 }

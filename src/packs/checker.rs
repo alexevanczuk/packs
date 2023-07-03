@@ -1,5 +1,6 @@
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
+use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 
 use crate::packs::per_file_cache::create_cache_dir_idempotently;
@@ -213,12 +214,19 @@ fn get_all_violations(
         experimental_parser,
     );
 
-    let constant_resolver = get_zeitwerk_constant_resolver(
-        &configuration.pack_set,
-        &configuration.absolute_root,
-        &configuration.cache_directory,
-        !configuration.cache_enabled,
-    );
+    let constant_resolver = if configuration.experimental_parser {
+        get_experimental_constant_resolver(
+            &configuration.absolute_root,
+            &processed_files,
+        )
+    } else {
+        get_zeitwerk_constant_resolver(
+            &configuration.pack_set,
+            &configuration.absolute_root,
+            &configuration.cache_directory,
+            !configuration.cache_enabled,
+        )
+    };
 
     debug!("Turning unresolved references into fully qualified references");
     let references: Vec<Reference> = processed_files
@@ -242,6 +250,7 @@ fn get_all_violations(
             references
         })
         .collect();
+
     debug!("Finished turning unresolved references into fully qualified references");
 
     debug!("Running checkers on resolved references");
@@ -262,6 +271,7 @@ fn get_all_violations(
                 .collect::<Vec<Violation>>()
         })
         .collect();
+
     debug!("Finished running checkers");
 
     violations
