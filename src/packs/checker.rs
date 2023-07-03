@@ -77,13 +77,8 @@ impl<'a> Reference<'a> {
                 .unwrap()
                 .to_string();
 
-            let defining_pack_name =
+            let defining_pack =
                 configuration.pack_set.for_file(absolute_path_of_definition);
-
-            let defining_pack: Option<&'a Pack> = match defining_pack_name {
-                Some(name) => Some(configuration.pack_set.for_pack(&name)),
-                None => None,
-            };
 
             (defining_pack, Some(relative_defining_file))
         } else {
@@ -99,7 +94,7 @@ impl<'a> Reference<'a> {
 
         let constant_name = constant_name.clone();
 
-        let referencing_pack_name = configuration
+        let referencing_pack = configuration
             .pack_set
             .for_file(referencing_file_path)
             .unwrap_or_else(|| {
@@ -108,9 +103,6 @@ impl<'a> Reference<'a> {
                     &referencing_file_path.display()
                 )
             });
-
-        let referencing_pack =
-            configuration.pack_set.for_pack(&referencing_pack_name);
 
         let loc = unresolved_reference.location.clone();
         let source_location = SourceLocation {

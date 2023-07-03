@@ -330,15 +330,19 @@ mod tests {
                 .expect("Could not canonicalize path")
                 .as_path(),
         );
-        let absolute_file_path = PathBuf::from(
-            "tests/fixtures/simple_app/packs/foo/app/services/foo.rb",
-        )
-        .canonicalize()
-        .expect("Could not canonicalize path");
+        let absolute_file_path = configuration
+            .absolute_root
+            .join("packs/foo/app/services/foo.rb")
+            .canonicalize()
+            .expect("Could not canonicalize path");
 
         assert_eq!(
-            Some(String::from("packs/foo")),
-            configuration.pack_set.for_file(&absolute_file_path)
+            String::from("packs/foo"),
+            configuration
+                .pack_set
+                .for_file(&absolute_file_path)
+                .unwrap()
+                .name
         )
     }
 }

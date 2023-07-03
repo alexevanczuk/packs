@@ -11,7 +11,7 @@ use super::{checker::ViolationIdentifier, Pack};
 pub struct PackSet {
     pub packs: Vec<Pack>,
     indexed_packs: HashMap<String, Pack>,
-    for_file_cache: dashmap::DashMap<PathBuf, Option<String>>,
+    owning_pack_name_for_file: HashMap<PathBuf, String>,
     // For now, we keep track of all violations so that we can diff them and only
     // present the ones that are not recorded.
     // Eventually, we'll need to rewrite these to disk, in which case we'll need
@@ -22,7 +22,10 @@ pub struct PackSet {
 }
 
 impl PackSet {
-    pub fn build(packs: HashSet<Pack>) -> PackSet {
+    pub fn build(
+        packs: HashSet<Pack>,
+        owning_package_yml_for_file: HashMap<PathBuf, PathBuf>,
+    ) -> PackSet {
         let packs: Vec<Pack> = packs
             .into_iter()
             .sorted_by(|packa, packb| {
@@ -30,47 +33,41 @@ impl PackSet {
                     .then_with(|| packa.name.cmp(&packb.name))
             })
             .collect();
-        let mut indexed_packs: HashMap<String, Pack> = HashMap::new();
+        let mut indexed_packs_by_name: HashMap<String, Pack> = HashMap::new();
+        let mut indexed_packs_by_yml: HashMap<PathBuf, String> = HashMap::new();
+
         let mut all_violations = HashSet::new();
         for pack in &packs {
-            indexed_packs.insert(pack.name.clone(), pack.clone());
+            indexed_packs_by_name.insert(pack.name.clone(), pack.clone());
+            indexed_packs_by_yml.insert(pack.yml.clone(), pack.name.clone());
             for violation_identifier in pack.all_violations() {
                 all_violations.insert(violation_identifier);
             }
         }
 
-        PackSet {
-            indexed_packs,
-            packs,
-            for_file_cache: dashmap::DashMap::new(),
-            all_violations,
-        }
-    }
+        let mut owning_pack_name_for_file: HashMap<PathBuf, String> =
+            HashMap::new();
 
-    pub fn for_file(&self, absolute_file_path: &Path) -> Option<String> {
-        if self.for_file_cache.contains_key(absolute_file_path) {
-            self.for_file_cache.get(absolute_file_path).unwrap().clone()
-        } else {
-            let defining_pack_name = self.for_file_uncached(absolute_file_path);
-            self.for_file_cache.insert(
-                absolute_file_path.to_path_buf(),
-                defining_pack_name.clone(),
-            );
-            defining_pack_name
-        }
-    }
-
-    pub fn for_file_uncached(
-        &self,
-        absolute_file_path: &Path,
-    ) -> Option<String> {
-        for pack in &self.packs {
-            if absolute_file_path.starts_with(pack.yml.parent().unwrap()) {
-                return Some(pack.name.clone());
+        for (file, package_yml) in owning_package_yml_for_file {
+            if let Some(pack_name) = indexed_packs_by_yml.get(&package_yml) {
+                owning_pack_name_for_file.insert(file, pack_name.clone());
             }
         }
 
-        None
+        let indexed_packs = indexed_packs_by_name;
+
+        PackSet {
+            indexed_packs,
+            packs,
+            all_violations,
+            owning_pack_name_for_file,
+        }
+    }
+
+    pub fn for_file(&self, absolute_file_path: &Path) -> Option<&Pack> {
+        self.owning_pack_name_for_file
+            .get(absolute_file_path)
+            .map(|pack_name| self.for_pack(pack_name))
     }
 
     pub fn for_pack(&self, pack_name: &str) -> &Pack {
