@@ -1,7 +1,8 @@
 # TODO
 
 ## Features
-- Explore alternate extractor (below)
+- Refactor common methods from experimental and packwerk parsers
+- Think through how to handle monkey patches / opening up other modules in experimental parser
 - Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
 
 ## Performance
@@ -38,10 +39,10 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 ```
 
 # Packwerk Implementation Considerations
+- See `EXPERIMENTAL_PARSER_USAGE.md` for more info
 - Packwerk considers a definition to be a reference. I explored removing this in this branch: https://github.com/alexevanczuk/packs/pull/44
   - This results in a diff in violations, because if a class opens up a module defined by another class, its considered to be a reference to that other class.
   - I think this is actually a bug in packwerk, since a definition is not really a reference. Even though monkey patching / opening up other moduels is not great, we should surface that information through a different mechanism (such as allowing packs to have a monkey patches violation)
-  - Note this logic can be moved into the experimental parser, since it does not need to preserve behavior.
 
 # Abandoned Performance Improvement Attempts
 - In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
@@ -50,16 +51,3 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
 Eventually, I'd like to port this idea over to `packs`.
 We might consider how we can have specific checkers/validators be responsible for their own portion of the deserialized properties in `package.yml` files.
-
-# Alternate Extractor
-The alternate extractor is an experimental implementation of the extractor that does not infer constants from file names, but instead parses them directly.
-
-## Implementation Notes:
-- Allow it to be configured with cmd line argument, e.g. `--extractor=experimental` or packwerk.yml flag
-- This feature should have a "monkeypatches" key in packwerk.yml. This is a hash of constants and what file monkey patches them. "Validate" should check this. This can allow the alternate implementation to avoid violations on a monkey patched "String" class, for example.
-- This parser thinks a constant can be defined in many places. For each place, it establishes one reference.
-- This parser does not consider definitions to be references. (This is a bug in the current implementation – see above.)
-
-## Sequencing
-- Implement
-- Announce it, share learnings, and demo it at guild meeting

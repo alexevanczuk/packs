@@ -266,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compatible_with_alternate_extractor() {
+    fn test_compatible_with_alternate_parser() {
         let contents: String = String::from(
             r#"{
     "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
