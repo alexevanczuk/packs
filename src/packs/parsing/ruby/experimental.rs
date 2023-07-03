@@ -34,4 +34,31 @@ mod tests {
         };
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn nested_constant() {
+        let contents: String = String::from("Foo::Bar");
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![UnresolvedReference {
+            name: String::from("Foo::Bar"),
+            namespace_path: vec![],
+            location: Range {
+                start_row: 1,
+                start_col: 0,
+                end_row: 1,
+                end_col: 9,
+            },
+        }];
+
+        let definitions = vec![];
+
+        let actual = process_from_contents(contents, &absolute_path);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+        assert_eq!(expected, actual);
+    }
 }
