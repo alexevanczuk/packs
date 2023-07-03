@@ -223,7 +223,7 @@ fn get_all_violations(
 
     debug!("Turning unresolved references into fully qualified references");
     let references: Vec<Reference> = processed_files
-        .into_par_iter()
+        .par_iter()
         .flat_map(|processed_file| {
             let references: Vec<Reference> = processed_file
                 .unresolved_references
