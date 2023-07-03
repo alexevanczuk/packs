@@ -8,6 +8,7 @@ fn test_update() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
+        .arg("--debug")
         .arg("update")
         .assert()
         .success()
@@ -51,6 +52,7 @@ fn test_update_with_experimental_parser() -> Result<(), Box<dyn Error>> {
         .unwrap()
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
+        .arg("--debug")
         .arg("--experimental-parser")
         .arg("update")
         .assert()

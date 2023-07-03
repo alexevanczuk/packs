@@ -9,6 +9,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/architecture_violations")
+        .arg("--debug")
         .arg("check")
         .assert()
         .failure()

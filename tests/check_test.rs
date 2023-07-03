@@ -9,6 +9,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
+        .arg("--debug")
         .arg("check")
         .assert()
         .failure()
@@ -25,6 +26,7 @@ fn test_check_with_package_todo_file() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/contains_package_todo")
+        .arg("--debug")
         .arg("check")
         .assert()
         .success()
@@ -42,6 +44,7 @@ fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--experimental-parser")
+        .arg("--debug")
         .arg("check")
         .assert()
         .failure()
