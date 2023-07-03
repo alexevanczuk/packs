@@ -149,7 +149,7 @@ pub(crate) fn check_all(
         cache_dir: configuration.cache_directory.to_owned(),
     };
 
-    debug!("Interecting input files with configuration included files");
+    debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let violations: Vec<Violation> = get_all_violations(
