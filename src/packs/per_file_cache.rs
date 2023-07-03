@@ -3,11 +3,12 @@ use crate::packs::SourceLocation;
 use serde::{Deserialize, Serialize};
 
 use std::env;
-use std::fs::{self, File};
-use std::io::{Read, Write};
+use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use super::file_utils::file_content_digest;
 use super::parsing::{Cache, Range};
 use super::{ProcessedFile, UnresolvedReference};
 
@@ -90,20 +91,6 @@ pub fn read_json_file(
     let reader = std::io::BufReader::new(file);
     let data = serde_json::from_reader(reader)?;
     Ok(data)
-}
-
-pub(crate) fn file_content_digest(file: &Path) -> String {
-    let mut file_content = Vec::new();
-
-    // Read the file content
-    let mut file_handle = fs::File::open(file)
-        .unwrap_or_else(|_| panic!("Failed to open file {:?}", file));
-    file_handle
-        .read_to_end(&mut file_content)
-        .expect("Failed to read file");
-
-    // Compute the MD5 digest
-    format!("{:x}", md5::compute(&file_content))
 }
 
 #[derive(Debug)]
