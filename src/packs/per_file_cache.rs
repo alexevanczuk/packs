@@ -26,7 +26,7 @@ impl Cache for PerFileCache {
             CachableFile::from(absolute_root, &self.cache_dir, path);
 
         if cachable_file.cache_is_valid() {
-            cachable_file.cache_entry.unwrap().processed_file()
+            cachable_file.cache_entry.unwrap().processed_file(path)
         } else {
             let processed_file = process_file(path, experimental_parser);
             write_cache(&cachable_file, processed_file.clone());
@@ -38,12 +38,11 @@ impl Cache for PerFileCache {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
-    pub absolute_path: PathBuf,
     pub unresolved_references: Vec<ReferenceEntry>,
 }
 
 impl CacheEntry {
-    pub fn processed_file(self) -> ProcessedFile {
+    pub fn processed_file(self, absolute_path: &Path) -> ProcessedFile {
         let unresolved_references = self
             .unresolved_references
             .iter()
@@ -52,7 +51,7 @@ impl CacheEntry {
 
         ProcessedFile {
             unresolved_references,
-            absolute_path: self.absolute_path,
+            absolute_path: absolute_path.to_owned(),
             definitions: vec![], // TODO
         }
     }
@@ -180,10 +179,10 @@ fn write_cache(cachable_file: &CachableFile, processed_file: ProcessedFile) {
             }
         })
         .collect();
+
     let cache_entry = &CacheEntry {
         file_contents_digest,
         unresolved_references,
-        absolute_path: processed_file.absolute_path,
     };
 
     let cache_data = serde_json::to_string(&cache_entry)
