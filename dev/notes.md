@@ -40,9 +40,14 @@ As I'm new to Rust, I don't take advantage of a lot of features in Rust that wou
 # Profiling
 I've been using https://github.com/flamegraph-rs/flamegraph to generate flamegraphs to improve performance.
 
-Specifically, this command which merges similar code paths to see where most of the time is spent:
+Install with:
 ```
-sudo CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root=../your_app check
+cargo install flamegraph
+```
+
+I have aliased this command which generates something like a "left-shifted" flamegraph, to show where most of the time is spent:
+```
+alias profile_packs='CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --profile=release --reverse --min-width=0.5 -- --project-root="../your_app" check'
 ```
 For more, see: https://nnethercote.github.io/perf-book/profiling.html
 
