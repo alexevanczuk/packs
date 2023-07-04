@@ -1,4 +1,8 @@
-use std::{fs::File, path::Path};
+use std::{
+    collections::HashMap,
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -78,6 +82,10 @@ pub(crate) struct RawConfiguration {
     // Experimental parser
     #[serde(default)]
     pub experimental_parser: bool,
+
+    // Ignored monkey patches
+    #[serde(default)]
+    pub ignored_monkey_patches: HashMap<String, PathBuf>,
 }
 
 fn default_include() -> Vec<String> {

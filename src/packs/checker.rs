@@ -212,6 +212,7 @@ fn get_all_violations(
         get_experimental_constant_resolver(
             &configuration.absolute_root,
             &processed_files,
+            &configuration.ignored_monkey_patches,
         )
     } else {
         get_zeitwerk_constant_resolver(

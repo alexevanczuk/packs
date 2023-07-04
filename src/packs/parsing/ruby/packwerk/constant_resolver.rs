@@ -23,6 +23,7 @@ impl ConstantResolver {
         absolute_root: &Path,
         constants: Vec<Constant>,
         disallow_multiple_definitions: bool,
+        ignored_monkey_patches: &HashMap<String, PathBuf>,
     ) -> ConstantResolver {
         debug!("Building constant resolver");
 
@@ -35,6 +36,27 @@ impl ConstantResolver {
 
         // TODO: Do this in parallel?
         for constant in constants {
+            if constant.fully_qualified_name == *"Sidekiq" {
+                dbg!(&constant);
+                dbg!(&ignored_monkey_patches);
+            }
+
+            if let Some(monkey_patch_location) =
+                ignored_monkey_patches.get(&constant.fully_qualified_name)
+            {
+                let relative_path = constant
+                    .absolute_path_of_definition
+                    .strip_prefix(absolute_root)
+                    .unwrap();
+                if monkey_patch_location == relative_path {
+                    debug!(
+                        "Ignoring monkey patch: {:?}",
+                        constant.absolute_path_of_definition
+                    );
+                    continue;
+                }
+                continue;
+            }
             let fully_qualified_constant_name =
                 constant.fully_qualified_name.clone();
 

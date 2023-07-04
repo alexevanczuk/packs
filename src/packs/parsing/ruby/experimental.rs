@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
@@ -11,6 +14,7 @@ pub(crate) mod parser;
 pub fn get_experimental_constant_resolver(
     absolute_root: &Path,
     processed_files: &Vec<ProcessedFile>,
+    ignored_monkey_patches: &HashMap<String, PathBuf>,
 ) -> ConstantResolver {
     let constants = processed_files
         .into_par_iter()
@@ -32,7 +36,12 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<Constant>>();
 
-    ConstantResolver::create(absolute_root, constants, false)
+    ConstantResolver::create(
+        absolute_root,
+        constants,
+        false,
+        ignored_monkey_patches,
+    )
 }
 
 #[cfg(test)]

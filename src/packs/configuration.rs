@@ -9,6 +9,7 @@ use crate::packs::walk_directory::WalkDirectoryResult;
 
 use crate::packs::walk_directory;
 
+use std::collections::HashMap;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
@@ -25,6 +26,7 @@ pub struct Configuration {
     pub pack_set: PackSet,
     pub layers: Layers,
     pub experimental_parser: bool,
+    pub ignored_monkey_patches: HashMap<String, PathBuf>,
 }
 
 impl Configuration {
@@ -92,6 +94,8 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         layers: raw_config.architecture_layers,
     };
 
+    let ignored_monkey_patches = raw_config.ignored_monkey_patches;
+
     debug!("Finished building configuration");
 
     Configuration {
@@ -102,6 +106,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         pack_set,
         layers,
         experimental_parser,
+        ignored_monkey_patches,
     }
 }
 

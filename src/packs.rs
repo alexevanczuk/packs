@@ -82,6 +82,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
         get_experimental_constant_resolver(
             &configuration.absolute_root,
             &processed_files,
+            &configuration.ignored_monkey_patches,
         )
     } else {
         get_zeitwerk_constant_resolver(
