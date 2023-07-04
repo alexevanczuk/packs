@@ -5,13 +5,26 @@
 ## Features
 - Refactor common methods from experimental and packwerk parsers
 - Think through how to handle monkey patches / opening up other modules in experimental parser
-- Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
+- Implement `packs validate` – should always error and direct the user to the single command, check
+  - Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
+  - Make sure to run these validations in parallel and that it does not break VSCode extension (due to different output).
+- `packs init | create | move`
+- CLI could have `-i` interactive mode (like `use_packs`, also see https://github.com/mikaelmello/inquire)
+- Unnecessary dependency validation
+- Privacy violation inversion?
 
 ## Performance
+Although `packs` is intended to be fast, there are ways it can be made a lot faster!
+
 - Explore alternate caching mechanisms:
   - Convert existing cache to be `PackwerkCompatibleCache`.
   - Consider using SQLite cache (for less file IO)
   - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
+- Conditional cache usage. For example, implemented as an LSP, packs could always use cache and only bust specific caches (asychronously) when certain events (e.g. file changes) are received.
+- By using modified time, we can avoid opening the entire file and parsing it and calculating the md5 hash. It's possible this would not be a meaningful performance improvement.
+
+### Improved use of references (less cloning)
+As I'm new to Rust, I don't take advantage of a lot of features in Rust that would improve the performance, such as making sure I minimize the use of deep clones and use references.
 
 # Distribution Considerations
 - Sign the binary
