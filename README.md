@@ -14,7 +14,7 @@ A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a
 
 ## To be 20x faster than `packwerk` on most projects
 - Currently ~20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md).
-- Your milemage may vary!
+- Your mileage may vary!
 - Other performance improvements are coming soon!
 
 ## Support non-Rails, non-zeitwerk apps
