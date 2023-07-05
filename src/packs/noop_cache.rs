@@ -1,19 +1,24 @@
 use std::path::Path;
 
 use super::{
-    parsing::{process_file, Cache},
+    caching::{CacheResult, EmptyCacheEntry},
     ProcessedFile,
 };
+use crate::packs::caching::Cache;
 
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn process_file(
+    fn get(&self, _absolute_root: &Path, _path: &Path) -> CacheResult {
+        // Return nothing!
+        CacheResult::Miss(EmptyCacheEntry::default())
+    }
+
+    fn write(
         &self,
-        _absolute_root: &Path,
-        path: &Path,
-        experimental_parser: bool,
-    ) -> ProcessedFile {
-        process_file(path, experimental_parser)
+        _empty_cache_entry: &super::caching::EmptyCacheEntry,
+        _processed_file: &ProcessedFile,
+    ) {
+        // Do nothing!
     }
 }

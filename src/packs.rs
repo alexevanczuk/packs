@@ -9,6 +9,7 @@ use std::hash::Hasher;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
+pub(crate) mod caching;
 pub(crate) mod checker;
 pub mod cli;
 pub(crate) mod file_utils;

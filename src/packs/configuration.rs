@@ -1,7 +1,7 @@
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
-use super::parsing::Cache;
 use super::{checker::architecture::Layers, per_file_cache};
 use super::{noop_cache, PackSet};
+use crate::packs::caching::Cache;
 
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;

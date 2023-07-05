@@ -14,6 +14,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use super::{
+    caching::{Cache, CacheResult},
     file_utils::{get_file_type, SupportedFileType},
     ProcessedFile,
 };
@@ -71,15 +72,6 @@ pub struct Definition {
     pub namespace_path: Vec<String>,
 }
 
-pub trait Cache {
-    fn process_file(
-        &self,
-        absolute_root: &Path,
-        path: &Path,
-        experimental_parser: bool,
-    ) -> ProcessedFile;
-}
-
 pub fn process_files_with_cache(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
@@ -89,11 +81,15 @@ pub fn process_files_with_cache(
     paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            cache.process_file(
-                absolute_root,
-                absolute_path,
-                experimental_parser,
-            )
+            match cache.get(absolute_root, absolute_path) {
+                CacheResult::Processed(processed_file) => processed_file,
+                CacheResult::Miss(empty_cache_entry) => {
+                    let processed_file =
+                        process_file(absolute_path, experimental_parser);
+                    cache.write(&empty_cache_entry, &processed_file);
+                    processed_file
+                }
+            }
         })
         .collect()
 }
