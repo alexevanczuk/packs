@@ -45,13 +45,6 @@ impl EmptyCacheEntry {
 }
 
 pub trait Cache {
-    // fn process_file(
-    //     &self,
-    //     absolute_root: &Path,
-    //     path: &Path,
-    //     experimental_parser: bool,
-    // ) -> ProcessedFile;
-
     fn get(&self, absolute_root: &Path, path: &Path) -> CacheResult;
 
     fn write(
