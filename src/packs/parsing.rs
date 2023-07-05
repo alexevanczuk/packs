@@ -14,7 +14,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    caching::Cache,
+    caching::{Cache, CacheResult},
     file_utils::{get_file_type, SupportedFileType},
     ProcessedFile,
 };
@@ -82,8 +82,13 @@ pub fn process_files_with_cache(
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
             match cache.get(absolute_root, absolute_path) {
-                Some(processed_file) => processed_file,
-                None => process_file(absolute_path, experimental_parser),
+                CacheResult::Processed(processed_file) => processed_file,
+                CacheResult::Miss(cache_miss) => {
+                    let processed_file =
+                        process_file(absolute_path, experimental_parser);
+                    cache.write(&cache_miss, &processed_file);
+                    processed_file
+                }
             }
         })
         .collect()

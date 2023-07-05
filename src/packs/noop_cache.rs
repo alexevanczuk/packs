@@ -1,18 +1,17 @@
 use std::path::Path;
 
-use super::ProcessedFile;
+use super::{
+    caching::{CacheMiss, CacheResult},
+    ProcessedFile,
+};
 use crate::packs::caching::Cache;
 
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn get(
-        &self,
-        _absolute_root: &Path,
-        _path: &Path,
-    ) -> Option<ProcessedFile> {
+    fn get(&self, _absolute_root: &Path, _path: &Path) -> CacheResult {
         // Return nothing!
-        None
+        CacheResult::Miss(CacheMiss::default())
     }
 
     fn write(

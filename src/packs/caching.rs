@@ -2,7 +2,12 @@ use std::path::{Path, PathBuf};
 
 use super::{file_utils::file_content_digest, ProcessedFile};
 
-#[derive(Debug)]
+pub enum CacheResult {
+    Processed(ProcessedFile),
+    Miss(CacheMiss),
+}
+
+#[derive(Debug, Default)]
 pub struct CacheMiss {
     pub relative_path: PathBuf,
     pub file_contents_digest: String,
@@ -45,7 +50,7 @@ pub trait Cache {
     //     experimental_parser: bool,
     // ) -> ProcessedFile;
 
-    fn get(&self, absolute_root: &Path, path: &Path) -> Option<ProcessedFile>;
+    fn get(&self, absolute_root: &Path, path: &Path) -> CacheResult;
 
     fn write(&self, cache_miss: &CacheMiss, processed_file: &ProcessedFile);
 }

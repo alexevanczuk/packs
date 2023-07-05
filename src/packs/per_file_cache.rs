@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use super::caching::Cache;
 use super::caching::CacheMiss;
 
+use super::caching::CacheResult;
 use super::parsing::Definition;
 use super::parsing::Range;
 use super::{ProcessedFile, UnresolvedReference};
@@ -18,7 +19,7 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn get(&self, absolute_root: &Path, path: &Path) -> Option<ProcessedFile> {
+    fn get(&self, absolute_root: &Path, path: &Path) -> CacheResult {
         let cache_miss = CacheMiss::new(absolute_root, &self.cache_dir, path);
         let cache_entry = cache_entry_for_file(&cache_miss);
         if let Some(cache_entry) = cache_entry {
@@ -26,13 +27,13 @@ impl Cache for PerFileCache {
                 == cache_miss.file_contents_digest;
 
             if !file_digests_match {
-                None
+                CacheResult::Miss(cache_miss)
             } else {
                 let processed_file = cache_entry.processed_file(path);
-                Some(processed_file)
+                CacheResult::Processed(processed_file)
             }
         } else {
-            None
+            CacheResult::Miss(cache_miss)
         }
     }
 
