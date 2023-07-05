@@ -20,6 +20,7 @@ mod pack_set;
 pub mod package_todo;
 pub mod parsing;
 pub(crate) mod per_file_cache;
+pub(crate) mod reference_graph_builder;
 mod walk_directory;
 
 // Re-exports: Eventually, these may be part of the public API for packs
