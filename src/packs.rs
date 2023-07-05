@@ -140,5 +140,29 @@ mod tests {
 }
 
 pub fn list_monkey_patches(configuration: Configuration) {
-    todo!()
+    let initialized_dir =
+        create_cache_dir_idempotently(&configuration.cache_directory);
+
+    let cache = configuration.get_cache(initialized_dir);
+
+    let constant_resolver = if configuration.experimental_parser {
+        let processed_files: Vec<ProcessedFile> = process_files_with_cache(
+            &configuration.absolute_root,
+            &configuration.included_files,
+            cache,
+            &configuration.experimental_parser,
+        );
+        get_experimental_constant_resolver(
+            &configuration.absolute_root,
+            &processed_files,
+            &configuration.ignored_monkey_patches,
+        )
+    } else {
+        get_zeitwerk_constant_resolver(
+            &configuration.pack_set,
+            &configuration.absolute_root,
+            &configuration.cache_directory,
+            !configuration.cache_enabled,
+        )
+    };
 }
