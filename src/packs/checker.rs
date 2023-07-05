@@ -1,9 +1,9 @@
+use crate::packs::caching::create_cache_dir_idempotently;
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
 use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
 
-use crate::packs::per_file_cache::create_cache_dir_idempotently;
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
@@ -138,7 +138,10 @@ pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cache = configuration.get_cache();
+    let initialized_dir =
+        create_cache_dir_idempotently(&configuration.cache_directory);
+
+    let cache = configuration.get_cache(initialized_dir);
 
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
@@ -175,7 +178,9 @@ pub(crate) fn check_all(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cache = configuration.get_cache();
+    let initialized_dir =
+        create_cache_dir_idempotently(&configuration.cache_directory);
+    let cache = configuration.get_cache(initialized_dir);
 
     let violations = get_all_violations(
         &configuration,
@@ -195,9 +200,6 @@ fn get_all_violations(
     cache: Box<dyn Cache + Send + Sync>,
     experimental_parser: bool,
 ) -> Vec<Violation> {
-    // TODO: Write a test that if this isn't here, it fails gracefully
-    create_cache_dir_idempotently(&configuration.cache_directory);
-
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
