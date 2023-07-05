@@ -16,7 +16,6 @@ pub struct EmptyCacheEntry {
 }
 
 impl EmptyCacheEntry {
-    // Pass in Configuration and get cache_dir from that
     pub fn new(
         absolute_root: &Path,
         cache_directory: &Path,
