@@ -148,8 +148,6 @@ pub struct Pack {
 
 impl Hash for Pack {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // Implement the hash function for your struct fields
-        // Call the appropriate `hash` method on the `Hasher` to hash each field
         self.name.hash(state);
     }
 }
