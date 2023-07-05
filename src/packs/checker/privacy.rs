@@ -47,8 +47,26 @@ impl CheckerInterface for Checker {
             .unwrap()
             .starts_with(public_folder.to_string_lossy().as_ref());
 
-        if is_public {
+        let private_constants = &defining_pack.private_constants;
+
+        if is_public && private_constants.is_empty() {
             return None;
+        }
+
+        let private_constants = &defining_pack.private_constants;
+
+        if !private_constants.is_empty() {
+            let constant_is_private =
+                private_constants.contains(&reference.constant_name);
+
+            let constant_is_in_private_namespace =
+                private_constants.iter().any(|private_constant| {
+                    reference.constant_name.starts_with(private_constant)
+                });
+
+            if !constant_is_private && !constant_is_in_private_namespace {
+                return None;
+            }
         }
 
         // START: Original packwerk message
