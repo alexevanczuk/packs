@@ -150,7 +150,7 @@ pub fn list_monkey_patches(configuration: Configuration) {
             &configuration.absolute_root,
             &configuration.included_files,
             cache,
-            &configuration.experimental_parser,
+            configuration.experimental_parser,
         );
         get_experimental_constant_resolver(
             &configuration.absolute_root,

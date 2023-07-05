@@ -2,13 +2,14 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
 };
 
 #[derive(Default, Debug)]
 pub struct ConstantResolver {
     pub fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
+    pub detected_monkey_patches: HashMap<String, HashSet<PathBuf>>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -34,13 +35,11 @@ impl ConstantResolver {
             Constant,
         > = HashMap::new();
 
+        let mut detected_monkey_patches: HashMap<String, HashSet<PathBuf>> =
+            HashMap::new();
+
         // TODO: Do this in parallel?
         for constant in constants {
-            if constant.fully_qualified_name == *"Sidekiq" {
-                dbg!(&constant);
-                dbg!(&ignored_monkey_patches);
-            }
-
             if let Some(monkey_patch_location) =
                 ignored_monkey_patches.get(&constant.fully_qualified_name)
             {
@@ -75,6 +74,8 @@ impl ConstantResolver {
                         "Found two constants with the same name: {:?} and {:?}",
                         existing_constant, constant
                     );
+                } else {
+                    detected_monkey_patches
                 }
             } else {
                 fully_qualified_constant_to_constant_map
@@ -86,6 +87,7 @@ impl ConstantResolver {
 
         ConstantResolver {
             fully_qualified_constant_to_constant_map,
+            detected_monkey_patches,
         }
     }
 
