@@ -274,7 +274,9 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")],
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
             enforce_privacy: CheckerSetting::True,
             ..Pack::default()
         };
@@ -316,7 +318,9 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")],
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
             enforce_privacy: CheckerSetting::True,
             ..Pack::default()
         };
@@ -358,7 +362,9 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            private_constants: vec![String::from("::DifferentConstant")],
+            private_constants: vec![String::from("::DifferentConstant")]
+                .into_iter()
+                .collect(),
             enforce_privacy: CheckerSetting::True,
             ..Pack::default()
         };

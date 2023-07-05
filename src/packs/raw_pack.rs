@@ -12,6 +12,8 @@ pub(crate) struct RawPack {
     pub visible_to: HashSet<String>,
     #[serde(default)]
     pub ignored_private_constants: HashSet<String>,
+    #[serde(default)]
+    pub private_constants: HashSet<String>,
     #[serde(default = "default_public_folder")]
     pub public_folder: String,
     #[serde(default)]

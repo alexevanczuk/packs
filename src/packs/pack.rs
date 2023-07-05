@@ -25,6 +25,7 @@ pub struct Pack {
     pub dependencies: HashSet<String>,
     pub ignored_dependencies: HashSet<String>,
     pub ignored_private_constants: HashSet<String>,
+    pub private_constants: HashSet<String>,
     pub package_todo: PackageTodo,
     pub visible_to: HashSet<String>,
     pub public_folder: PathBuf,
@@ -150,6 +151,7 @@ impl Pack {
         let public_folder = relative_path.join(raw_pack.public_folder);
         let ignored_dependencies = raw_pack.ignored_dependencies;
         let ignored_private_constants = raw_pack.ignored_private_constants;
+        let private_constants = raw_pack.private_constants;
 
         let enforce_dependencies =
             convert_raw_checker_setting(&raw_pack.enforce_dependencies);
@@ -170,6 +172,7 @@ impl Pack {
             package_todo,
             ignored_dependencies,
             ignored_private_constants,
+            private_constants,
             visible_to,
             enforce_dependencies,
             enforce_privacy,
