@@ -68,7 +68,9 @@ First, some context:
 - If you're unclear where `packs` thinks a constant is defined, you can use `packs -e list-definitions`
 
 # Upcoming Developments + Limitations
-- Over time, we'll want to refine how we handle monkey patches. Alternative implementations are:
+- There may be some definition constructs that are not properly parsed yet.
+- There is currently no strong support for ignoring monkey patches. For example, if one pack monkey patches `String`, then every pack would get a violation against that pack every time they use `String`. I'm looking into allowing a pack to register its monkey patches, thereby ignoring them. Similarly, we could have a function like `list-monkey-patches` which lists all constants that are defined multiple times. 
+  - We could actually consider pointing `packs` at the ruby standard library to get all constants defined by the standard library. We could hard-code this list in `packs` so that we could get a clear list of places where an app monkey patches the standard library
   - We could consider *every* time a constant is opened up (i.e. a `class` or `module` keyword) to be "defining" a constant. This would mean that tons of files define the same constants. This is not a problem unless *different packs* define the same constant. This implementation would be very strict against monkey patches.
   - We could allow a monkey patch to be defined within `packwerk.yml`, so that it can be ignored as a definition. For example, if the root pack opens up `String`, we might have `String: config/initializers/string_extensions.rb` in our `packwerk.yml`.
 - Right now, if multiple files define the same constant, we just choose the *first* one. This is not an ideal implementation at all. Instead, we should think about having constants be able to be defined by multiple files. Instead of having a "primary" definition, we can create one reference for each definition. For example, if `packs/a` and `packs/b` define `Foo`, then using `Foo` creates one reference to each of those packs.
