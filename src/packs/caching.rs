@@ -11,6 +11,7 @@ pub enum CacheResult {
 pub struct CacheMiss {
     pub relative_path: PathBuf,
     pub file_contents_digest: String,
+    pub file_name_digest: String,
     pub cache_file_path: PathBuf,
 }
 
@@ -25,8 +26,8 @@ impl CacheMiss {
             filepath.strip_prefix(absolute_root).unwrap().to_path_buf();
 
         let file_digest = md5::compute(relative_path.to_str().unwrap());
-        let file_digest_str = format!("{:x}", file_digest);
-        let cache_file_path = cache_directory.join(file_digest_str);
+        let file_name_digest = format!("{:x}", file_digest);
+        let cache_file_path = cache_directory.join(&file_name_digest);
 
         let file_contents_digest = file_content_digest(filepath);
 
@@ -34,6 +35,7 @@ impl CacheMiss {
             relative_path,
             file_contents_digest,
             cache_file_path,
+            file_name_digest,
         }
     }
 
