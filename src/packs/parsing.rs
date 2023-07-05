@@ -83,10 +83,10 @@ pub fn process_files_with_cache(
         .map(|absolute_path| -> ProcessedFile {
             match cache.get(absolute_root, absolute_path) {
                 CacheResult::Processed(processed_file) => processed_file,
-                CacheResult::Miss(cache_miss) => {
+                CacheResult::Miss(empty_cache_entry) => {
                     let processed_file =
                         process_file(absolute_path, experimental_parser);
-                    cache.write(&cache_miss, &processed_file);
+                    cache.write(&empty_cache_entry, &processed_file);
                     processed_file
                 }
             }
