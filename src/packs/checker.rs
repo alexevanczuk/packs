@@ -14,9 +14,8 @@ use std::path::Path;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
-use super::parsing::{
-    ruby::packwerk::constant_resolver::ConstantResolver, Cache,
-};
+use super::caching::Cache;
+use super::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
 use super::Pack;
 use super::UnresolvedReference;
 

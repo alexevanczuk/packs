@@ -8,9 +8,10 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use super::caching::Cache;
 use super::file_utils::file_content_digest;
 use super::parsing::Definition;
-use super::parsing::{Cache, Range};
+use super::parsing::Range;
 use super::{ProcessedFile, UnresolvedReference};
 
 pub struct PerFileCache {

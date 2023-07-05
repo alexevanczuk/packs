@@ -1,9 +1,7 @@
 use std::path::Path;
 
-use super::{
-    parsing::{process_file, Cache},
-    ProcessedFile,
-};
+use super::{parsing::process_file, ProcessedFile};
+use crate::packs::caching::Cache;
 
 pub struct NoopCache {}
 
