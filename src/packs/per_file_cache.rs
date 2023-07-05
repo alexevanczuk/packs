@@ -22,7 +22,7 @@ impl Cache for PerFileCache {
     fn get(&self, absolute_root: &Path, path: &Path) -> CacheResult {
         let empty_cache_entry =
             EmptyCacheEntry::new(absolute_root, &self.cache_dir, path);
-        let cache_entry = cache_entry_for_file(&empty_cache_entry);
+        let cache_entry = cache_entry_from_empty(&empty_cache_entry);
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
                 == empty_cache_entry.file_contents_digest;
@@ -86,8 +86,8 @@ impl Cache for PerFileCache {
     }
 }
 
-fn cache_entry_for_file(file: &EmptyCacheEntry) -> Option<CacheEntry> {
-    let cache_file_path = &file.cache_file_path;
+fn cache_entry_from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
+    let cache_file_path = &empty.cache_file_path;
 
     if cache_file_path.exists() {
         Some(read_json_file(cache_file_path).unwrap_or_else(|_| {
