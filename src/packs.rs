@@ -1,5 +1,6 @@
 pub(crate) mod configuration;
 mod raw_configuration;
+mod raw_pack;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -36,6 +37,7 @@ use self::checker::ViolationIdentifier;
 
 use self::parsing::Definition;
 use self::parsing::UnresolvedReference;
+use self::raw_pack::RawPack;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
@@ -69,38 +71,6 @@ pub struct ProcessedFile {
 pub struct SourceLocation {
     line: usize,
     column: usize,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RawPack {
-    #[serde(default)]
-    dependencies: HashSet<String>,
-    #[serde(default)]
-    ignored_dependencies: HashSet<String>,
-    #[serde(default)]
-    visible_to: HashSet<String>,
-    #[serde(default)]
-    ignored_private_constants: HashSet<String>,
-    #[serde(default = "default_public_folder")]
-    public_folder: String,
-    #[serde(default)]
-    layer: Option<String>,
-    #[serde(default = "default_checker_setting")]
-    enforce_dependencies: String,
-    #[serde(default = "default_checker_setting")]
-    enforce_privacy: String,
-    #[serde(default = "default_checker_setting")]
-    enforce_visibility: String,
-    #[serde(default = "default_checker_setting")]
-    enforce_architecture: String,
-}
-
-fn default_checker_setting() -> String {
-    "false".to_string()
-}
-
-fn default_public_folder() -> String {
-    "app/public".to_string()
 }
 
 // Make an enum for the configuration of a checker, which can be either false, true, or strict:
