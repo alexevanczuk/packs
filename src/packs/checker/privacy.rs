@@ -47,8 +47,26 @@ impl CheckerInterface for Checker {
             .unwrap()
             .starts_with(public_folder.to_string_lossy().as_ref());
 
-        if is_public {
+        let private_constants = &defining_pack.private_constants;
+
+        if is_public && private_constants.is_empty() {
             return None;
+        }
+
+        let private_constants = &defining_pack.private_constants;
+
+        if !private_constants.is_empty() {
+            let constant_is_private =
+                private_constants.contains(&reference.constant_name);
+
+            let constant_is_in_private_namespace =
+                private_constants.iter().any(|private_constant| {
+                    reference.constant_name.starts_with(private_constant)
+                });
+
+            if !constant_is_private && !constant_is_in_private_namespace {
+                return None;
+            }
         }
 
         // START: Original packwerk message
@@ -244,6 +262,127 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             public_folder: PathBuf::from("packs/bar/app/api"),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/api/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        assert_eq!(None, checker.check(&reference))
+    }
+
+    #[test]
+    fn test_private_constants_includes_referenced_constant() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/api/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let expected_violation = Violation {
+            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("privacy"),
+                file: String::from("packs/foo/app/services/foo.rb"),
+                constant_name: String::from("::Bar"),
+                referencing_pack_name: String::from("packs/foo"),
+                defining_pack_name: String::from("packs/bar"),
+            },
+        };
+
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_private_constants_includes_parent_of_referenced_constant() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = &Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar::BarChild"),
+            defining_pack: Some(&defining_pack),
+            referencing_pack,
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/api/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let expected_violation = Violation {
+            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar::BarChild` is private to `packs/bar`, but referenced from `packs/foo`"),
+            identifier: ViolationIdentifier {
+                violation_type: String::from("privacy"),
+                file: String::from("packs/foo/app/services/foo.rb"),
+                constant_name: String::from("::Bar::BarChild"),
+                referencing_pack_name: String::from("packs/foo"),
+                defining_pack_name: String::from("packs/bar"),
+            },
+        };
+
+        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_private_constants_does_not_include_referenced_constant() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            private_constants: vec![String::from("::DifferentConstant")]
+                .into_iter()
+                .collect(),
             enforce_privacy: CheckerSetting::True,
             ..Pack::default()
         };
