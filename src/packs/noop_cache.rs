@@ -1,17 +1,25 @@
 use std::path::Path;
 
-use super::{parsing::process_file, ProcessedFile};
+use super::ProcessedFile;
 use crate::packs::caching::Cache;
 
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn process_file(
+    fn get(
         &self,
         _absolute_root: &Path,
-        path: &Path,
-        experimental_parser: bool,
-    ) -> ProcessedFile {
-        process_file(path, experimental_parser)
+        _path: &Path,
+    ) -> Option<ProcessedFile> {
+        // Return nothing!
+        None
+    }
+
+    fn write(
+        &self,
+        _cachable_file: &super::caching::CachableFile,
+        _processed_file: &ProcessedFile,
+    ) {
+        // Do nothing!
     }
 }

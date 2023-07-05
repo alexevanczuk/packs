@@ -81,11 +81,10 @@ pub fn process_files_with_cache(
     paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            cache.process_file(
-                absolute_root,
-                absolute_path,
-                experimental_parser,
-            )
+            match cache.get(absolute_root, absolute_path) {
+                Some(processed_file) => processed_file,
+                None => process_file(absolute_path, experimental_parser),
+            }
         })
         .collect()
 }
