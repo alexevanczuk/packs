@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 
-use super::{checker::ViolationIdentifier, Pack};
+use super::{checker::ViolationIdentifier, pack::Pack};
 
 #[derive(Default, Debug)]
 pub struct PackSet {

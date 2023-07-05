@@ -66,8 +66,13 @@ impl CheckerInterface for Checker {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
-    use crate::packs::*;
+    use crate::packs::{
+        pack::{CheckerSetting, Pack},
+        *,
+    };
 
     #[test]
     fn referencing_and_defining_pack_are_identical() {

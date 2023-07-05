@@ -49,7 +49,7 @@ impl Configuration {
     pub(crate) fn get_cache(
         &self,
         // This takes an unused "InitializedCacheDirectory" argument, which is a sentinel
-        // value returned by  
+        // value returned by
         _initialized_dir: InitializedCacheDirectory,
     ) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
@@ -109,7 +109,11 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 mod tests {
 
     use super::*;
-    use crate::packs::{configuration, CheckerSetting, Pack, PackageTodo};
+    use crate::packs::{
+        configuration,
+        pack::{CheckerSetting, Pack},
+        PackageTodo,
+    };
 
     use pretty_assertions::assert_eq;
 

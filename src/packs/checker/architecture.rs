@@ -106,7 +106,10 @@ impl CheckerInterface for Checker {
 #[cfg(test)]
 mod tests {
 
-    use crate::packs::{CheckerSetting, Pack, SourceLocation};
+    use crate::packs::{
+        pack::{CheckerSetting, Pack},
+        SourceLocation,
+    };
 
     use super::*;
 

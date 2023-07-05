@@ -6,8 +6,9 @@ use std::{
 };
 use tracing::debug;
 
-use super::{file_utils::build_glob_set, raw_configuration::RawConfiguration};
-use crate::packs::Pack;
+use super::{
+    file_utils::build_glob_set, pack::Pack, raw_configuration::RawConfiguration,
+};
 
 pub struct WalkDirectoryResult {
     pub included_files: HashSet<PathBuf>,

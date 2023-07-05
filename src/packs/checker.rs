@@ -15,8 +15,8 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::caching::Cache;
+use super::pack::Pack;
 use super::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
-use super::Pack;
 use super::UnresolvedReference;
 
 pub mod architecture;

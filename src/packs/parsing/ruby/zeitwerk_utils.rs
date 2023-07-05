@@ -9,7 +9,7 @@ use tracing::debug;
 
 use crate::packs::{
     caching::create_cache_dir_idempotently, file_utils::process_glob_pattern,
-    parsing::ruby::rails_utils::get_acronyms_from_disk, Pack, PackSet,
+    pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
 use super::packwerk::constant_resolver::{Constant, ConstantResolver};
