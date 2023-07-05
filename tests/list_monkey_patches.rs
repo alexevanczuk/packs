@@ -9,7 +9,7 @@ fn test_update() -> Result<(), Box<dyn Error>> {
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
-        .arg("list_monkey_patches")
+        .arg("list-monkey-patches")
         .assert()
         .success()
         .stdout(predicate::str::contains(
