@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::packs::{
-    file_utils::process_glob_pattern,
+    caching::create_cache_dir_idempotently, file_utils::process_glob_pattern,
     parsing::ruby::rails_utils::get_acronyms_from_disk, Pack, PackSet,
 };
 
@@ -189,7 +189,7 @@ fn cache_constant_definitions(
     })
     .expect("Failed to serialize");
 
-    std::fs::create_dir_all(cache_dir).unwrap();
+    create_cache_dir_idempotently(cache_dir);
     std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
         .unwrap();
 }

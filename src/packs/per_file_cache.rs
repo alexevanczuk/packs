@@ -7,9 +7,8 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use super::caching::Cache;
-use super::caching::EmptyCacheEntry;
-
 use super::caching::CacheResult;
+use super::caching::EmptyCacheEntry;
 use super::parsing::Definition;
 use super::parsing::Range;
 use super::{ProcessedFile, UnresolvedReference};
@@ -154,11 +153,6 @@ pub fn read_json_file(
     let reader = std::io::BufReader::new(file);
     let data = serde_json::from_reader(reader)?;
     Ok(data)
-}
-
-pub fn create_cache_dir_idempotently(cache_dir: &PathBuf) {
-    std::fs::create_dir_all(cache_dir)
-        .expect("Failed to create cache directory");
 }
 
 #[cfg(test)]

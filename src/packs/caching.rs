@@ -7,6 +7,8 @@ pub enum CacheResult {
     Miss(EmptyCacheEntry),
 }
 
+pub struct InitializedCacheDirectory;
+
 #[derive(Debug, Default)]
 pub struct EmptyCacheEntry {
     pub relative_path: PathBuf,
@@ -51,4 +53,12 @@ pub trait Cache {
         empty_cache_entry: &EmptyCacheEntry,
         processed_file: &ProcessedFile,
     );
+}
+
+pub fn create_cache_dir_idempotently(
+    cache_dir: &Path,
+) -> InitializedCacheDirectory {
+    std::fs::create_dir_all(cache_dir)
+        .expect("Failed to create cache directory");
+    InitializedCacheDirectory
 }

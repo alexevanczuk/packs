@@ -1,3 +1,4 @@
+use super::caching::InitializedCacheDirectory;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::{checker::architecture::Layers, per_file_cache};
 use super::{noop_cache, PackSet};
@@ -45,7 +46,12 @@ impl Configuration {
         }
     }
 
-    pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
+    pub(crate) fn get_cache(
+        &self,
+        // This takes an unused "InitializedCacheDirectory" argument, which is a sentinel
+        // value returned by  
+        _initialized_dir: InitializedCacheDirectory,
+    ) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
             Box::new(per_file_cache::PerFileCache {
                 cache_dir: self.cache_directory.to_owned(),
