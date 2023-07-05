@@ -138,3 +138,7 @@ mod tests {
         )
     }
 }
+
+pub fn list_monkey_patches(configuration: Configuration) {
+    todo!()
+}

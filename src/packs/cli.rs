@@ -30,6 +30,11 @@ enum Command {
     DeleteCache,
 
     #[clap(
+        about = "List constants defined in multiple places or listed explicitly in package.yml files"
+    )]
+    ListMonkeyPatches,
+
+    #[clap(
         about = "List packs based on configuration in packwerk.yml (for debugging purposes)"
     )]
     ListPacks,
@@ -123,6 +128,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::ListDefinitions => {
             packs::list_definitions(&configuration);
+            Ok(())
+        }
+        Command::ListMonkeyPatches => {
+            packs::list_monkey_patches(configuration);
             Ok(())
         }
     }
