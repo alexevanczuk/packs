@@ -17,7 +17,7 @@ impl Cache for NoopCache {
 
     fn write(
         &self,
-        _cachable_file: &super::caching::CachableFile,
+        _cache_miss: &super::caching::CacheMiss,
         _processed_file: &ProcessedFile,
     ) {
         // Do nothing!

@@ -6,8 +6,8 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use super::caching::CachableFile;
 use super::caching::Cache;
+use super::caching::CacheMiss;
 
 use super::parsing::Definition;
 use super::parsing::Range;
@@ -19,12 +19,11 @@ pub struct PerFileCache {
 
 impl Cache for PerFileCache {
     fn get(&self, absolute_root: &Path, path: &Path) -> Option<ProcessedFile> {
-        let cachable_file =
-            CachableFile::new(absolute_root, &self.cache_dir, path);
-        let cache_entry = cache_entry_for_file(&cachable_file);
+        let cache_miss = CacheMiss::new(absolute_root, &self.cache_dir, path);
+        let cache_entry = cache_entry_for_file(&cache_miss);
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
-                == cachable_file.file_contents_digest;
+                == cache_miss.file_contents_digest;
 
             if !file_digests_match {
                 None
@@ -37,13 +36,8 @@ impl Cache for PerFileCache {
         }
     }
 
-    fn write(
-        &self,
-        cachable_file: &CachableFile,
-        processed_file: &ProcessedFile,
-    ) {
-        let file_contents_digest =
-            cachable_file.file_contents_digest.to_owned();
+    fn write(&self, cache_miss: &CacheMiss, processed_file: &ProcessedFile) {
+        let file_contents_digest = cache_miss.file_contents_digest.to_owned();
         let unresolved_references: Vec<ReferenceEntry> = processed_file
             .unresolved_references
             .iter()
@@ -51,9 +45,7 @@ impl Cache for PerFileCache {
                 ReferenceEntry {
                     constant_name: r.name.to_owned(),
                     namespace_path: r.namespace_path.to_owned(),
-                    relative_path: cachable_file
-                        .relative_path_string()
-                        .to_owned(),
+                    relative_path: cache_miss.relative_path_string().to_owned(),
                     source_location: SourceLocation {
                         line: r.location.start_row,
                         column: r.location.start_col,
@@ -72,11 +64,11 @@ impl Cache for PerFileCache {
 
         let cache_data = serde_json::to_string(&cache_entry)
             .expect("Failed to serialize references");
-        let mut file = File::create(&cachable_file.cache_file_path)
+        let mut file = File::create(&cache_miss.cache_file_path)
             .unwrap_or_else(|e| {
                 panic!(
                     "Failed to create cache file {:?}: {}",
-                    cachable_file.cache_file_path, e
+                    cache_miss.cache_file_path, e
                 )
             });
 
@@ -85,7 +77,7 @@ impl Cache for PerFileCache {
     }
 }
 
-fn cache_entry_for_file(file: &CachableFile) -> Option<CacheEntry> {
+fn cache_entry_for_file(file: &CacheMiss) -> Option<CacheEntry> {
     let cache_file_path = &file.cache_file_path;
 
     if cache_file_path.exists() {

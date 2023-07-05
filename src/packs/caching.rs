@@ -3,19 +3,19 @@ use std::path::{Path, PathBuf};
 use super::{file_utils::file_content_digest, ProcessedFile};
 
 #[derive(Debug)]
-pub struct CachableFile {
+pub struct CacheMiss {
     pub relative_path: PathBuf,
     pub file_contents_digest: String,
     pub cache_file_path: PathBuf,
 }
 
-impl CachableFile {
+impl CacheMiss {
     // Pass in Configuration and get cache_dir from that
     pub fn new(
         absolute_root: &Path,
         cache_directory: &Path,
         filepath: &Path,
-    ) -> CachableFile {
+    ) -> CacheMiss {
         let relative_path: PathBuf =
             filepath.strip_prefix(absolute_root).unwrap().to_path_buf();
 
@@ -25,7 +25,7 @@ impl CachableFile {
 
         let file_contents_digest = file_content_digest(filepath);
 
-        CachableFile {
+        CacheMiss {
             relative_path,
             file_contents_digest,
             cache_file_path,
@@ -47,9 +47,5 @@ pub trait Cache {
 
     fn get(&self, absolute_root: &Path, path: &Path) -> Option<ProcessedFile>;
 
-    fn write(
-        &self,
-        cachable_file: &CachableFile,
-        processed_file: &ProcessedFile,
-    );
+    fn write(&self, cache_miss: &CacheMiss, processed_file: &ProcessedFile);
 }
