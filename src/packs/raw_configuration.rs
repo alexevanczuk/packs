@@ -80,25 +80,15 @@ pub(crate) struct RawConfiguration {
     pub experimental_parser: bool,
 }
 
-// We used to use #[derive(Default)] on the RawConfiguration.
-// However, that doesn't use the defaults fed to serde.
-// Ideally, there is a way to generate this Default implementation without having to
-// respecify these.
-// This is used if there is no packwerk.yml. The serde defaults are used if there is one,
-// but a key is not set.
+// Normally if a key is not set, serde will use the default value for that type.
+// If there is no `packwerk.yml` at all, we use `RawConfiguration::default()` to get the default,
+// So this implementation of default ensures that the default is the same as the serde default.
 impl Default for RawConfiguration {
     fn default() -> Self {
-        RawConfiguration {
-            include: default_include(),
-            exclude: default_exclude(),
-            package_paths: default_package_paths(),
-            custom_associations: default_custom_associations(),
-            cache: default_cache(),
-            cache_directory: default_cache_directory(),
-            autoload_paths: Default::default(),
-            architecture_layers: Default::default(),
-            experimental_parser: Default::default(),
-        }
+        // Deserialize an empty string to get the default RawConfiguration
+        // We used to use #[derive(Default)] on the RawConfiguration.
+        // However, that doesn't use the defaults fed to serde
+        serde_yaml::from_str("").unwrap()
     }
 }
 
