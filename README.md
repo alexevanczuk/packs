@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/v/pks.svg?color=33c552)](https://crates.io/crates/pks)
 [![Security Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)](https://github.com/alexevanczuk/packs/actions?query=workflow%3A%22Security+audit%22++)
 
-A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for ruby.
+A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for Ruby.
 
 # Goals:
 ## To be a drop-in replacement for `packwerk` on most projects
@@ -19,7 +19,7 @@ A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a
 
 ## Support non-Rails, non-zeitwerk apps
 - Currently supports non-Rails apps through an experimental implementation
-- Uses same public API as `packwerk`, but has different behavior.
+- Uses the same public API as `packwerk`, but has different behavior.
 - See [EXPERIMENTAL_PARSER_USAGE.md](https://github.com/alexevanczuk/packs/blob/main/EXPERIMENTAL_PARSER_USAGE.md) for more info
 
 # Usage and Documentation
@@ -67,7 +67,7 @@ Directions:
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
 
 Instructions:
-- Follow directions above to install `packs`
+- Follow the directions above to install `packs`
 - Run `packs delete-cache`
 - Run `packs update`
 - Confirm the output of `git diff` is empty
@@ -76,7 +76,7 @@ Instructions:
 # New to Rust?
 Me too! This is my first Rust project, so I'd love to have feedback, advice, and contributions!
 
-Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile time checks on memory usage.
+Rust is a low-level language with high-level abstractions, a rich type system, with a focus on memory safety through innovative compile-time checks on memory usage.
 
 If you're new to Rust, don't be intimidated! [https://www.rust-lang.org](https://www.rust-lang.org/learn) has tons of great learning resources.
 
@@ -89,7 +89,6 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 - zeitwerk default namespaces
 - extensible plugin system
 - stale violation detection
-- bin/packwerk validate (e.g. cycle detection)
 - strict mode on checkers
 
 # Benchmarks

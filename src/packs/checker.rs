@@ -133,6 +133,10 @@ pub(crate) trait CheckerInterface {
     fn check(&self, reference: &Reference) -> Option<Violation>;
 }
 
+pub(crate) trait ValidatorInterface {
+    fn validate(&self, configuration: &Configuration) -> Option<String>;
+}
+
 // TODO: Break this function up into smaller functions
 pub(crate) fn check_all(
     configuration: Configuration,
@@ -152,7 +156,7 @@ pub(crate) fn check_all(
         cache,
         configuration.experimental_parser,
     );
-    let recorded_violations = configuration.pack_set.all_violations;
+    let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
     let unrecorded_violations = violations
@@ -162,12 +166,29 @@ pub(crate) fn check_all(
 
     debug!("Finished filtering out recorded violations");
 
+    let mut errors_present = false;
+
     if !unrecorded_violations.is_empty() {
         for violation in unrecorded_violations.iter() {
             println!("{}\n", violation.message);
         }
 
         println!("{} violation(s) detected:", unrecorded_violations.len());
+
+        errors_present = true;
+    }
+
+    let validation_errors = validate(&configuration);
+    if !validation_errors.is_empty() {
+        errors_present = true;
+
+        println!("{} validation error(s) detected:", validation_errors.len());
+        for validation_error in validation_errors.iter() {
+            println!("{}\n", validation_error);
+        }
+    }
+
+    if errors_present {
         Err("Packwerk check failed".into())
     } else {
         println!("No violations detected!");
@@ -175,6 +196,19 @@ pub(crate) fn check_all(
     }
 }
 
+fn validate(configuration: &Configuration) -> Vec<String> {
+    debug!("Running validators against packages");
+    let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> =
+        vec![Box::new(dependency::Checker {})];
+
+    let validation_errors = validators
+        .iter()
+        .filter_map(|v| v.validate(configuration))
+        .collect();
+    debug!("Finished validators against packages");
+
+    validation_errors
+}
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {

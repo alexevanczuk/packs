@@ -1,8 +1,79 @@
-use super::{CheckerInterface, ViolationIdentifier};
+use std::collections::HashMap;
+
+use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::Violation;
+use crate::packs::pack::Pack;
+use crate::packs::{Configuration, Violation};
+use petgraph::algo::tarjan_scc;
+use petgraph::prelude::DiGraph;
 
 pub struct Checker {}
+impl ValidatorInterface for Checker {
+    fn validate(&self, configuration: &Configuration) -> Option<String> {
+        // configuration.pack_set
+        let mut graph = DiGraph::<(), ()>::new();
+        let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
+            HashMap::new();
+        let mut node_to_pack: HashMap<petgraph::prelude::NodeIndex, &Pack> =
+            HashMap::new();
+        for pack in &configuration.pack_set.packs {
+            let node = graph.add_node(());
+            pack_to_node.insert(pack, node);
+            node_to_pack.insert(node, pack);
+        }
+
+        for pack in &configuration.pack_set.packs {
+            for dependency_pack_name in &pack.dependencies {
+                let from_pack = pack;
+                let to_pack =
+                    configuration.pack_set.for_pack(dependency_pack_name);
+                let from_node = pack_to_node
+                    .get(&from_pack)
+                    .expect("Could not find from_pack")
+                    .to_owned();
+                let to_node = pack_to_node
+                    .get(&to_pack)
+                    .expect("Could not find to_pack")
+                    .to_owned();
+                graph.add_edge(from_node, to_node, ());
+            }
+        }
+
+        let mut sccs = vec![];
+        let strongly_componented_components = tarjan_scc(&graph);
+        for component in strongly_componented_components {
+            if component.len() > 1 {
+                let pack_names: Vec<String> = component
+                    .iter()
+                    .map(|node_index| {
+                        let pack = node_to_pack
+                            .get(node_index)
+                            .expect("Could not find pack name for node index");
+                        pack.name.to_owned()
+                    })
+                    .collect();
+                sccs.push(pack_names.join(", "));
+            }
+        }
+
+        if sccs.is_empty() {
+            None
+        } else {
+            let sccs_display = sccs.join("\n\n");
+
+            let error_message = format!(
+                "
+Found {} strongly connected components (i.e. dependency cycles)
+The following groups of packages from a cycle:
+
+{}",
+                sccs.len(),
+                sccs_display
+            );
+            Some(error_message)
+        }
+    }
+}
 
 // TODO: Add test for ignored_dependencies
 // Add test for does not enforce dependencies
@@ -80,6 +151,7 @@ impl CheckerInterface for Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
+    use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
     #[test]
@@ -147,5 +219,40 @@ mod tests {
             },
         };
         assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_validate_with_cycle() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_dependency_cycles")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        let error = checker.validate(&configuration);
+        let expected_message = String::from(
+            "
+Found 1 strongly connected components (i.e. dependency cycles)
+The following groups of packages from a cycle:
+
+packs/foo, packs/bar",
+        );
+        assert_eq!(error, Some(expected_message));
+    }
+
+    #[test]
+    fn test_validate_without_cycle() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/simple_app")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        let error = checker.validate(&configuration);
+        assert_eq!(error, None);
     }
 }
