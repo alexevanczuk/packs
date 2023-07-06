@@ -133,6 +133,10 @@ pub(crate) trait CheckerInterface {
     fn check(&self, reference: &Reference) -> Option<Violation>;
 }
 
+pub(crate) trait ValidatorInterface {
+    fn validate(&self, reference: &Reference) -> Option<Violation>;
+}
+
 // TODO: Break this function up into smaller functions
 pub(crate) fn check_all(
     configuration: Configuration,

@@ -22,6 +22,7 @@ impl Checker {
         for pack in &configuration.pack_set.packs {
             let node = graph.add_node(());
             pack_to_node.insert(pack, node);
+            node_to_pack.insert(node, pack);
         }
 
         for pack in &configuration.pack_set.packs {
@@ -41,14 +42,39 @@ impl Checker {
             }
         }
 
+        let mut sccs = vec![];
         let strongly_componented_components = tarjan_scc(&graph);
         for component in strongly_componented_components {
             if component.len() > 1 {
-                return Some("Cycle detected".to_owned());
+                let pack_names: Vec<String> = component
+                    .iter()
+                    .map(|node_index| {
+                        let pack = node_to_pack
+                            .get(node_index)
+                            .expect("Could not find pack name for node index");
+                        pack.name.to_owned()
+                    })
+                    .collect();
+                sccs.push(pack_names.join(", "));
             }
         }
 
-        None
+        if sccs.is_empty() {
+            None
+        } else {
+            let sccs_display = sccs.join("\n");
+
+            let error_message = format!(
+                "
+Found {} strongly connected components (i.e. dependency cycles)
+The following groups of packages from a cycle:
+
+{}",
+                sccs.len(),
+                sccs_display
+            );
+            Some(error_message)
+        }
     }
 }
 
@@ -128,6 +154,7 @@ impl CheckerInterface for Checker {
 mod tests {
     use super::*;
     use crate::packs::*;
+    use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
     #[test]
@@ -208,7 +235,14 @@ mod tests {
         );
 
         let error = checker.validate(configuration);
-        assert_eq!(error, Some("Cycle detected".to_owned()));
+        let expected_message = String::from(
+            "
+Found 1 strongly connected components (i.e. dependency cycles)
+The following groups of packages from a cycle:
+
+packs/foo, packs/bar",
+        );
+        assert_eq!(error, Some(expected_message));
     }
 
     #[test]

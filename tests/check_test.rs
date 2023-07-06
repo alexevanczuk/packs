@@ -55,3 +55,28 @@ fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
     common::teardown();
     Ok(())
 }
+
+#[test]
+fn test_check_cycle_detection() -> Result<(), Box<dyn Error>> {
+    let expected_message = String::from(
+        "
+Found 1 strongly connected components (i.e. dependency cycles)
+The following groups of packages from a cycle:
+
+packs/foo, packs/bar",
+    );
+
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/app_with_dependency_cycles")
+        .arg("--debug")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("1 validation error(s) detected:"))
+        .stdout(predicate::str::contains(expected_message));
+
+    common::teardown();
+    Ok(())
+}
