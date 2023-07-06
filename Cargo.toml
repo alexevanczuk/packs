@@ -46,6 +46,7 @@ line-col = "0.2.1"
 ruby_inflector = '0.0.8'
 serde_magnus = "0.2.2"
 globset = "0.4.10"
+petgraph = "0.6.3"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI

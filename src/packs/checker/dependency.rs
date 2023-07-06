@@ -1,6 +1,11 @@
+use std::collections::HashMap;
+
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
+use crate::packs::pack::Pack;
 use crate::packs::Violation;
+use petgraph::algo::tarjan_scc;
+use petgraph::prelude::DiGraph;
 
 pub struct Checker {}
 impl Checker {
@@ -9,7 +14,41 @@ impl Checker {
         configuration: crate::packs::Configuration,
     ) -> Option<String> {
         // configuration.pack_set
-        Some("Cycle detected".to_owned())
+        let mut graph = DiGraph::<(), ()>::new();
+        let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
+            HashMap::new();
+        let mut node_to_pack: HashMap<petgraph::prelude::NodeIndex, &Pack> =
+            HashMap::new();
+        for pack in &configuration.pack_set.packs {
+            let node = graph.add_node(());
+            pack_to_node.insert(pack, node);
+        }
+
+        for pack in &configuration.pack_set.packs {
+            for dependency_pack_name in &pack.dependencies {
+                let from_pack = pack;
+                let to_pack =
+                    configuration.pack_set.for_pack(&dependency_pack_name);
+                let from_node = pack_to_node
+                    .get(&from_pack)
+                    .expect("Could not find from_pack")
+                    .to_owned();
+                let to_node = pack_to_node
+                    .get(&to_pack)
+                    .expect("Could not find to_pack")
+                    .to_owned();
+                graph.add_edge(from_node, to_node, ());
+            }
+        }
+
+        let strongly_componented_components = tarjan_scc(&graph);
+        for component in strongly_componented_components {
+            if component.len() > 1 {
+                return Some("Cycle detected".to_owned());
+            }
+        }
+
+        None
     }
 }
 
