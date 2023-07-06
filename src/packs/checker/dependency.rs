@@ -59,7 +59,7 @@ impl ValidatorInterface for Checker {
         if sccs.is_empty() {
             None
         } else {
-            let sccs_display = sccs.join("\n");
+            let sccs_display = sccs.join("\n\n");
 
             let error_message = format!(
                 "
