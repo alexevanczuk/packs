@@ -5,9 +5,6 @@
 ## Features
 - Refactor common methods from experimental and packwerk parsers
 - Think through how to handle monkey patches / opening up other modules in experimental parser
-- Implement `packs validate` – should always error and direct the user to the single command, check
-  - Implement cycle detection within check command, see https://docs.rs/petgraph/latest/petgraph/algo/index.html
-  - Make sure to run these validations in parallel and that it does not break VSCode extension (due to different output).
 - `packs init | create | move`
 - CLI could have `-i` interactive mode (like `use_packs`, also see https://github.com/mikaelmello/inquire)
 - Unnecessary dependency validation

@@ -75,3 +75,8 @@ First, some context:
   - We could allow a monkey patch to be defined within `packwerk.yml`, so that it can be ignored as a definition. For example, if the root pack opens up `String`, we might have `String: config/initializers/string_extensions.rb` in our `packwerk.yml`.
 - Right now, if multiple files define the same constant, we just choose the *first* one. This is not an ideal implementation at all. Instead, we should think about having constants be able to be defined by multiple files. Instead of having a "primary" definition, we can create one reference for each definition. For example, if `packs/a` and `packs/b` define `Foo`, then using `Foo` creates one reference to each of those packs.
 
+# Advantages
+- Simpler – parsing files directly is conceptually simpler than inferring constants from file names based on zeitwerk conventions, which require handling of inflections, default namespaces, collapsed directories, and more. The implementation is simpler to maintain as well.
+  - This makes the behavior easier to understand, too. In `packwerk`, a reference is also considered a definition.
+- More applicable – allows `packs` to be used in non-Rails, non-Zeitwerk apps, such as gems. This also provides the basis of other interesting features, like detecting the use of specific gems in packages.
+- Richer feature opportunities – provides platform for other possible features like monkey-patch detection.
