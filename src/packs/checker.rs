@@ -166,28 +166,33 @@ pub(crate) fn check_all(
 
     debug!("Finished filtering out recorded violations");
 
+    let mut errors_present = false;
+
     if !unrecorded_violations.is_empty() {
         for violation in unrecorded_violations.iter() {
             println!("{}\n", violation.message);
         }
 
         println!("{} violation(s) detected:", unrecorded_violations.len());
+
+        errors_present = true;
+    }
+
+    let validation_errors = validate(&configuration);
+    if !validation_errors.is_empty() {
+        errors_present = true;
+
+        println!("{} validation error(s) detected:", validation_errors.len());
+        for validation_error in validation_errors.iter() {
+            println!("{}\n", validation_error);
+        }
+    }
+
+    if errors_present {
         Err("Packwerk check failed".into())
     } else {
-        let validation_errors = validate(&configuration);
-        if !validation_errors.is_empty() {
-            println!(
-                "{} validation error(s) detected:",
-                validation_errors.len()
-            );
-            for validation_error in validation_errors.iter() {
-                println!("{}\n", validation_error);
-            }
-            Err("Packwerk check failed".into())
-        } else {
-            println!("No violations detected!");
-            Ok(())
-        }
+        println!("No violations detected!");
+        Ok(())
     }
 }
 
