@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validate() {
+    fn test_validate_with_cycle() {
         let checker = Checker {};
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/app_with_dependency_cycles")
@@ -170,5 +170,19 @@ mod tests {
 
         let error = checker.validate(configuration);
         assert_eq!(error, Some("Cycle detected".to_owned()));
+    }
+
+    #[test]
+    fn test_validate_without_cycle() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/simple_app")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        let error = checker.validate(configuration);
+        assert_eq!(error, None);
     }
 }
