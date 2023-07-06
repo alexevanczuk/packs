@@ -169,5 +169,6 @@ mod tests {
         );
 
         let error = checker.validate(configuration);
+        assert_eq!(error, Some("Cycle detected".to_owned()));
     }
 }
