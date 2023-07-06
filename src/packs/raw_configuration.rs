@@ -107,3 +107,18 @@ fn default_cache() -> bool {
 fn default_cache_directory() -> String {
     String::from("tmp/cache/packwerk")
 }
+
+// Add a test that the default RawConfiguration tmp directory is tmp/cache/packwerk
+// Add a test that the default RawConfiguration cache is true
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_defaults() {
+        let raw_configuration = RawConfiguration::default();
+
+        assert_eq!(raw_configuration.cache, true);
+        assert_eq!(raw_configuration.cache_directory, "tmp/cache/packwerk");
+    }
+}
