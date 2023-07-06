@@ -3,6 +3,15 @@ use crate::packs::checker::Reference;
 use crate::packs::Violation;
 
 pub struct Checker {}
+impl Checker {
+    fn validate(
+        &self,
+        configuration: crate::packs::Configuration,
+    ) -> Option<String> {
+        // configuration.pack_set
+        Some("Cycle detected".to_owned())
+    }
+}
 
 // TODO: Add test for ignored_dependencies
 // Add test for does not enforce dependencies
@@ -147,5 +156,18 @@ mod tests {
             },
         };
         assert_eq!(expected_violation, checker.check(&reference).unwrap())
+    }
+
+    #[test]
+    fn test_validate() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_dependency_cycles")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        let error = checker.validate(configuration);
     }
 }
