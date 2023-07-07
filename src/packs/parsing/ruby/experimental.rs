@@ -4,7 +4,9 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::packs::ProcessedFile;
 
-use super::packwerk::constant_resolver::{Constant, ConstantResolver};
+use super::packwerk::constant_resolver::{
+    ConstantDefinition, ConstantResolver,
+};
 
 pub(crate) mod parser;
 
@@ -21,16 +23,16 @@ pub fn get_experimental_constant_resolver(
                 .map(|definition| {
                     let fully_qualified_name =
                         definition.fully_qualified_name.to_owned();
-                    Constant {
+                    ConstantDefinition {
                         fully_qualified_name,
                         absolute_path_of_definition: processed_file
                             .absolute_path
                             .to_owned(),
                     }
                 })
-                .collect::<Vec<Constant>>()
+                .collect::<Vec<ConstantDefinition>>()
         })
-        .collect::<Vec<Constant>>();
+        .collect::<Vec<ConstantDefinition>>();
 
     ConstantResolver::create(absolute_root, constants, false)
 }

@@ -12,7 +12,9 @@ use crate::packs::{
     pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
-use super::packwerk::constant_resolver::{Constant, ConstantResolver};
+use super::packwerk::constant_resolver::{
+    ConstantDefinition, ConstantResolver,
+};
 
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
@@ -34,7 +36,7 @@ fn inferred_constants_from_pack_set(
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
-) -> Vec<Constant> {
+) -> Vec<ConstantDefinition> {
     let autoload_paths = get_autoload_paths(&pack_set.packs);
     inferred_constants_from_autoload_paths(
         autoload_paths,
@@ -49,7 +51,7 @@ fn inferred_constants_from_autoload_paths(
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
-) -> Vec<Constant> {
+) -> Vec<ConstantDefinition> {
     debug!("Get constant resolver cache");
     let cache_data = get_constant_resolver_cache(cache_dir);
 
@@ -101,7 +103,7 @@ fn inferred_constants_from_autoload_paths(
     let acronyms = &get_acronyms_from_disk(absolute_root);
 
     debug!("Inferring constants from file name (using cache)");
-    let constants: Vec<Constant> = file_to_longest_path
+    let constants: Vec<ConstantDefinition> = file_to_longest_path
         .into_iter()
         .par_bridge()
         .map(|(absolute_path_of_definition, absolute_autoload_path)| {
@@ -109,7 +111,7 @@ fn inferred_constants_from_autoload_paths(
                 .file_definition_map
                 .get(&absolute_path_of_definition)
             {
-                Constant {
+                ConstantDefinition {
                     fully_qualified_name: fully_qualified_name.to_owned(),
                     absolute_path_of_definition,
                 }
@@ -121,7 +123,7 @@ fn inferred_constants_from_autoload_paths(
                 )
             }
         })
-        .collect::<Vec<Constant>>();
+        .collect::<Vec<ConstantDefinition>>();
 
     debug!("Caching constant definitions");
     cache_constant_definitions(&constants, cache_dir, cache_disabled);
@@ -133,7 +135,7 @@ fn inferred_constant_from_file(
     absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
     acronyms: &HashSet<String>,
-) -> Constant {
+) -> ConstantDefinition {
     let relative_path =
         absolute_path.strip_prefix(absolute_autoload_path).unwrap();
 
@@ -143,7 +145,7 @@ fn inferred_constant_from_file(
     let fully_qualified_constant_name =
         crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
 
-    Constant {
+    ConstantDefinition {
         fully_qualified_name: fully_qualified_constant_name,
         absolute_path_of_definition: absolute_path.to_path_buf(),
     }
@@ -168,7 +170,7 @@ fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
 }
 
 fn cache_constant_definitions(
-    constants: &Vec<Constant>,
+    constants: &Vec<ConstantDefinition>,
     cache_dir: &Path,
     cache_disabled: bool,
 ) {
@@ -228,7 +230,8 @@ mod tests {
     use super::*;
     use crate::packs;
     use crate::packs::{
-        configuration, parsing::ruby::packwerk::constant_resolver::Constant,
+        configuration,
+        parsing::ruby::packwerk::constant_resolver::ConstantDefinition,
     };
 
     fn teardown() {
@@ -246,7 +249,7 @@ mod tests {
     #[test]
     fn unnested_reference_to_unnested_constant() {
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: get_absolute_root(SIMPLE_APP)
                     .join("packs/foo/app/services/foo.rb")
@@ -265,7 +268,7 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb")
@@ -283,7 +286,7 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::Foo::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
@@ -300,7 +303,7 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
@@ -316,7 +319,7 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::Bar::BAR".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
@@ -334,7 +337,7 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(app);
 
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::MyModule::SomeAPIClass".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/my_module/some_api_class.rb")
@@ -345,7 +348,7 @@ mod tests {
         );
 
         assert_eq!(
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "::MyModule::SomeCSVClass".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/my_module/some_csv_class.rb")
@@ -380,7 +383,7 @@ mod tests {
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(
             String::from("Foo::Bar"),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "Foo::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb"),
@@ -389,7 +392,7 @@ mod tests {
 
         expected_constant_map.insert(
             "Bar".to_owned(),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb"),
@@ -397,7 +400,7 @@ mod tests {
         );
         expected_constant_map.insert(
             "Baz".to_owned(),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "Baz".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/baz/app/services/baz.rb"),
@@ -405,7 +408,7 @@ mod tests {
         );
         expected_constant_map.insert(
             "Foo".to_owned(),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "Foo".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb"),
@@ -413,7 +416,7 @@ mod tests {
         );
         expected_constant_map.insert(
             "SomeConcern".to_owned(),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "SomeConcern".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/models/concerns/some_concern.rb"),
@@ -421,7 +424,7 @@ mod tests {
         );
         expected_constant_map.insert(
             "SomeRootClass".to_owned(),
-            Constant {
+            ConstantDefinition {
                 fully_qualified_name: "SomeRootClass".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/some_root_class.rb"),
