@@ -28,7 +28,7 @@ pub fn get_zeitwerk_constant_resolver(
         cache_dir,
         cache_disabled,
     );
-    ConstantResolver::create(absolute_root, constants, true)
+    ConstantResolver::create(constants, true)
 }
 
 fn inferred_constants_from_pack_set(

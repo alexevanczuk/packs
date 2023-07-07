@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Default, Debug)]
 pub struct ConstantResolver {
@@ -18,10 +15,8 @@ pub struct ConstantDefinition {
     pub absolute_path_of_definition: PathBuf,
 }
 
-#[allow(unused_variables)]
 impl ConstantResolver {
     pub fn create(
-        absolute_root: &Path,
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
     ) -> ConstantResolver {

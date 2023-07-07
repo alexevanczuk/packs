@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::packs::ProcessedFile;
@@ -11,7 +9,6 @@ use super::packwerk::constant_resolver::{
 pub(crate) mod parser;
 
 pub fn get_experimental_constant_resolver(
-    absolute_root: &Path,
     processed_files: &Vec<ProcessedFile>,
 ) -> ConstantResolver {
     let constants = processed_files
@@ -34,7 +31,7 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<ConstantDefinition>>();
 
-    ConstantResolver::create(absolute_root, constants, false)
+    ConstantResolver::create(constants, false)
 }
 
 #[cfg(test)]

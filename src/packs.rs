@@ -79,10 +79,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
             true,
         );
 
-        get_experimental_constant_resolver(
-            &configuration.absolute_root,
-            &processed_files,
-        )
+        get_experimental_constant_resolver(&processed_files)
     } else {
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
