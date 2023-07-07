@@ -1,4 +1,7 @@
 use lib_ruby_parser::{nodes, Loc, Node};
+use line_col::LineColLookup;
+
+use crate::packs::parsing::Range;
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -16,5 +19,17 @@ pub fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
                 node
             )
         }
+    }
+}
+
+pub fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
+    let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
+    let (end_row, end_col) = lookup.get(loc.end);
+
+    Range {
+        start_row,
+        start_col: start_col - 1,
+        end_row,
+        end_col,
     }
 }

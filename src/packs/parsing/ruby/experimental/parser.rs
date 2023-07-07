@@ -1,13 +1,13 @@
 use crate::packs::{
     inflector_shim::to_class_case,
     parsing::{
-        ruby::parse_utils::{fetch_node_location, ParseError},
+        ruby::parse_utils::{fetch_node_location, loc_to_range, ParseError},
         ParsedDefinition, Range, UnresolvedReference,
     },
     ProcessedFile,
 };
 use lib_ruby_parser::{
-    nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
+    nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
 use std::{collections::HashSet, fs, path::Path};
@@ -20,17 +20,6 @@ struct ReferenceCollector<'a> {
     pub behavioral_change_in_namespace: bool,
 }
 
-fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
-    let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
-    let (end_row, end_col) = lookup.get(loc.end);
-
-    Range {
-        start_row,
-        start_col: start_col - 1,
-        end_row,
-        end_col,
-    }
-}
 fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
     match node {
         Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
