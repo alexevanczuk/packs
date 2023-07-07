@@ -40,7 +40,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::packs::parsing::ruby::experimental::parser::process_from_contents;
-    use crate::packs::parsing::{Definition, Range};
+    use crate::packs::parsing::{ParsedDefinition, Range};
     use crate::packs::{ProcessedFile, UnresolvedReference};
     use pretty_assertions::assert_eq;
 
@@ -189,7 +189,7 @@ end
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
-        let definitions = vec![Definition {
+        let definitions = vec![ParsedDefinition {
             fully_qualified_name: String::from("Foo"),
             location: Range {
                 start_row: 1,

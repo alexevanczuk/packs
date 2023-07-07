@@ -30,7 +30,7 @@ pub(crate) use package_todo::PackageTodo;
 
 use self::caching::create_cache_dir_idempotently;
 
-use self::parsing::Definition;
+use self::parsing::ParsedDefinition;
 use self::parsing::UnresolvedReference;
 
 pub fn greet() {
@@ -58,7 +58,7 @@ pub fn delete_cache(configuration: Configuration) {
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
-    pub definitions: Vec<Definition>,
+    pub definitions: Vec<ParsedDefinition>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq)]

@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use super::caching::Cache;
 use super::caching::CacheResult;
 use super::caching::EmptyCacheEntry;
-use super::parsing::Definition;
+use super::parsing::ParsedDefinition;
 use super::parsing::Range;
 use super::{ProcessedFile, UnresolvedReference};
 
@@ -101,7 +101,7 @@ pub struct CacheEntry {
     pub file_contents_digest: String,
     pub unresolved_references: Vec<ReferenceEntry>,
     #[serde(default)]
-    pub definitions: Vec<Definition>,
+    pub definitions: Vec<ParsedDefinition>,
 }
 
 impl CacheEntry {
