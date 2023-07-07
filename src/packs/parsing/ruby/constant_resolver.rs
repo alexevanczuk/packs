@@ -133,15 +133,29 @@ impl ConstantResolver {
         }
     }
 
-    // Example for namespace_path: ['Foo', 'Bar', 'Baz']
-    // If the const_name is 'Boo',
-    // it could refer to any of the following:
+    // In Ruby, say we have this code:
+    //
+    // module Foo
+    //   module Bar
+    //     module Baz
+    //       Boo
+    //     end
+    //   end
+    // end
+    //
+    // The `current_namespace_path` here is: ['Foo', 'Bar', 'Baz']
+    // The `const_name` here is: `Boo`
+    // Ruby constant resolution rules dictate that `Boo` coudl refer to any of the following,
+    // in this specific order:
+    //
     // ::Foo::Bar::Baz::Boo
     // ::Foo::Bar::Boo
     // ::Foo::Boo
     // ::Boo
+    //
     // We need to check each of these possibilities in order, and return the first one that exists
     // If none of them exist, return None
+    //
     fn resolve_traversing_namespace_path<'a>(
         &'a self,
         const_name: &'a str,
