@@ -20,8 +20,6 @@ impl ConstantResolver {
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
     ) -> ConstantResolver {
-        debug!("Building constant resolver");
-
         debug!("Building constant resolver from constants vector");
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
