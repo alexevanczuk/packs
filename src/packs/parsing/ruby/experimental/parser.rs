@@ -1,6 +1,9 @@
 use crate::packs::{
     inflector_shim::to_class_case,
-    parsing::{ParsedDefinition, Range, UnresolvedReference},
+    parsing::{
+        ruby::parse_utils::{fetch_node_location, ParseError},
+        ParsedDefinition, Range, UnresolvedReference,
+    },
     ProcessedFile,
 };
 use lib_ruby_parser::{
@@ -15,25 +18,6 @@ struct ReferenceCollector<'a> {
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
     pub behavioral_change_in_namespace: bool,
-}
-
-#[derive(Debug)]
-enum ParseError {
-    Metaprogramming,
-    // Add more variants as needed for different error cases
-}
-
-fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
-    match node {
-        Node::Const(const_node) => Ok(&const_node.expression_l),
-        node => {
-            dbg!(node);
-            panic!(
-                "Cannot handle other node in get_constant_node_name: {:?}",
-                node
-            )
-        }
-    }
 }
 
 fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
