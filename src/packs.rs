@@ -93,7 +93,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
     };
 
     let constants = constant_resolver
-        .fully_qualified_constant_to_constant_map
+        .fully_qualified_constant_name_to_constant_definition_map
         .values();
 
     for constant in constants {

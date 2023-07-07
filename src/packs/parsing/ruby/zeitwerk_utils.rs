@@ -377,8 +377,8 @@ mod tests {
             &configuration.cache_directory,
             !configuration.cache_enabled,
         );
-        let actual_constant_map =
-            constant_resolver.fully_qualified_constant_to_constant_map;
+        let actual_constant_map = constant_resolver
+            .fully_qualified_constant_name_to_constant_definition_map;
 
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(

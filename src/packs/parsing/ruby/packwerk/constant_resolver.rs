@@ -8,7 +8,7 @@ use std::{
 
 #[derive(Default, Debug)]
 pub struct ConstantResolver {
-    pub fully_qualified_constant_to_constant_map:
+    pub fully_qualified_constant_name_to_constant_definition_map:
         HashMap<String, ConstantDefinition>,
 }
 
@@ -64,7 +64,8 @@ impl ConstantResolver {
         debug!("Finished building constant resolver");
 
         ConstantResolver {
-            fully_qualified_constant_to_constant_map,
+            fully_qualified_constant_name_to_constant_definition_map:
+                fully_qualified_constant_to_constant_map,
         }
     }
 
@@ -188,7 +189,7 @@ impl ConstantResolver {
         fully_qualified_name: &String,
     ) -> Option<&ConstantDefinition> {
         if let Some(constant) = self
-            .fully_qualified_constant_to_constant_map
+            .fully_qualified_constant_name_to_constant_definition_map
             .get(fully_qualified_name)
         {
             return Some(constant);
