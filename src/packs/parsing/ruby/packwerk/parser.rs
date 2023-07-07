@@ -118,7 +118,7 @@ fn get_definition_from(
     let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
 
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
-        let mut name_components = owned_namespace_path.clone();
+        let mut name_components = owned_namespace_path;
         name_components.push(name);
         format!("::{}", name_components.join("::"))
     } else {
@@ -127,7 +127,6 @@ fn get_definition_from(
 
     Definition {
         fully_qualified_name,
-        namespace_path: owned_namespace_path,
         location: location.to_owned(),
     }
 }
@@ -186,13 +185,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             &location,
         );
 
-        // Note – is there a way to use lifetime specifiers to get rid of this and
-        // just keep current namespaces as a vector of string references or something else
-        // more efficient?
-        self.current_namespaces.push(namespace);
-
         let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
+        let namespace_path = self.current_namespaces.to_owned();
         self.definitions.push(definition);
 
         // Packwerk also considers a definition to be a "reference"
@@ -201,6 +195,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             namespace_path,
             location,
         });
+
+        // Note – is there a way to use lifetime specifiers to get rid of this and
+        // just keep current namespaces as a vector of string references or something else
+        // more efficient?
+        self.current_namespaces.push(namespace);
 
         if let Some(inner) = &node.body {
             self.visit(inner);
@@ -287,7 +286,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         self.definitions.push(Definition {
             fully_qualified_name,
-            namespace_path: self.current_namespaces.to_owned(),
             location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         });
 
@@ -312,13 +310,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             &location,
         );
 
-        // Note – is there a way to use lifetime specifiers to get rid of this and
-        // just keep current namespaces as a vector of string references or something else
-        // more efficient?
-        self.current_namespaces.push(namespace);
-
         let name = definition.fully_qualified_name.to_owned();
-        let namespace_path = definition.namespace_path.to_owned();
+        let namespace_path = self.current_namespaces.to_owned();
         self.definitions.push(definition);
 
         // Packwerk also considers a definition to be a "reference"
@@ -327,6 +320,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             namespace_path,
             location,
         });
+
+        // Note – is there a way to use lifetime specifiers to get rid of this and
+        // just keep current namespaces as a vector of string references or something else
+        // more efficient?
+        self.current_namespaces.push(namespace);
 
         if let Some(inner) = &node.body {
             self.visit(inner);

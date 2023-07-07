@@ -197,7 +197,6 @@ end
                 end_row: 1,
                 end_col: 10,
             },
-            namespace_path: vec![],
         }];
 
         let actual = process_from_contents(contents, &absolute_path);
