@@ -85,7 +85,7 @@ fn get_definition_from(
     let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
 
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
-        let mut name_components = owned_namespace_path.clone();
+        let mut name_components = owned_namespace_path;
         name_components.push(name);
         name_components.join("::")
     } else {
@@ -94,7 +94,6 @@ fn get_definition_from(
 
     Definition {
         fully_qualified_name,
-        namespace_path: owned_namespace_path,
         location: location.to_owned(),
     }
 }
@@ -247,7 +246,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
         self.definitions.push(Definition {
             fully_qualified_name,
-            namespace_path: self.current_namespaces.to_owned(),
             location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         });
 

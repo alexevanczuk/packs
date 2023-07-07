@@ -69,7 +69,7 @@ pub struct Range {
 pub struct Definition {
     pub fully_qualified_name: String,
     pub location: Range,
-    pub namespace_path: Vec<String>,
+    // pub namespace_path: Vec<String>,
 }
 
 pub fn process_files_with_cache(
