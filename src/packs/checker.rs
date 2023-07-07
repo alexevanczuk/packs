@@ -16,7 +16,7 @@ use tracing::debug;
 
 use super::caching::Cache;
 use super::pack::Pack;
-use super::parsing::ruby::packwerk::constant_resolver::ConstantResolver;
+use super::parsing::ruby::constant_resolver::ConstantResolver;
 use super::UnresolvedReference;
 
 pub mod architecture;
