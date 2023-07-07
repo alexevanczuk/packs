@@ -243,10 +243,7 @@ fn get_all_violations(
     );
 
     let constant_resolver = if configuration.experimental_parser {
-        get_experimental_constant_resolver(
-            &configuration.absolute_root,
-            &processed_files,
-        )
+        get_experimental_constant_resolver(&processed_files)
     } else {
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,

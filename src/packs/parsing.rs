@@ -66,7 +66,7 @@ pub struct Range {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Eq)]
-pub struct Definition {
+pub struct ParsedDefinition {
     pub fully_qualified_name: String,
     pub location: Range,
 }

@@ -30,7 +30,7 @@ pub(crate) use package_todo::PackageTodo;
 
 use self::caching::create_cache_dir_idempotently;
 
-use self::parsing::Definition;
+use self::parsing::ParsedDefinition;
 use self::parsing::UnresolvedReference;
 
 pub fn greet() {
@@ -58,7 +58,7 @@ pub fn delete_cache(configuration: Configuration) {
 pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
-    pub definitions: Vec<Definition>,
+    pub definitions: Vec<ParsedDefinition>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq)]
@@ -79,10 +79,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
             true,
         );
 
-        get_experimental_constant_resolver(
-            &configuration.absolute_root,
-            &processed_files,
-        )
+        get_experimental_constant_resolver(&processed_files)
     } else {
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
@@ -93,7 +90,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
     };
 
     let constants = constant_resolver
-        .fully_qualified_constant_to_constant_map
+        .fully_qualified_constant_name_to_constant_definition_map
         .values();
 
     for constant in constants {

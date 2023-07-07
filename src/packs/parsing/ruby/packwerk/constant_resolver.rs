@@ -1,27 +1,23 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Default, Debug)]
 pub struct ConstantResolver {
-    pub fully_qualified_constant_to_constant_map: HashMap<String, Constant>,
+    pub fully_qualified_constant_name_to_constant_definition_map:
+        HashMap<String, ConstantDefinition>,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Constant {
+pub struct ConstantDefinition {
     pub fully_qualified_name: String,
     pub absolute_path_of_definition: PathBuf,
 }
 
-#[allow(unused_variables)]
 impl ConstantResolver {
     pub fn create(
-        absolute_root: &Path,
-        constants: Vec<Constant>,
+        constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
     ) -> ConstantResolver {
         debug!("Building constant resolver");
@@ -30,7 +26,7 @@ impl ConstantResolver {
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
             String,
-            Constant,
+            ConstantDefinition,
         > = HashMap::new();
 
         // TODO: Do this in parallel?
@@ -63,7 +59,8 @@ impl ConstantResolver {
         debug!("Finished building constant resolver");
 
         ConstantResolver {
-            fully_qualified_constant_to_constant_map,
+            fully_qualified_constant_name_to_constant_definition_map:
+                fully_qualified_constant_to_constant_map,
         }
     }
 
@@ -71,7 +68,7 @@ impl ConstantResolver {
         &self,
         fully_or_partially_qualified_constant: &str,
         namespace_path: &[&str],
-    ) -> Option<Constant> {
+    ) -> Option<ConstantDefinition> {
         // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
         let (namespace_path, const_name) =
             if fully_or_partially_qualified_constant.starts_with("::") {
@@ -90,7 +87,7 @@ impl ConstantResolver {
         const_name: &'a str,
         current_namespace_path: &'a [&str],
         original_name: &'a str,
-    ) -> Option<Constant> {
+    ) -> Option<ConstantDefinition> {
         let constant = self.resolve_traversing_namespace_path(
             const_name,
             current_namespace_path,
@@ -103,7 +100,7 @@ impl ConstantResolver {
                 let fully_qualified_name_guess =
                     fully_qualified_name_vec.join("::");
 
-                Some(Constant {
+                Some(ConstantDefinition {
                     fully_qualified_name: fully_qualified_name_guess,
                     absolute_path_of_definition: absolute_path_of_definition
                         .to_owned(),
@@ -185,9 +182,9 @@ impl ConstantResolver {
     fn constant_for_fully_qualified_name(
         &self,
         fully_qualified_name: &String,
-    ) -> Option<&Constant> {
+    ) -> Option<&ConstantDefinition> {
         if let Some(constant) = self
-            .fully_qualified_constant_to_constant_map
+            .fully_qualified_constant_name_to_constant_definition_map
             .get(fully_qualified_name)
         {
             return Some(constant);

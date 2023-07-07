@@ -1,15 +1,14 @@
-use std::path::Path;
-
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::packs::ProcessedFile;
 
-use super::packwerk::constant_resolver::{Constant, ConstantResolver};
+use super::packwerk::constant_resolver::{
+    ConstantDefinition, ConstantResolver,
+};
 
 pub(crate) mod parser;
 
 pub fn get_experimental_constant_resolver(
-    absolute_root: &Path,
     processed_files: &Vec<ProcessedFile>,
 ) -> ConstantResolver {
     let constants = processed_files
@@ -21,18 +20,18 @@ pub fn get_experimental_constant_resolver(
                 .map(|definition| {
                     let fully_qualified_name =
                         definition.fully_qualified_name.to_owned();
-                    Constant {
+                    ConstantDefinition {
                         fully_qualified_name,
                         absolute_path_of_definition: processed_file
                             .absolute_path
                             .to_owned(),
                     }
                 })
-                .collect::<Vec<Constant>>()
+                .collect::<Vec<ConstantDefinition>>()
         })
-        .collect::<Vec<Constant>>();
+        .collect::<Vec<ConstantDefinition>>();
 
-    ConstantResolver::create(absolute_root, constants, false)
+    ConstantResolver::create(constants, false)
 }
 
 #[cfg(test)]
@@ -40,7 +39,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::packs::parsing::ruby::experimental::parser::process_from_contents;
-    use crate::packs::parsing::{Definition, Range};
+    use crate::packs::parsing::{ParsedDefinition, Range};
     use crate::packs::{ProcessedFile, UnresolvedReference};
     use pretty_assertions::assert_eq;
 
@@ -189,7 +188,7 @@ end
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
-        let definitions = vec![Definition {
+        let definitions = vec![ParsedDefinition {
             fully_qualified_name: String::from("Foo"),
             location: Range {
                 start_row: 1,

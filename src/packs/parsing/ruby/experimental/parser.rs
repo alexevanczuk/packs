@@ -1,6 +1,6 @@
 use crate::packs::{
     inflector_shim::to_class_case,
-    parsing::{Definition, Range, UnresolvedReference},
+    parsing::{ParsedDefinition, Range, UnresolvedReference},
     ProcessedFile,
 };
 use lib_ruby_parser::{
@@ -11,7 +11,7 @@ use std::{collections::HashSet, fs, path::Path};
 
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
-    pub definitions: Vec<Definition>,
+    pub definitions: Vec<ParsedDefinition>,
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
     pub behavioral_change_in_namespace: bool,
@@ -79,7 +79,7 @@ fn get_definition_from(
     current_nesting: &String,
     parent_nesting: &[String],
     location: &Range,
-) -> Definition {
+) -> ParsedDefinition {
     let name = current_nesting.to_owned();
 
     let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
@@ -92,7 +92,7 @@ fn get_definition_from(
         name
     };
 
-    Definition {
+    ParsedDefinition {
         fully_qualified_name,
         location: location.to_owned(),
     }
@@ -244,7 +244,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             name
         };
 
-        self.definitions.push(Definition {
+        self.definitions.push(ParsedDefinition {
             fully_qualified_name,
             location: loc_to_range(&node.expression_l, &self.line_col_lookup),
         });
