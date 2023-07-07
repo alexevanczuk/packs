@@ -1,7 +1,10 @@
 use crate::packs::{
     inflector_shim::to_class_case,
     parsing::{
-        ruby::parse_utils::{fetch_node_location, loc_to_range, ParseError},
+        ruby::parse_utils::{
+            fetch_const_const_name, fetch_const_name, fetch_node_location,
+            loc_to_range, ParseError,
+        },
         ParsedDefinition, Range, UnresolvedReference,
     },
     ProcessedFile,
@@ -51,34 +54,6 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
     pub superclasses: Vec<SuperclassReference>,
-}
-
-fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
-    match node {
-        Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
-        Node::Cbase(_) => Ok(String::from("")),
-        Node::Send(_) => Err(ParseError::Metaprogramming),
-        Node::Lvar(_) => Err(ParseError::Metaprogramming),
-        Node::Ivar(_) => Err(ParseError::Metaprogramming),
-        Node::Self_(_) => Err(ParseError::Metaprogramming),
-        node => {
-            dbg!(node);
-            panic!(
-                "Cannot handle other node in get_constant_node_name: {:?}",
-                node
-            )
-        }
-    }
-}
-
-fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
-    match &node.scope {
-        Some(s) => {
-            let parent_namespace = fetch_const_name(s)?;
-            Ok(format!("{}::{}", parent_namespace, node.name))
-        }
-        None => Ok(node.name.to_owned()),
-    }
 }
 
 fn get_definition_from(
