@@ -1,4 +1,3 @@
-pub(crate) mod constant_resolver;
 pub(crate) mod parser;
 
 #[cfg(test)]

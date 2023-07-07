@@ -8,7 +8,7 @@ pub(crate) mod test_util {
     use packs::configuration;
 
     use crate::packs::{
-        self, parsing::ruby::packwerk::constant_resolver::ConstantResolver,
+        self, parsing::ruby::constant_resolver::ConstantResolver,
     };
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";

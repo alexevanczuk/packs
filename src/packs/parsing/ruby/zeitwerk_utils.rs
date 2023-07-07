@@ -12,9 +12,7 @@ use crate::packs::{
     pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
-use super::packwerk::constant_resolver::{
-    ConstantDefinition, ConstantResolver,
-};
+use super::constant_resolver::{ConstantDefinition, ConstantResolver};
 
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
@@ -230,8 +228,7 @@ mod tests {
     use super::*;
     use crate::packs;
     use crate::packs::{
-        configuration,
-        parsing::ruby::packwerk::constant_resolver::ConstantDefinition,
+        configuration, parsing::ruby::constant_resolver::ConstantDefinition,
     };
 
     fn teardown() {
