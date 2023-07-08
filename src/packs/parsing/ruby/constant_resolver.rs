@@ -161,6 +161,12 @@ impl ConstantResolver {
         if let Some(constant) =
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
+            // Since the ContantResolver might say that some constant Foo::Bar::Baz is defined in Foo::Bar,
+            // we want to return a ConstantDefinition that has the fully qualified name of the constant we're looking for.
+            // In this case, we want to return a ConstantDefinition with the fully qualified name of Foo::Bar::Baz
+            // even though the ConstantDefinition we found has the fully qualified name of Foo::Bar
+            // The ConstantResolver from the experimental parser does not need to do this, so we might be better off
+            // having a separate ConstantResolver for that implementation
             let fully_qualified_name = combine_namespace_with_constant_name(
                 current_namespace_path,
                 original_name,
@@ -168,10 +174,6 @@ impl ConstantResolver {
 
             let absolute_path_of_definition =
                 constant.absolute_path_of_definition.to_owned();
-            // Since the ContantResolver might say that some constant Foo::Bar::Baz is defined in Foo::Bar,
-            // we want to return a ConstantDefinition that has the fully qualified name of the constant we're looking for.
-            // In this case, we want to return a ConstantDefinition with the fully qualified name of Foo::Bar::Baz
-            // even though the ConstantDefinition we found has the fully qualified name of Foo::Bar
             Some(ConstantDefinition {
                 fully_qualified_name,
                 absolute_path_of_definition,
