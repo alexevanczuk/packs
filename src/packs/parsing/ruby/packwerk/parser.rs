@@ -1,9 +1,9 @@
 use crate::packs::{
-    inflector_shim::to_class_case,
     parsing::{
         ruby::parse_utils::{
             fetch_casgn_name, fetch_const_const_name, fetch_const_name,
-            fetch_node_location, get_definition_from, loc_to_range,
+            fetch_node_location, get_definition_from,
+            get_reference_from_active_record_association, loc_to_range,
         },
         ParsedDefinition, Range, UnresolvedReference,
     },
@@ -14,11 +14,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::packs::parsing::ruby::namespace_calculator;
 
@@ -54,22 +50,6 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
     pub superclasses: Vec<SuperclassReference>,
-}
-
-fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
-    for pair_node in kwargs.pairs.iter() {
-        if let Node::Pair(pair) = pair_node {
-            if let Node::Sym(k) = *pair.key.to_owned() {
-                if k.name.to_string_lossy() == *"class_name" {
-                    if let Node::Str(v) = *pair.value.to_owned() {
-                        return Some(v.value.to_string_lossy());
-                    }
-                }
-            }
-        }
-    }
-
-    None
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -124,59 +104,15 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
-        // TODO: Read in args, process associations as a separate class
-        // These can get complicated! e.g. we can specify a class name
-        // dbg!(&node);
-        if node.method_name == *"has_one"
-            || node.method_name == *"has_many"
-            || node.method_name == *"belongs_to"
-            || node.method_name == *"has_and_belongs_to_many"
-        {
-            let first_arg: Option<&Node> = node.args.get(0);
+        let association_reference =
+            get_reference_from_active_record_association(
+                node,
+                &self.current_namespaces,
+                &self.line_col_lookup,
+            );
 
-            let mut name: Option<String> = None;
-            for node in node.args.iter() {
-                if let Node::Kwargs(kwargs) = node {
-                    if let Some(found) = extract_class_name_from_kwargs(kwargs)
-                    {
-                        name = Some(found);
-                    }
-                }
-            }
-
-            if let Some(Node::Sym(d)) = first_arg {
-                if name.is_none() {
-                    // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
-                    // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
-                    name = Some(to_class_case(
-                        &d.name.to_string_lossy(),
-                        true,
-                        &HashSet::new(), // todo: pass in acronyms here
-                    ));
-                }
-            }
-
-            // let unwrapped_name = name.unwrap_or_else(|| {
-            //     panic!("Could not find class name for association {:?}", &node,)
-            // });
-            // Later we should probably handle these cases!
-            if name.is_some() {
-                let unwrapped_name = name.unwrap_or_else(|| {
-                    panic!(
-                        "Could not find class name for association {:?}",
-                        &node,
-                    )
-                });
-
-                self.references.push(UnresolvedReference {
-                    name: unwrapped_name,
-                    namespace_path: self.current_namespaces.to_owned(),
-                    location: loc_to_range(
-                        &node.expression_l,
-                        &self.line_col_lookup,
-                    ),
-                })
-            }
+        if let Some(association_reference) = association_reference {
+            self.references.push(association_reference);
         }
 
         lib_ruby_parser::traverse::visitor::visit_send(self, node);

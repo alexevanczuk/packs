@@ -1,7 +1,12 @@
+use std::collections::HashSet;
+
 use lib_ruby_parser::{nodes, Loc, Node};
 use line_col::LineColLookup;
 
-use crate::packs::parsing::{ParsedDefinition, Range};
+use crate::packs::{
+    inflector_shim::to_class_case,
+    parsing::{ParsedDefinition, Range, UnresolvedReference},
+};
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -96,4 +101,78 @@ pub fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
         }
         None => Ok(node.name.to_owned()),
     }
+}
+
+pub fn get_reference_from_active_record_association(
+    node: &nodes::Send,
+    current_namespaces: &[String],
+    line_col_lookup: &LineColLookup,
+) -> Option<UnresolvedReference> {
+    // TODO: Read in args, process associations as a separate class
+    // These can get complicated! e.g. we can specify a class name
+    // dbg!(&node);
+    if node.method_name == *"has_one"
+        || node.method_name == *"has_many"
+        || node.method_name == *"belongs_to"
+        || node.method_name == *"has_and_belongs_to_many"
+    {
+        let first_arg: Option<&Node> = node.args.get(0);
+
+        let mut name: Option<String> = None;
+        for node in node.args.iter() {
+            if let Node::Kwargs(kwargs) = node {
+                if let Some(found) = extract_class_name_from_kwargs(kwargs) {
+                    name = Some(found);
+                }
+            }
+        }
+
+        if let Some(Node::Sym(d)) = first_arg {
+            if name.is_none() {
+                // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
+                // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
+                name = Some(to_class_case(
+                    &d.name.to_string_lossy(),
+                    true,
+                    &HashSet::new(), // todo: pass in acronyms here
+                ));
+            }
+        }
+
+        // let unwrapped_name = name.unwrap_or_else(|| {
+        //     panic!("Could not find class name for association {:?}", &node,)
+        // });
+        // Later we should probably handle these cases!
+        if name.is_some() {
+            let unwrapped_name = name.unwrap_or_else(|| {
+                panic!("Could not find class name for association {:?}", &node,)
+            });
+
+            Some(UnresolvedReference {
+                name: unwrapped_name,
+                namespace_path: current_namespaces.to_owned(),
+                location: loc_to_range(&node.expression_l, line_col_lookup),
+            })
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
+    for pair_node in kwargs.pairs.iter() {
+        if let Node::Pair(pair) = pair_node {
+            if let Node::Sym(k) = *pair.key.to_owned() {
+                if k.name.to_string_lossy() == *"class_name" {
+                    if let Node::Str(v) = *pair.value.to_owned() {
+                        return Some(v.value.to_string_lossy());
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }
