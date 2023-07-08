@@ -18,7 +18,6 @@ pub fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
     match node {
         Node::Const(const_node) => Ok(&const_node.expression_l),
         node => {
-            dbg!(node);
             panic!(
                 "Cannot handle other node in get_constant_node_name: {:?}",
                 node
@@ -71,7 +70,6 @@ pub fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
         Node::Ivar(_) => Err(ParseError::Metaprogramming),
         Node::Self_(_) => Err(ParseError::Metaprogramming),
         node => {
-            dbg!(node);
             panic!(
                 "Cannot handle other node in get_constant_node_name: {:?}",
                 node
@@ -110,7 +108,6 @@ pub fn get_reference_from_active_record_association(
 ) -> Option<UnresolvedReference> {
     // TODO: Read in args, process associations as a separate class
     // These can get complicated! e.g. we can specify a class name
-    // dbg!(&node);
     if node.method_name == *"has_one"
         || node.method_name == *"has_many"
         || node.method_name == *"belongs_to"
