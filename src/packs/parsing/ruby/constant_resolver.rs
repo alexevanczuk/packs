@@ -3,6 +3,8 @@ use tracing::debug;
 
 use std::{collections::HashMap, path::PathBuf};
 
+use super::namespace_calculator::combine_namespace_with_constant_name;
+
 #[derive(Default, Debug)]
 pub struct ConstantResolver {
     pub fully_qualified_constant_name_to_constant_definition_map:
@@ -92,22 +94,11 @@ impl ConstantResolver {
         let constant = self.resolve_traversing_namespace_path(
             const_name,
             current_namespace_path,
+            original_name,
         );
         match constant {
-            (Some(namespace), Some(absolute_path_of_definition)) => {
-                let mut fully_qualified_name_vec = vec![""];
-                fully_qualified_name_vec.extend(namespace);
-                fully_qualified_name_vec.push(original_name);
-                let fully_qualified_name_guess =
-                    fully_qualified_name_vec.join("::");
-
-                Some(ConstantDefinition {
-                    fully_qualified_name: fully_qualified_name_guess,
-                    absolute_path_of_definition: absolute_path_of_definition
-                        .to_owned(),
-                })
-            }
-            (None, None) => {
+            Some(definition) => Some(definition),
+            None => {
                 // If we couldn't find a match, it's possible the constant is defined within its parent namespace and not within its own file.
                 // For example, `Boo` above could be defined in `foo/bar.rb` as:
                 // module Foo
@@ -129,9 +120,6 @@ impl ConstantResolver {
                     current_namespace_path,
                     original_name,
                 )
-            }
-            _ => {
-                todo!()
             }
         }
     }
@@ -163,36 +151,43 @@ impl ConstantResolver {
         &'a self,
         const_name: &'a str,
         current_namespace_path: &'a [&str],
-    ) -> (Option<&'a [&str]>, Option<&'a PathBuf>) {
-        let mut fully_qualified_name_guess_vec =
-            current_namespace_path.to_vec();
-        fully_qualified_name_guess_vec.push(const_name);
-
-        let fully_qualified_name_guess =
-            fully_qualified_name_guess_vec.join("::");
-
-        let fully_qualified_name_guess =
-            format!("::{}", fully_qualified_name_guess);
+        original_name: &'a str,
+    ) -> Option<ConstantDefinition> {
+        let fully_qualified_name_guess = combine_namespace_with_constant_name(
+            current_namespace_path,
+            const_name,
+        );
 
         if let Some(constant) =
             self.constant_for_fully_qualified_name(&fully_qualified_name_guess)
         {
-            (
-                Some(current_namespace_path),
-                Some(&constant.absolute_path_of_definition),
-            )
+            let fully_qualified_name = combine_namespace_with_constant_name(
+                current_namespace_path,
+                original_name,
+            );
+
+            let absolute_path_of_definition =
+                constant.absolute_path_of_definition.to_owned();
+            // Since the ContantResolver might say that some constant Foo::Bar::Baz is defined in Foo::Bar,
+            // we want to return a ConstantDefinition that has the fully qualified name of the constant we're looking for.
+            // In this case, we want to return a ConstantDefinition with the fully qualified name of Foo::Bar::Baz
+            // even though the ConstantDefinition we found has the fully qualified name of Foo::Bar
+            Some(ConstantDefinition {
+                fully_qualified_name,
+                absolute_path_of_definition,
+            })
         } else {
             // In this case, we couldn't find a constant with the given name under the given namespace.
             // However, it's possible the constant is defined within the parent namespace.
             let split_result = current_namespace_path.split_last();
             match split_result {
-                Some((_last, parent_namespace)) => {
-                    let vec = parent_namespace;
-                    let (namespace, absolute_path_of_definition) =
-                        self.resolve_traversing_namespace_path(const_name, vec);
-                    (namespace, absolute_path_of_definition)
-                }
-                None => (None, None),
+                Some((_last, parent_namespace)) => self
+                    .resolve_traversing_namespace_path(
+                        const_name,
+                        parent_namespace,
+                        original_name,
+                    ),
+                None => None,
             }
         }
     }

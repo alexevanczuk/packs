@@ -35,3 +35,12 @@ pub(crate) fn calculate_module_nesting(
 
     nesting
 }
+
+pub fn combine_namespace_with_constant_name(
+    namespace_path: &[&str],
+    const_name: &str,
+) -> String {
+    let mut fully_qualified_name_vec = namespace_path.to_vec();
+    fully_qualified_name_vec.push(const_name);
+    format!("::{}", fully_qualified_name_vec.join("::"))
+}
