@@ -1,9 +1,12 @@
 use crate::packs::{
     parsing::{
-        ruby::parse_utils::{
-            fetch_const_const_name, fetch_const_name, fetch_node_location,
-            get_constant_assignment_definition, get_definition_from,
-            get_reference_from_active_record_association, loc_to_range,
+        ruby::{
+            namespace_calculator::possible_fully_qualified_constants,
+            parse_utils::{
+                fetch_const_const_name, fetch_const_name, fetch_node_location,
+                get_constant_assignment_definition, get_definition_from,
+                get_reference_from_active_record_association, loc_to_range,
+            },
         },
         ParsedDefinition, Range, UnresolvedReference,
     },
@@ -16,32 +19,12 @@ use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::Path};
 
-use crate::packs::parsing::ruby::namespace_calculator;
-
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {
     pub name: String,
     pub namespace_path: Vec<String>,
 }
 
-impl UnresolvedReference {
-    fn possible_fully_qualified_constants(&self) -> Vec<String> {
-        if self.name.starts_with("::") {
-            return vec![self.name.to_owned()];
-        }
-
-        let mut possible_constants = vec![self.name.to_owned()];
-        let module_nesting = namespace_calculator::calculate_module_nesting(
-            &self.namespace_path,
-        );
-        for nesting in module_nesting {
-            let possible_constant = format!("::{}::{}", nesting, self.name);
-            possible_constants.push(possible_constant);
-        }
-
-        possible_constants
-    }
-}
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
     pub definitions: Vec<ParsedDefinition>,
@@ -285,7 +268,13 @@ pub(crate) fn process_from_contents(
         .into_iter()
         .filter(|r| {
             let mut should_ignore_local_reference = false;
-            let possible_constants = r.possible_fully_qualified_constants();
+            let namespace_path = r
+                .namespace_path
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<&str>>();
+            let possible_constants =
+                possible_fully_qualified_constants(&namespace_path, &r.name);
             for constant_name in possible_constants {
                 if let Some(location) = definition_to_location_map
                     .get(&constant_name)

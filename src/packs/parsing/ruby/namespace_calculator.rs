@@ -18,13 +18,13 @@
 // # inputs: ['Foo', 'Bar', 'Baz']
 // # outputs: ['Foo::Bar::Baz', 'Foo::Bar', 'Foo']
 pub(crate) fn calculate_module_nesting(
-    namespace_nesting: &[String],
+    namespace_nesting: &[&str],
 ) -> Vec<String> {
     let mut nesting = Vec::new();
     let mut previous = String::from("");
     namespace_nesting.iter().for_each(|namespace| {
         let new_nesting: String = if previous.is_empty() {
-            namespace.to_owned()
+            namespace.to_string()
         } else {
             format!("{}::{}", previous, namespace)
         };
@@ -43,4 +43,22 @@ pub fn combine_namespace_with_constant_name(
     let mut fully_qualified_name_vec = namespace_path.to_vec();
     fully_qualified_name_vec.push(const_name);
     format!("::{}", fully_qualified_name_vec.join("::"))
+}
+
+pub fn possible_fully_qualified_constants(
+    namespace_path: &[&str],
+    const_name: &str,
+) -> Vec<String> {
+    if const_name.starts_with("::") {
+        return vec![const_name.to_owned()];
+    }
+
+    let mut possible_constants = vec![format!("::{}", const_name)];
+    let module_nesting = calculate_module_nesting(namespace_path);
+    for nesting in module_nesting {
+        let possible_constant = format!("::{}::{}", nesting, const_name);
+        possible_constants.push(possible_constant);
+    }
+
+    possible_constants
 }
