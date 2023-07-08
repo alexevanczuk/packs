@@ -1,7 +1,7 @@
 use lib_ruby_parser::{nodes, Loc, Node};
 use line_col::LineColLookup;
 
-use crate::packs::parsing::Range;
+use crate::packs::parsing::{ParsedDefinition, Range};
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -19,6 +19,29 @@ pub fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
                 node
             )
         }
+    }
+}
+
+pub fn get_definition_from(
+    current_nesting: &String,
+    parent_nesting: &[String],
+    location: &Range,
+) -> ParsedDefinition {
+    let name = current_nesting.to_owned();
+
+    let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
+
+    let fully_qualified_name = if !owned_namespace_path.is_empty() {
+        let mut name_components = owned_namespace_path;
+        name_components.push(name);
+        format!("::{}", name_components.join("::"))
+    } else {
+        format!("::{}", name)
+    };
+
+    ParsedDefinition {
+        fully_qualified_name,
+        location: location.to_owned(),
     }
 }
 

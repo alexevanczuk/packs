@@ -3,7 +3,7 @@ use crate::packs::{
     parsing::{
         ruby::parse_utils::{
             fetch_const_const_name, fetch_const_name, fetch_node_location,
-            loc_to_range, ParseError,
+            get_definition_from, loc_to_range, ParseError,
         },
         ParsedDefinition, Range, UnresolvedReference,
     },
@@ -54,29 +54,6 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
     pub superclasses: Vec<SuperclassReference>,
-}
-
-fn get_definition_from(
-    current_nesting: &String,
-    parent_nesting: &[String],
-    location: &Range,
-) -> ParsedDefinition {
-    let name = current_nesting.to_owned();
-
-    let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
-
-    let fully_qualified_name = if !owned_namespace_path.is_empty() {
-        let mut name_components = owned_namespace_path;
-        name_components.push(name);
-        format!("::{}", name_components.join("::"))
-    } else {
-        format!("::{}", name)
-    };
-
-    ParsedDefinition {
-        fully_qualified_name,
-        location: location.to_owned(),
-    }
 }
 
 // TODO: Combine with fetch_const_const_name
