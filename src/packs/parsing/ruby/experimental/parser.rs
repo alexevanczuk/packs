@@ -1,13 +1,19 @@
 use crate::packs::{
-    inflector_shim::to_class_case,
-    parsing::{ParsedDefinition, Range, UnresolvedReference},
+    parsing::{
+        ruby::parse_utils::{
+            fetch_const_const_name, fetch_const_name, fetch_node_location,
+            get_constant_assignment_definition, get_definition_from,
+            get_reference_from_active_record_association, loc_to_range,
+        },
+        ParsedDefinition, UnresolvedReference,
+    },
     ProcessedFile,
 };
 use lib_ruby_parser::{
-    nodes, traverse::visitor::Visitor, Loc, Node, Parser, ParserOptions,
+    nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
-use std::{collections::HashSet, fs, path::Path};
+use std::{fs, path::Path};
 
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
@@ -15,114 +21,6 @@ struct ReferenceCollector<'a> {
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
     pub behavioral_change_in_namespace: bool,
-}
-
-#[derive(Debug)]
-enum ParseError {
-    Metaprogramming,
-    // Add more variants as needed for different error cases
-}
-
-fn fetch_node_location(node: &nodes::Node) -> Result<&Loc, ParseError> {
-    match node {
-        Node::Const(const_node) => Ok(&const_node.expression_l),
-        node => {
-            dbg!(node);
-            panic!(
-                "Cannot handle other node in get_constant_node_name: {:?}",
-                node
-            )
-        }
-    }
-}
-
-fn loc_to_range(loc: &Loc, lookup: &LineColLookup) -> Range {
-    let (start_row, start_col) = lookup.get(loc.begin); // There's an off-by-one difference here with packwerk
-    let (end_row, end_col) = lookup.get(loc.end);
-
-    Range {
-        start_row,
-        start_col: start_col - 1,
-        end_row,
-        end_col,
-    }
-}
-fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
-    match node {
-        Node::Const(const_node) => Ok(fetch_const_const_name(const_node)?),
-        Node::Cbase(_) => Ok(String::from("")),
-        Node::Send(_) => Err(ParseError::Metaprogramming),
-        Node::Lvar(_) => Err(ParseError::Metaprogramming),
-        Node::Ivar(_) => Err(ParseError::Metaprogramming),
-        Node::Self_(_) => Err(ParseError::Metaprogramming),
-        node => {
-            dbg!(node);
-            panic!(
-                "Cannot handle other node in get_constant_node_name: {:?}",
-                node
-            )
-        }
-    }
-}
-
-fn fetch_const_const_name(node: &nodes::Const) -> Result<String, ParseError> {
-    match &node.scope {
-        Some(s) => {
-            let parent_namespace = fetch_const_name(s)?;
-            Ok(format!("{}::{}", parent_namespace, node.name))
-        }
-        None => Ok(node.name.to_owned()),
-    }
-}
-
-fn get_definition_from(
-    current_nesting: &String,
-    parent_nesting: &[String],
-    location: &Range,
-) -> ParsedDefinition {
-    let name = current_nesting.to_owned();
-
-    let owned_namespace_path: Vec<String> = parent_nesting.to_vec();
-
-    let fully_qualified_name = if !owned_namespace_path.is_empty() {
-        let mut name_components = owned_namespace_path;
-        name_components.push(name);
-        name_components.join("::")
-    } else {
-        name
-    };
-
-    ParsedDefinition {
-        fully_qualified_name,
-        location: location.to_owned(),
-    }
-}
-
-// TODO: Combine with fetch_const_const_name
-fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
-    match &node.scope {
-        Some(s) => {
-            let parent_namespace = fetch_const_name(s)?;
-            Ok(format!("{}::{}", parent_namespace, node.name))
-        }
-        None => Ok(node.name.to_owned()),
-    }
-}
-
-fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
-    for pair_node in kwargs.pairs.iter() {
-        if let Node::Pair(pair) = pair_node {
-            if let Node::Sym(k) = *pair.key.to_owned() {
-                if k.name.to_string_lossy() == *"class_name" {
-                    if let Node::Str(v) = *pair.value.to_owned() {
-                        return Some(v.value.to_string_lossy());
-                    }
-                }
-            }
-        }
-    }
-
-    None
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -168,86 +66,30 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
-        self.behavioral_change_in_namespace = true;
+        let association_reference =
+            get_reference_from_active_record_association(
+                node,
+                &self.current_namespaces,
+                &self.line_col_lookup,
+            );
 
-        // TODO: Read in args, process associations as a separate class
-        // These can get complicated! e.g. we can specify a class name
-        // dbg!(&node);
-        if node.method_name == *"has_one"
-            || node.method_name == *"has_many"
-            || node.method_name == *"belongs_to"
-            || node.method_name == *"has_and_belongs_to_many"
-        {
-            let first_arg: Option<&Node> = node.args.get(0);
-
-            let mut name: Option<String> = None;
-            for node in node.args.iter() {
-                if let Node::Kwargs(kwargs) = node {
-                    if let Some(found) = extract_class_name_from_kwargs(kwargs)
-                    {
-                        name = Some(found);
-                    }
-                }
-            }
-
-            if let Some(Node::Sym(d)) = first_arg {
-                if name.is_none() {
-                    // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
-                    // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
-                    name = Some(to_class_case(
-                        &d.name.to_string_lossy(),
-                        true,
-                        &HashSet::new(), // todo: pass in acronyms here
-                    ));
-                }
-            }
-
-            // let unwrapped_name = name.unwrap_or_else(|| {
-            //     panic!("Could not find class name for association {:?}", &node,)
-            // });
-            // Later we should probably handle these cases!
-            if name.is_some() {
-                let unwrapped_name = name.unwrap_or_else(|| {
-                    panic!(
-                        "Could not find class name for association {:?}",
-                        &node,
-                    )
-                });
-
-                self.references.push(UnresolvedReference {
-                    name: unwrapped_name,
-                    namespace_path: self.current_namespaces.to_owned(),
-                    location: loc_to_range(
-                        &node.expression_l,
-                        &self.line_col_lookup,
-                    ),
-                })
-            }
+        if let Some(association_reference) = association_reference {
+            self.references.push(association_reference);
         }
 
         lib_ruby_parser::traverse::visitor::visit_send(self, node);
     }
 
     fn on_casgn(&mut self, node: &nodes::Casgn) {
-        let name_result = fetch_casgn_name(node);
-        if name_result.is_err() {
-            return;
+        let definition = get_constant_assignment_definition(
+            node,
+            self.current_namespaces.to_owned(),
+            &self.line_col_lookup,
+        );
+
+        if let Some(definition) = definition {
+            self.definitions.push(definition);
         }
-
-        // TODO: This can be extracted from on_class
-        let name = name_result.unwrap();
-        let fully_qualified_name = if !self.current_namespaces.is_empty() {
-            let mut name_components = self.current_namespaces.clone();
-            name_components.push(name);
-            name_components.join("::")
-        } else {
-            name
-        };
-
-        self.definitions.push(ParsedDefinition {
-            fully_qualified_name,
-            location: loc_to_range(&node.expression_l, &self.line_col_lookup),
-        });
 
         if let Some(v) = node.value.to_owned() {
             self.visit(&v);
