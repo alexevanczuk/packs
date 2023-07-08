@@ -86,3 +86,14 @@ pub fn fetch_const_const_name(
         None => Ok(node.name.to_owned()),
     }
 }
+
+// TODO: Combine with fetch_const_const_name
+pub fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
+    match &node.scope {
+        Some(s) => {
+            let parent_namespace = fetch_const_name(s)?;
+            Ok(format!("{}::{}", parent_namespace, node.name))
+        }
+        None => Ok(node.name.to_owned()),
+    }
+}

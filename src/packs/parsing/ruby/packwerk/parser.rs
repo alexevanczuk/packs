@@ -2,8 +2,8 @@ use crate::packs::{
     inflector_shim::to_class_case,
     parsing::{
         ruby::parse_utils::{
-            fetch_const_const_name, fetch_const_name, fetch_node_location,
-            get_definition_from, loc_to_range, ParseError,
+            fetch_casgn_name, fetch_const_const_name, fetch_const_name,
+            fetch_node_location, get_definition_from, loc_to_range,
         },
         ParsedDefinition, Range, UnresolvedReference,
     },
@@ -54,17 +54,6 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
     pub superclasses: Vec<SuperclassReference>,
-}
-
-// TODO: Combine with fetch_const_const_name
-fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
-    match &node.scope {
-        Some(s) => {
-            let parent_namespace = fetch_const_name(s)?;
-            Ok(format!("{}::{}", parent_namespace, node.name))
-        }
-        None => Ok(node.name.to_owned()),
-    }
 }
 
 fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
