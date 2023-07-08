@@ -64,7 +64,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let namespace = namespace_result.unwrap();
 
         if let Some(inner) = node.superclass.as_ref() {
-            // dbg!("Visiting superclass!: {:?}", inner);
             self.in_superclass = true;
             self.visit(inner);
             self.in_superclass = false;
