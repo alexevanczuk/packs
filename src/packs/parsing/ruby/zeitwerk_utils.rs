@@ -301,7 +301,6 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
-        dbg!(&resolver);
         assert_eq!(
             ConstantDefinition {
                 fully_qualified_name: "::Bar".to_string(),
