@@ -13,7 +13,7 @@ A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a
 - This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `packs` is the same as `packwerk`.
 
 ## To be 20x faster than `packwerk` on most projects
-- Currently ~20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md).
+- Currently ~10-20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md).
 - Your mileage may vary!
 - Other performance improvements are coming soon!
 
