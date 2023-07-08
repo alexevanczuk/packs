@@ -35,9 +35,9 @@ fn get_definition_from(
     let fully_qualified_name = if !owned_namespace_path.is_empty() {
         let mut name_components = owned_namespace_path;
         name_components.push(name);
-        name_components.join("::")
+        format!("::{}", name_components.join("::"))
     } else {
-        name
+        format!("::{}", name)
     };
 
     ParsedDefinition {

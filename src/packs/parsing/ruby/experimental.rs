@@ -18,6 +18,11 @@ pub fn get_experimental_constant_resolver(
                 .map(|definition| {
                     let fully_qualified_name =
                         definition.fully_qualified_name.to_owned();
+                    // The parser does not (but maybe should) add a leading "::" to the
+                    // definitions, since the convention is to represent fully qualified constant names
+                    // with a leading "::". Eventually we can push this responsibility into the parser.
+                    // let fully_qualified_name =
+                    //     format!("::{}", fully_qualified_name);
                     ConstantDefinition {
                         fully_qualified_name,
                         absolute_path_of_definition: processed_file
@@ -187,7 +192,7 @@ end
         let unresolved_references = vec![];
 
         let definitions = vec![ParsedDefinition {
-            fully_qualified_name: String::from("Foo"),
+            fully_qualified_name: String::from("::Foo"),
             location: Range {
                 start_row: 1,
                 start_col: 6,

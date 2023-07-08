@@ -140,12 +140,14 @@ fn inferred_constant_from_file(
     let relative_path = relative_path.with_extension("");
 
     let relative_path_str = relative_path.to_str().unwrap();
-    let fully_qualified_constant_name =
+    let camelized_path =
         crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
+    let fully_qualified_name = format!("::{}", camelized_path);
 
+    let absolute_path_of_definition = absolute_path.to_path_buf();
     ConstantDefinition {
-        fully_qualified_name: fully_qualified_constant_name,
-        absolute_path_of_definition: absolute_path.to_path_buf(),
+        fully_qualified_name,
+        absolute_path_of_definition,
     }
 }
 
@@ -299,6 +301,7 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
+        dbg!(&resolver);
         assert_eq!(
             ConstantDefinition {
                 fully_qualified_name: "::Bar".to_string(),
@@ -379,50 +382,50 @@ mod tests {
 
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(
-            String::from("Foo::Bar"),
+            String::from("::Foo::Bar"),
             ConstantDefinition {
-                fully_qualified_name: "Foo::Bar".to_owned(),
+                fully_qualified_name: "::Foo::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb"),
             },
         );
 
         expected_constant_map.insert(
-            "Bar".to_owned(),
+            "::Bar".to_owned(),
             ConstantDefinition {
-                fully_qualified_name: "Bar".to_owned(),
+                fully_qualified_name: "::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb"),
             },
         );
         expected_constant_map.insert(
-            "Baz".to_owned(),
+            "::Baz".to_owned(),
             ConstantDefinition {
-                fully_qualified_name: "Baz".to_owned(),
+                fully_qualified_name: "::Baz".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/baz/app/services/baz.rb"),
             },
         );
         expected_constant_map.insert(
-            "Foo".to_owned(),
+            "::Foo".to_owned(),
             ConstantDefinition {
-                fully_qualified_name: "Foo".to_owned(),
+                fully_qualified_name: "::Foo".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb"),
             },
         );
         expected_constant_map.insert(
-            "SomeConcern".to_owned(),
+            "::SomeConcern".to_owned(),
             ConstantDefinition {
-                fully_qualified_name: "SomeConcern".to_owned(),
+                fully_qualified_name: "::SomeConcern".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/models/concerns/some_concern.rb"),
             },
         );
         expected_constant_map.insert(
-            "SomeRootClass".to_owned(),
+            "::SomeRootClass".to_owned(),
             ConstantDefinition {
-                fully_qualified_name: "SomeRootClass".to_owned(),
+                fully_qualified_name: "::SomeRootClass".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/some_root_class.rb"),
             },
