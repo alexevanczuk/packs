@@ -187,7 +187,6 @@ pub fn get_constant_assignment_definition(
         return None;
     }
 
-    // TODO: This can be extracted from on_class
     let name = name_result.unwrap();
     let fully_qualified_name = if !current_namespaces.is_empty() {
         let mut name_components = current_namespaces;
