@@ -93,7 +93,7 @@ pub fn fetch_const_const_name(
 }
 
 // TODO: Combine with fetch_const_const_name
-pub fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
+fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     match &node.scope {
         Some(s) => {
             let parent_namespace = fetch_const_name(s)?;
@@ -175,4 +175,30 @@ fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
     }
 
     None
+}
+
+pub fn get_constant_assignment_definition(
+    node: &nodes::Casgn,
+    current_namespaces: Vec<String>,
+    line_col_lookup: &LineColLookup,
+) -> Option<ParsedDefinition> {
+    let name_result = fetch_casgn_name(node);
+    if name_result.is_err() {
+        return None;
+    }
+
+    // TODO: This can be extracted from on_class
+    let name = name_result.unwrap();
+    let fully_qualified_name = if !current_namespaces.is_empty() {
+        let mut name_components = current_namespaces;
+        name_components.push(name);
+        format!("::{}", name_components.join("::"))
+    } else {
+        format!("::{}", name)
+    };
+
+    Some(ParsedDefinition {
+        fully_qualified_name,
+        location: loc_to_range(&node.expression_l, line_col_lookup),
+    })
 }

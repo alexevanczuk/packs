@@ -1,8 +1,8 @@
 use crate::packs::{
     parsing::{
         ruby::parse_utils::{
-            fetch_casgn_name, fetch_const_const_name, fetch_const_name,
-            fetch_node_location, get_definition_from,
+            fetch_const_const_name, fetch_const_name, fetch_node_location,
+            get_constant_assignment_definition, get_definition_from,
             get_reference_from_active_record_association, loc_to_range,
         },
         ParsedDefinition, Range, UnresolvedReference,
@@ -117,25 +117,15 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_casgn(&mut self, node: &nodes::Casgn) {
-        let name_result = fetch_casgn_name(node);
-        if name_result.is_err() {
-            return;
+        let definition = get_constant_assignment_definition(
+            node,
+            self.current_namespaces.to_owned(),
+            &self.line_col_lookup,
+        );
+
+        if let Some(definition) = definition {
+            self.definitions.push(definition);
         }
-
-        // TODO: This can be extracted from on_class
-        let name = name_result.unwrap();
-        let fully_qualified_name = if !self.current_namespaces.is_empty() {
-            let mut name_components = self.current_namespaces.clone();
-            name_components.push(name);
-            format!("::{}", name_components.join("::"))
-        } else {
-            format!("::{}", name)
-        };
-
-        self.definitions.push(ParsedDefinition {
-            fully_qualified_name,
-            location: loc_to_range(&node.expression_l, &self.line_col_lookup),
-        });
 
         if let Some(v) = node.value.to_owned() {
             self.visit(&v);
