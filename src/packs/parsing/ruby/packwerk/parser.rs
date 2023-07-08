@@ -42,7 +42,6 @@ impl UnresolvedReference {
         possible_constants
     }
 }
-
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
     pub definitions: Vec<ParsedDefinition>,
