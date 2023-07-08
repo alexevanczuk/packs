@@ -91,9 +91,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         let fully_qualified_name = if !self.current_namespaces.is_empty() {
             let mut name_components = self.current_namespaces.clone();
             name_components.push(name);
-            name_components.join("::")
+            format!("::{}", name_components.join("::"))
         } else {
-            name
+            format!("::{}", name)
         };
 
         self.definitions.push(ParsedDefinition {
