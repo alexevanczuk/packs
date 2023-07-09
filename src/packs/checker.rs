@@ -65,33 +65,31 @@ impl<'a> Reference<'a> {
         let maybe_constant = constant_resolver
             .resolve(&unresolved_reference.name, &str_namespace_path);
 
-        let (defining_pack, relative_defining_file) = if let Some(constant) =
-            &maybe_constant
-        {
-            let absolute_path_of_definition =
-                &constant.absolute_path_of_definition;
-            let relative_defining_file = absolute_path_of_definition
-                .strip_prefix(&configuration.absolute_root)
-                .unwrap()
-                .to_path_buf()
-                .to_str()
-                .unwrap()
-                .to_string();
+        let (defining_pack, relative_defining_file, constant_name) =
+            if let Some(constant) = &maybe_constant {
+                let absolute_path_of_definition =
+                    &constant.absolute_path_of_definition;
+                let relative_defining_file = absolute_path_of_definition
+                    .strip_prefix(&configuration.absolute_root)
+                    .unwrap()
+                    .to_path_buf()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
 
-            let defining_pack =
-                configuration.pack_set.for_file(absolute_path_of_definition);
+                let defining_pack = configuration
+                    .pack_set
+                    .for_file(absolute_path_of_definition);
 
-            (defining_pack, Some(relative_defining_file))
-        } else {
-            (None, None)
-        };
-
-        let constant_name = if let Some(constant) = &maybe_constant {
-            &constant.fully_qualified_name
-        } else {
-            // Contant name is not known, so we'll just use the unresolved name for now
-            &unresolved_reference.name
-        };
+                (
+                    defining_pack,
+                    Some(relative_defining_file),
+                    &constant.fully_qualified_name,
+                )
+            } else {
+                // Contant name is not known, so we'll just use the unresolved name for now
+                (None, None, &unresolved_reference.name)
+            };
 
         let constant_name = constant_name.clone();
 
