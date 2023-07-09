@@ -2,7 +2,7 @@ use crate::packs::caching::create_cache_dir_idempotently;
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
-use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
 
 use crate::packs::Configuration;
 use crate::packs::ProcessedFile;

@@ -24,7 +24,7 @@ pub(crate) use crate::packs::checker::Violation;
 pub(crate) use crate::packs::pack_set::PackSet;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
-use crate::packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
 

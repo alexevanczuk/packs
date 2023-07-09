@@ -2,7 +2,7 @@ pub mod packs;
 
 #[cfg(test)]
 pub(crate) mod test_util {
-    use packs::parsing::ruby::zeitwerk_utils::get_zeitwerk_constant_resolver;
+    use packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
     use std::path::PathBuf;
 
     use packs::configuration;

@@ -5,4 +5,4 @@ pub mod packwerk;
 pub mod parse_utils;
 pub(crate) mod rails_utils;
 pub mod ruby_utils;
-pub mod zeitwerk_utils;
+pub mod zeitwerk;
