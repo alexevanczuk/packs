@@ -55,42 +55,45 @@ impl<'a> Reference<'a> {
         let maybe_constant_definition = constant_resolver
             .resolve(&unresolved_reference.name, &str_namespace_path);
 
-        let (defining_pack, relative_defining_file, constant_name) =
-            if let Some(constant) = &maybe_constant_definition {
-                let absolute_path_of_definition =
-                    &constant.absolute_path_of_definition;
-                let relative_defining_file = absolute_path_of_definition
-                    .strip_prefix(&configuration.absolute_root)
-                    .unwrap()
-                    .to_path_buf()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+        if let Some(constant) = &maybe_constant_definition {
+            let absolute_path_of_definition =
+                &constant.absolute_path_of_definition;
+            let relative_defining_file = absolute_path_of_definition
+                .strip_prefix(&configuration.absolute_root)
+                .unwrap()
+                .to_path_buf()
+                .to_str()
+                .unwrap()
+                .to_string();
 
-                let defining_pack = configuration
-                    .pack_set
-                    .for_file(absolute_path_of_definition);
+            let defining_pack =
+                configuration.pack_set.for_file(absolute_path_of_definition);
 
-                let relative_defining_file = Some(relative_defining_file);
-                let constant_name = constant.fully_qualified_name.clone();
+            let relative_defining_file = Some(relative_defining_file);
+            let constant_name = constant.fully_qualified_name.clone();
 
-                (defining_pack, relative_defining_file, constant_name)
-            } else {
-                let defining_pack = None;
-                let relative_defining_file = None;
-                // Contant name is not known, so we'll just use the unresolved name for now
-                let constant_name = unresolved_reference.name.clone();
+            vec![Reference {
+                constant_name,
+                defining_pack,
+                referencing_pack,
+                relative_referencing_file,
+                source_location,
+                relative_defining_file,
+            }]
+        } else {
+            let defining_pack = None;
+            let relative_defining_file = None;
+            // Contant name is not known, so we'll just use the unresolved name for now
+            let constant_name = unresolved_reference.name.clone();
 
-                (defining_pack, relative_defining_file, constant_name)
-            };
-
-        vec![Reference {
-            constant_name,
-            defining_pack,
-            referencing_pack,
-            relative_referencing_file,
-            source_location,
-            relative_defining_file,
-        }]
+            vec![Reference {
+                constant_name,
+                defining_pack,
+                referencing_pack,
+                relative_referencing_file,
+                source_location,
+                relative_defining_file,
+            }]
+        }
     }
 }
