@@ -14,6 +14,30 @@ pub struct ZeitwerkConstantResolver {
 }
 
 impl ZeitwerkConstantResolver {
+    pub fn resolve(
+        &self,
+        fully_or_partially_qualified_constant: &str,
+        namespace_path: &[&str],
+    ) -> Option<ConstantDefinition> {
+        // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
+        let (namespace_path, const_name) =
+            if fully_or_partially_qualified_constant.starts_with("::") {
+                // `resolve_constant` will add a leading :: before it makes a guess at the fully qualified name
+                // so we remove it here and represent it as a relative constant with no namespace path
+                let const_name = fully_or_partially_qualified_constant
+                    .strip_prefix("::")
+                    .unwrap();
+                let namespace_path: &[&str] = &[];
+                (namespace_path, const_name)
+            } else {
+                (namespace_path, fully_or_partially_qualified_constant)
+            };
+
+        self.resolve_constant(const_name, namespace_path, const_name)
+    }
+}
+
+impl ZeitwerkConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
@@ -60,27 +84,6 @@ impl ZeitwerkConstantResolver {
         }
     }
 
-    pub fn resolve(
-        &self,
-        fully_or_partially_qualified_constant: &str,
-        namespace_path: &[&str],
-    ) -> Option<ConstantDefinition> {
-        // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
-        let (namespace_path, const_name) =
-            if fully_or_partially_qualified_constant.starts_with("::") {
-                // `resolve_constant` will add a leading :: before it makes a guess at the fully qualified name
-                // so we remove it here and represent it as a relative constant with no namespace path
-                let const_name = fully_or_partially_qualified_constant
-                    .strip_prefix("::")
-                    .unwrap();
-                let namespace_path: &[&str] = &[];
-                (namespace_path, const_name)
-            } else {
-                (namespace_path, fully_or_partially_qualified_constant)
-            };
-
-        self.resolve_constant(const_name, namespace_path, const_name)
-    }
     fn resolve_constant<'a>(
         &'a self,
         const_name: &'a str,
@@ -142,7 +145,6 @@ impl ZeitwerkConstantResolver {
     //
     // We need to check each of these possibilities in order, and return the first one that exists
     // If none of them exist, return None
-    //
     fn resolve_traversing_namespace_path<'a>(
         &'a self,
         const_name: &'a str,
