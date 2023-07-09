@@ -2,26 +2,36 @@ use std::path::Path;
 
 use crate::packs::{
     constant_resolver::ConstantResolver, pack::Pack,
-    parsing::UnresolvedReference, Configuration, SourceLocation,
+    parsing::UnresolvedReference, Configuration, PackSet, SourceLocation,
 };
 
 #[derive(Debug)]
-pub struct Reference<'a> {
+pub struct Reference {
     pub constant_name: String,
-    pub defining_pack: Option<&'a Pack>,
+    pub defining_pack_name: Option<String>,
     pub relative_defining_file: Option<String>,
-    pub referencing_pack: &'a Pack,
+    pub referencing_pack_name: String,
     pub relative_referencing_file: String,
     pub source_location: SourceLocation,
 }
 
-impl<'a> Reference<'a> {
+impl Reference {
+    pub fn defining_pack(&self, pack_set: &PackSet) -> Option<&Pack> {
+        self.defining_pack_name.map(|name| pack_set.for_pack(&name))
+    }
+
+    pub fn referencing_pack(&self, pack_set: &PackSet) -> &Pack {
+        pack_set.for_pack(&self.referencing_pack_name)
+    }
+}
+
+impl Reference {
     pub fn from_unresolved_reference(
-        configuration: &'a Configuration,
-        constant_resolver: &'a (dyn ConstantResolver + Send + Sync),
+        configuration: &Configuration,
+        constant_resolver: &(dyn ConstantResolver + Send + Sync),
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
-    ) -> Vec<Reference<'a>> {
+    ) -> Vec<Reference> {
         let referencing_pack = configuration
             .pack_set
             .for_file(referencing_file_path)
@@ -74,8 +84,8 @@ impl<'a> Reference<'a> {
 
             vec![Reference {
                 constant_name,
-                defining_pack,
-                referencing_pack,
+                defining_pack_name,
+                referencing_pack_name,
                 relative_referencing_file,
                 source_location,
                 relative_defining_file,
@@ -88,8 +98,8 @@ impl<'a> Reference<'a> {
 
             vec![Reference {
                 constant_name,
-                defining_pack,
-                referencing_pack,
+                defining_pack_name,
+                referencing_pack_name,
                 relative_referencing_file,
                 source_location,
                 relative_defining_file,

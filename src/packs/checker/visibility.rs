@@ -9,11 +9,11 @@ pub struct Checker {}
 // from a pack to a pack that doesn't permit visibility from the referencing pack
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
-        let referencing_pack = &reference.referencing_pack;
+        let referencing_pack = &reference.referencing_pack_name;
         let relative_defining_file = &reference.relative_defining_file;
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack;
+        let defining_pack = &reference.defining_pack_name;
         if defining_pack.is_none() {
             return None;
         }
@@ -90,8 +90,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(&defining_pack),
+            referencing_pack_name: &referencing_pack,
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -119,8 +119,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(&defining_pack),
+            referencing_pack_name: &referencing_pack,
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),
@@ -163,8 +163,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(&defining_pack),
+            referencing_pack_name: &referencing_pack,
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),

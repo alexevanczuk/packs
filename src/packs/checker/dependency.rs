@@ -79,13 +79,13 @@ The following groups of packages from a cycle:
 // Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
     fn check(&self, reference: &Reference) -> Option<Violation> {
-        let referencing_pack = reference.referencing_pack;
+        let referencing_pack = reference.referencing_pack_name;
         if referencing_pack.enforce_dependencies.is_false() {
             return None;
         }
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack;
+        let defining_pack = &reference.defining_pack_name;
 
         if defining_pack.is_none() {
             return None;
@@ -165,10 +165,10 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(
+            defining_pack_name: Some(
                 configuration.pack_set.for_pack(&String::from("packs/foo")),
             ),
-            referencing_pack: configuration
+            referencing_pack_name: configuration
                 .pack_set
                 .for_pack(&String::from("packs/foo")),
             relative_referencing_file: String::from(
@@ -193,10 +193,10 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack: Some(
+            defining_pack_name: Some(
                 configuration.pack_set.for_pack(&String::from("packs/bar")),
             ),
-            referencing_pack: configuration
+            referencing_pack_name: configuration
                 .pack_set
                 .for_pack(&String::from("packs/foo")),
             relative_referencing_file: String::from(
