@@ -105,7 +105,7 @@ impl<'a> Reference<'a> {
                 )
             });
 
-        let loc = unresolved_reference.location.clone();
+        let loc = &unresolved_reference.location;
         let source_location = SourceLocation {
             line: loc.start_row,
             column: loc.start_col,
