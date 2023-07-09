@@ -15,7 +15,6 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::caching::Cache;
-use super::PackSet;
 
 pub mod architecture;
 pub mod dependency;

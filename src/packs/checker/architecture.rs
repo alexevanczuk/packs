@@ -113,6 +113,8 @@ impl CheckerInterface for Checker {
 #[cfg(test)]
 mod tests {
 
+    use std::collections::{HashMap, HashSet};
+
     use crate::packs::{
         pack::{CheckerSetting, Pack},
         PackSet, SourceLocation,
@@ -136,18 +138,10 @@ mod tests {
             ..Pack::default()
         };
 
-        let configuration = Configuration {
-            pack_set: PackSet {
-                packs: vec![defining_pack.clone(), referencing_pack.clone()],
-                ..PackSet::default()
-            },
-            ..Configuration::default()
-        };
-
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name),
-            referencing_pack_name: referencing_pack.name,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -155,6 +149,14 @@ mod tests {
                 "packs/bar/app/services/bar.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
         };
         assert_eq!(None, checker.check(&reference, &configuration))
     }
@@ -181,18 +183,10 @@ mod tests {
             ..Pack::default()
         };
 
-        let configuration = Configuration {
-            pack_set: PackSet {
-                packs: vec![defining_pack.clone(), referencing_pack.clone()],
-                ..PackSet::default()
-            },
-            ..Configuration::default()
-        };
-
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name),
-            referencing_pack_name: referencing_pack.name,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),
@@ -200,6 +194,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
         };
 
         let expected_violation = Violation {
@@ -240,18 +242,10 @@ mod tests {
             ..Pack::default()
         };
 
-        let configuration = Configuration {
-            pack_set: PackSet {
-                packs: vec![defining_pack.clone(), referencing_pack.clone()],
-                ..PackSet::default()
-            },
-            ..Configuration::default()
-        };
-
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack_name: Some(&defining_pack),
-            referencing_pack_name: &referencing_pack,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),
@@ -261,6 +255,14 @@ mod tests {
             source_location: SourceLocation { line: 3, column: 1 },
         };
 
-        assert_eq!(None, checker.check(&reference))
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
+        };
+
+        assert_eq!(None, checker.check(&reference, &configuration))
     }
 }

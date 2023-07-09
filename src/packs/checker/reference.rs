@@ -16,11 +16,15 @@ pub struct Reference {
 }
 
 impl Reference {
-    pub fn defining_pack(&self, pack_set: &PackSet) -> Option<&Pack> {
-        self.defining_pack_name.map(|name| pack_set.for_pack(&name))
+    pub fn defining_pack<'a>(&self, pack_set: &'a PackSet) -> Option<&'a Pack> {
+        if let Some(name) = &self.defining_pack_name {
+            Some(pack_set.for_pack(name))
+        } else {
+            None
+        }
     }
 
-    pub fn referencing_pack(&self, pack_set: &PackSet) -> &Pack {
+    pub fn referencing_pack<'a>(&self, pack_set: &'a PackSet) -> &'a Pack {
         pack_set.for_pack(&self.referencing_pack_name)
     }
 }
@@ -32,9 +36,10 @@ impl Reference {
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Vec<Reference> {
-        let referencing_pack = configuration
+        let referencing_pack_name = configuration
             .pack_set
             .for_file(referencing_file_path)
+            .map(|pack| pack.name.clone())
             .unwrap_or_else(|| {
                 panic!(
                     "Could not find pack for referencing file path: {}",
@@ -76,8 +81,10 @@ impl Reference {
                 .unwrap()
                 .to_string();
 
-            let defining_pack =
-                configuration.pack_set.for_file(absolute_path_of_definition);
+            let defining_pack_name = configuration
+                .pack_set
+                .for_file(absolute_path_of_definition)
+                .map(|pack| pack.name.clone());
 
             let relative_defining_file = Some(relative_defining_file);
             let constant_name = constant.fully_qualified_name.clone();
@@ -91,7 +98,7 @@ impl Reference {
                 relative_defining_file,
             }]
         } else {
-            let defining_pack = None;
+            let defining_pack_name = None;
             let relative_defining_file = None;
             // Contant name is not known, so we'll just use the unresolved name for now
             let constant_name = unresolved_reference.name.clone();
