@@ -1,3 +1,7 @@
+use crate::packs::parsing::ParsedDefinition;
+use crate::packs::parsing::Range;
+use crate::packs::parsing::UnresolvedReference;
+use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
 use serde::{Deserialize, Serialize};
 
@@ -6,12 +10,9 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use super::caching::Cache;
-use super::caching::CacheResult;
-use super::caching::EmptyCacheEntry;
-use super::parsing::ParsedDefinition;
-use super::parsing::Range;
-use super::{ProcessedFile, UnresolvedReference};
+use super::Cache;
+use super::CacheResult;
+use super::EmptyCacheEntry;
 
 pub struct PerFileCache {
     pub cache_dir: PathBuf,

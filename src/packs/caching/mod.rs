@@ -9,6 +9,9 @@ pub enum CacheResult {
 
 pub struct InitializedCacheDirectory;
 
+pub(crate) mod noop_cache;
+pub(crate) mod per_file_cache;
+
 #[derive(Debug, Default)]
 pub struct EmptyCacheEntry {
     pub relative_path: PathBuf,

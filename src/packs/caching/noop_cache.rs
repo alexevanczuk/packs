@@ -1,10 +1,8 @@
 use std::path::Path;
 
-use super::{
-    caching::{CacheResult, EmptyCacheEntry},
-    ProcessedFile,
-};
-use crate::packs::caching::Cache;
+use crate::packs::{caching::Cache, ProcessedFile};
+
+use super::{CacheResult, EmptyCacheEntry};
 
 pub struct NoopCache {}
 
@@ -16,7 +14,7 @@ impl Cache for NoopCache {
 
     fn write(
         &self,
-        _empty_cache_entry: &super::caching::EmptyCacheEntry,
+        _empty_cache_entry: &EmptyCacheEntry,
         _processed_file: &ProcessedFile,
     ) {
         // Do nothing!

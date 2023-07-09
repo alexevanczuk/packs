@@ -1,7 +1,9 @@
+use super::caching::noop_cache::NoopCache;
+use super::caching::per_file_cache::PerFileCache;
 use super::caching::InitializedCacheDirectory;
+use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
-use super::{checker::architecture::Layers, per_file_cache};
-use super::{noop_cache, PackSet};
+use super::PackSet;
 use crate::packs::caching::Cache;
 
 use crate::packs::raw_configuration;
@@ -53,11 +55,11 @@ impl Configuration {
         _initialized_dir: InitializedCacheDirectory,
     ) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
-            Box::new(per_file_cache::PerFileCache {
+            Box::new(PerFileCache {
                 cache_dir: self.cache_directory.to_owned(),
             })
         } else {
-            Box::new(noop_cache::NoopCache {})
+            Box::new(NoopCache {})
         }
     }
 
