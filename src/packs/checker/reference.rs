@@ -70,33 +70,39 @@ impl Reference {
         let maybe_constant_definition = constant_resolver
             .resolve(&unresolved_reference.name, &str_namespace_path);
 
-        if let Some(constant) = &maybe_constant_definition {
-            let absolute_path_of_definition =
-                &constant.absolute_path_of_definition;
-            let relative_defining_file = absolute_path_of_definition
-                .strip_prefix(&configuration.absolute_root)
-                .unwrap()
-                .to_path_buf()
-                .to_str()
-                .unwrap()
-                .to_string();
+        if let Some(constant_definitions) = &maybe_constant_definition {
+            constant_definitions
+                .iter()
+                .map(move |constant| {
+                    let absolute_path_of_definition =
+                        &constant.absolute_path_of_definition;
+                    let relative_defining_file = absolute_path_of_definition
+                        .strip_prefix(&configuration.absolute_root)
+                        .unwrap()
+                        .to_path_buf()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
 
-            let defining_pack_name = configuration
-                .pack_set
-                .for_file(absolute_path_of_definition)
-                .map(|pack| pack.name.clone());
+                    let defining_pack_name = configuration
+                        .pack_set
+                        .for_file(absolute_path_of_definition)
+                        .map(|pack| pack.name.clone());
 
-            let relative_defining_file = Some(relative_defining_file);
-            let constant_name = constant.fully_qualified_name.clone();
+                    let relative_defining_file = Some(relative_defining_file);
+                    let constant_name = constant.fully_qualified_name.clone();
 
-            vec![Reference {
-                constant_name,
-                defining_pack_name,
-                referencing_pack_name,
-                relative_referencing_file,
-                source_location,
-                relative_defining_file,
-            }]
+                    Reference {
+                        constant_name,
+                        defining_pack_name,
+                        referencing_pack_name: referencing_pack_name.clone(),
+                        relative_referencing_file: relative_referencing_file
+                            .clone(),
+                        source_location: source_location.clone(),
+                        relative_defining_file,
+                    }
+                })
+                .collect()
         } else {
             let defining_pack_name = None;
             let relative_defining_file = None;

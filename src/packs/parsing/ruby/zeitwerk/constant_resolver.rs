@@ -18,7 +18,7 @@ impl ConstantResolver for ZeitwerkConstantResolver {
         &self,
         fully_or_partially_qualified_constant: &str,
         namespace_path: &[&str],
-    ) -> Option<ConstantDefinition> {
+    ) -> Option<Vec<ConstantDefinition>> {
         // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
         let (namespace_path, const_name) =
             if fully_or_partially_qualified_constant.starts_with("::") {
@@ -95,14 +95,14 @@ impl ZeitwerkConstantResolver {
         const_name: &'a str,
         current_namespace_path: &'a [&str],
         original_name: &'a str,
-    ) -> Option<ConstantDefinition> {
+    ) -> Option<Vec<ConstantDefinition>> {
         let constant = self.resolve_traversing_namespace_path(
             const_name,
             current_namespace_path,
             original_name,
         );
         match constant {
-            Some(definition) => Some(definition),
+            Some(definition) => Some(vec![definition]),
             None => {
                 // If we couldn't find a match, it's possible the constant is defined within its parent namespace and not within its own file.
                 // For example, `Boo` above could be defined in `foo/bar.rb` as:

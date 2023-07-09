@@ -59,7 +59,7 @@ pub struct ProcessedFile {
     pub definitions: Vec<ParsedDefinition>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq, Clone)]
 pub struct SourceLocation {
     line: usize,
     column: usize,

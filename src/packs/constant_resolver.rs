@@ -13,7 +13,7 @@ pub trait ConstantResolver {
         &self,
         fully_or_partially_qualified_constant: &str,
         namespace_path: &[&str],
-    ) -> Option<ConstantDefinition>;
+    ) -> Option<Vec<ConstantDefinition>>;
 
     fn fully_qualified_constant_name_to_constant_definition_map(
         &self,
