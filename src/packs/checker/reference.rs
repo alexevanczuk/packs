@@ -21,7 +21,7 @@ impl<'a> Reference<'a> {
         constant_resolver: &'a (dyn ConstantResolver + Send + Sync),
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
-    ) -> Reference<'a> {
+    ) -> Vec<Reference<'a>> {
         let referencing_pack = configuration
             .pack_set
             .for_file(referencing_file_path)
@@ -81,13 +81,13 @@ impl<'a> Reference<'a> {
                 (None, None, unresolved_reference.name.clone())
             };
 
-        Reference {
+        vec![Reference {
             constant_name,
             defining_pack,
             referencing_pack,
             relative_referencing_file,
             source_location,
             relative_defining_file,
-        }
+        }]
     }
 }

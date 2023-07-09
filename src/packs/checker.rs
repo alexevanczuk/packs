@@ -170,7 +170,7 @@ fn get_all_violations(
             let references: Vec<Reference> = processed_file
                 .unresolved_references
                 .iter()
-                .map(|unresolved_ref| {
+                .flat_map(|unresolved_ref| {
                     let absolute_path_of_referring_file =
                         processed_file.absolute_path.clone();
                     Reference::from_unresolved_reference(
