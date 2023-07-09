@@ -1,9 +1,11 @@
-use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
-use crate::packs::parsing::ruby::namespace_calculator::combine_namespace_with_constant_name;
+use crate::packs::{
+    constant_resolver::{ConstantDefinition, ConstantResolver},
+    parsing::ruby::namespace_calculator::combine_namespace_with_constant_name,
+};
 
 #[derive(Default, Debug)]
 pub struct ZeitwerkConstantResolver {
@@ -11,17 +13,41 @@ pub struct ZeitwerkConstantResolver {
         HashMap<String, ConstantDefinition>,
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ConstantDefinition {
-    pub fully_qualified_name: String,
-    pub absolute_path_of_definition: PathBuf,
+impl ConstantResolver for ZeitwerkConstantResolver {
+    fn resolve(
+        &self,
+        fully_or_partially_qualified_constant: &str,
+        namespace_path: &[&str],
+    ) -> Option<ConstantDefinition> {
+        // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
+        let (namespace_path, const_name) =
+            if fully_or_partially_qualified_constant.starts_with("::") {
+                // `resolve_constant` will add a leading :: before it makes a guess at the fully qualified name
+                // so we remove it here and represent it as a relative constant with no namespace path
+                let const_name = fully_or_partially_qualified_constant
+                    .strip_prefix("::")
+                    .unwrap();
+                let namespace_path: &[&str] = &[];
+                (namespace_path, const_name)
+            } else {
+                (namespace_path, fully_or_partially_qualified_constant)
+            };
+
+        self.resolve_constant(const_name, namespace_path, const_name)
+    }
+
+    fn fully_qualified_constant_name_to_constant_definition_map(
+        &self,
+    ) -> &HashMap<String, ConstantDefinition> {
+        &self.fully_qualified_constant_name_to_constant_definition_map
+    }
 }
 
 impl ZeitwerkConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
-    ) -> ZeitwerkConstantResolver {
+    ) -> Box<dyn ConstantResolver + Send + Sync> {
         debug!("Building constant resolver from constants vector");
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
@@ -58,33 +84,12 @@ impl ZeitwerkConstantResolver {
 
         debug!("Finished building constant resolver");
 
-        ZeitwerkConstantResolver {
+        Box::new(ZeitwerkConstantResolver {
             fully_qualified_constant_name_to_constant_definition_map:
                 fully_qualified_constant_to_constant_map,
-        }
+        })
     }
 
-    pub fn resolve(
-        &self,
-        fully_or_partially_qualified_constant: &str,
-        namespace_path: &[&str],
-    ) -> Option<ConstantDefinition> {
-        // If the fully_or_partially_qualified_constant is prefixed with ::, the namespace path is technically empty, since it's a global reference
-        let (namespace_path, const_name) =
-            if fully_or_partially_qualified_constant.starts_with("::") {
-                // `resolve_constant` will add a leading :: before it makes a guess at the fully qualified name
-                // so we remove it here and represent it as a relative constant with no namespace path
-                let const_name = fully_or_partially_qualified_constant
-                    .strip_prefix("::")
-                    .unwrap();
-                let namespace_path: &[&str] = &[];
-                (namespace_path, const_name)
-            } else {
-                (namespace_path, fully_or_partially_qualified_constant)
-            };
-
-        self.resolve_constant(const_name, namespace_path, const_name)
-    }
     fn resolve_constant<'a>(
         &'a self,
         const_name: &'a str,
@@ -146,7 +151,6 @@ impl ZeitwerkConstantResolver {
     //
     // We need to check each of these possibilities in order, and return the first one that exists
     // If none of them exist, return None
-    //
     fn resolve_traversing_namespace_path<'a>(
         &'a self,
         const_name: &'a str,

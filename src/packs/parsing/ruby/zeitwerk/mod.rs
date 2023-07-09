@@ -10,11 +10,15 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::packs::{
-    caching::create_cache_dir_idempotently, file_utils::process_glob_pattern,
-    pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
+    caching::create_cache_dir_idempotently,
+    constant_resolver::{ConstantDefinition, ConstantResolver},
+    file_utils::process_glob_pattern,
+    pack::Pack,
+    parsing::ruby::rails_utils::get_acronyms_from_disk,
+    PackSet,
 };
 
-use self::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
+use self::constant_resolver::ZeitwerkConstantResolver;
 
 use super::inflector_shim;
 
@@ -23,7 +27,7 @@ pub fn get_zeitwerk_constant_resolver(
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
-) -> ZeitwerkConstantResolver {
+) -> Box<dyn ConstantResolver + Send + Sync> {
     let constants = inferred_constants_from_pack_set(
         pack_set,
         absolute_root,
@@ -232,10 +236,7 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
 mod tests {
     use super::*;
     use crate::packs;
-    use crate::packs::{
-        configuration,
-        parsing::ruby::zeitwerk::constant_resolver::ConstantDefinition,
-    };
+    use crate::packs::configuration;
 
     fn teardown() {
         packs::delete_cache(configuration::get(&PathBuf::from(
@@ -381,7 +382,7 @@ mod tests {
             !configuration.cache_enabled,
         );
         let actual_constant_map = constant_resolver
-            .fully_qualified_constant_name_to_constant_definition_map;
+            .fully_qualified_constant_name_to_constant_definition_map();
 
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(
@@ -433,7 +434,7 @@ mod tests {
                     .join("app/services/some_root_class.rb"),
             },
         );
-        assert_eq!(expected_constant_map, actual_constant_map);
+        assert_eq!(&expected_constant_map, actual_constant_map);
 
         teardown();
     }

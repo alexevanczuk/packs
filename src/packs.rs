@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub(crate) mod caching;
 pub(crate) mod checker;
 pub mod cli;
+pub(crate) mod constant_resolver;
 pub(crate) mod file_utils;
 pub mod logger;
 mod pack_set;
@@ -87,7 +88,7 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
     };
 
     let constants = constant_resolver
-        .fully_qualified_constant_name_to_constant_definition_map
+        .fully_qualified_constant_name_to_constant_definition_map()
         .values();
 
     for constant in constants {

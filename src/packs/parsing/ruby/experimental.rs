@@ -1,16 +1,17 @@
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-use crate::packs::ProcessedFile;
-
-use super::zeitwerk::constant_resolver::{
-    ConstantDefinition, ZeitwerkConstantResolver,
+use crate::packs::{
+    constant_resolver::{ConstantDefinition, ConstantResolver},
+    ProcessedFile,
 };
+
+use super::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
 
 pub(crate) mod parser;
 
 pub fn get_experimental_constant_resolver(
     processed_files: &Vec<ProcessedFile>,
-) -> ZeitwerkConstantResolver {
+) -> Box<dyn ConstantResolver + Send + Sync> {
     let constants = processed_files
         .into_par_iter()
         .flat_map(|processed_file| {
