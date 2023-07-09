@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub(crate) mod caching;
 pub(crate) mod checker;
 pub mod cli;
+pub(crate) mod constant_resolver;
 pub(crate) mod file_utils;
 pub mod logger;
 mod pack_set;
