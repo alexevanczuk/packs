@@ -62,11 +62,11 @@ impl<'a> Reference<'a> {
             .map(|s| s.as_str())
             .collect::<Vec<&str>>();
 
-        let maybe_constant = constant_resolver
+        let maybe_constant_definition = constant_resolver
             .resolve(&unresolved_reference.name, &str_namespace_path);
 
         let (defining_pack, relative_defining_file, constant_name) =
-            if let Some(constant) = &maybe_constant {
+            if let Some(constant) = &maybe_constant_definition {
                 let absolute_path_of_definition =
                     &constant.absolute_path_of_definition;
                 let relative_defining_file = absolute_path_of_definition
