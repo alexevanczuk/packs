@@ -10,11 +10,12 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::packs::{
-    caching::create_cache_dir_idempotently, file_utils::process_glob_pattern,
+    caching::create_cache_dir_idempotently,
+    constant_resolver::ConstantDefinition, file_utils::process_glob_pattern,
     pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
-use self::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
+use self::constant_resolver::ZeitwerkConstantResolver;
 
 use super::inflector_shim;
 
@@ -232,10 +233,7 @@ fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
 mod tests {
     use super::*;
     use crate::packs;
-    use crate::packs::{
-        configuration,
-        parsing::ruby::zeitwerk::constant_resolver::ConstantDefinition,
-    };
+    use crate::packs::configuration;
 
     fn teardown() {
         packs::delete_cache(configuration::get(&PathBuf::from(

@@ -1,4 +1,12 @@
-use super::parsing::ruby::zeitwerk::constant_resolver::ConstantDefinition;
+use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ConstantDefinition {
+    pub fully_qualified_name: String,
+    pub absolute_path_of_definition: PathBuf,
+}
 
 pub trait ConstantResolver {
     fn resolve(

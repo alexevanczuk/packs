@@ -1,10 +1,8 @@
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-use crate::packs::ProcessedFile;
+use crate::packs::{constant_resolver::ConstantDefinition, ProcessedFile};
 
-use super::zeitwerk::constant_resolver::{
-    ConstantDefinition, ZeitwerkConstantResolver,
-};
+use super::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
 
 pub(crate) mod parser;
 

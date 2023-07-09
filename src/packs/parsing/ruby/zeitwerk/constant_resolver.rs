@@ -1,20 +1,16 @@
-use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
-use crate::packs::parsing::ruby::namespace_calculator::combine_namespace_with_constant_name;
+use crate::packs::{
+    constant_resolver::ConstantDefinition,
+    parsing::ruby::namespace_calculator::combine_namespace_with_constant_name,
+};
 
 #[derive(Default, Debug)]
 pub struct ZeitwerkConstantResolver {
     pub fully_qualified_constant_name_to_constant_definition_map:
         HashMap<String, ConstantDefinition>,
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ConstantDefinition {
-    pub fully_qualified_name: String,
-    pub absolute_path_of_definition: PathBuf,
 }
 
 impl ZeitwerkConstantResolver {
