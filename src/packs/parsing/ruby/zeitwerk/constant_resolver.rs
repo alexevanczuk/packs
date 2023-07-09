@@ -3,7 +3,7 @@ use tracing::debug;
 
 use std::{collections::HashMap, path::PathBuf};
 
-use super::namespace_calculator::combine_namespace_with_constant_name;
+use crate::packs::parsing::ruby::namespace_calculator::combine_namespace_with_constant_name;
 
 #[derive(Default, Debug)]
 pub struct ZeitwerkConstantResolver {

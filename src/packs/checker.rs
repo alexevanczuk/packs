@@ -16,7 +16,7 @@ use tracing::debug;
 
 use super::caching::Cache;
 use super::pack::Pack;
-use super::parsing::ruby::constant_resolver::ZeitwerkConstantResolver;
+use super::parsing::ruby::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
 use super::UnresolvedReference;
 
 pub mod architecture;

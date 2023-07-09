@@ -8,7 +8,8 @@ pub(crate) mod test_util {
     use packs::configuration;
 
     use crate::packs::{
-        self, parsing::ruby::constant_resolver::ZeitwerkConstantResolver,
+        self,
+        parsing::ruby::zeitwerk::constant_resolver::ZeitwerkConstantResolver,
     };
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";

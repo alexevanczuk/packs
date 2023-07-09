@@ -1,3 +1,5 @@
+pub(crate) mod constant_resolver;
+
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
@@ -12,7 +14,7 @@ use crate::packs::{
     pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
-use super::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
+use self::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
 
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
@@ -230,7 +232,8 @@ mod tests {
     use super::*;
     use crate::packs;
     use crate::packs::{
-        configuration, parsing::ruby::constant_resolver::ConstantDefinition,
+        configuration,
+        parsing::ruby::zeitwerk::constant_resolver::ConstantDefinition,
     };
 
     fn teardown() {
