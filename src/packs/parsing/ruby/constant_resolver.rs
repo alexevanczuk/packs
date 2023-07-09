@@ -6,7 +6,7 @@ use std::{collections::HashMap, path::PathBuf};
 use super::namespace_calculator::combine_namespace_with_constant_name;
 
 #[derive(Default, Debug)]
-pub struct ConstantResolver {
+pub struct ZeitwerkConstantResolver {
     pub fully_qualified_constant_name_to_constant_definition_map:
         HashMap<String, ConstantDefinition>,
 }
@@ -17,11 +17,11 @@ pub struct ConstantDefinition {
     pub absolute_path_of_definition: PathBuf,
 }
 
-impl ConstantResolver {
+impl ZeitwerkConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
-    ) -> ConstantResolver {
+    ) -> ZeitwerkConstantResolver {
         debug!("Building constant resolver from constants vector");
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
@@ -58,7 +58,7 @@ impl ConstantResolver {
 
         debug!("Finished building constant resolver");
 
-        ConstantResolver {
+        ZeitwerkConstantResolver {
             fully_qualified_constant_name_to_constant_definition_map:
                 fully_qualified_constant_to_constant_map,
         }

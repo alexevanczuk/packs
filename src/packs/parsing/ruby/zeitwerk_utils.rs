@@ -12,21 +12,21 @@ use crate::packs::{
     pack::Pack, parsing::ruby::rails_utils::get_acronyms_from_disk, PackSet,
 };
 
-use super::constant_resolver::{ConstantDefinition, ConstantResolver};
+use super::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
 
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
-) -> ConstantResolver {
+) -> ZeitwerkConstantResolver {
     let constants = inferred_constants_from_pack_set(
         pack_set,
         absolute_root,
         cache_dir,
         cache_disabled,
     );
-    ConstantResolver::create(constants, true)
+    ZeitwerkConstantResolver::create(constants, true)
 }
 
 fn inferred_constants_from_pack_set(
