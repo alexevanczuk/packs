@@ -49,6 +49,7 @@ pub struct Reference<'a> {
     relative_referencing_file: String,
     source_location: SourceLocation,
 }
+
 impl<'a> Reference<'a> {
     fn from_unresolved_reference(
         configuration: &'a Configuration,
