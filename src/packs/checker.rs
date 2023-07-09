@@ -56,6 +56,30 @@ impl<'a> Reference<'a> {
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
+        let referencing_pack = configuration
+            .pack_set
+            .for_file(referencing_file_path)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Could not find pack for referencing file path: {}",
+                    &referencing_file_path.display()
+                )
+            });
+
+        let loc = &unresolved_reference.location;
+        let source_location = SourceLocation {
+            line: loc.start_row,
+            column: loc.start_col,
+        };
+
+        let relative_referencing_file_path = referencing_file_path
+            .strip_prefix(&configuration.absolute_root)
+            .unwrap()
+            .to_path_buf();
+
+        let relative_referencing_file =
+            relative_referencing_file_path.to_str().unwrap().to_string();
+
         let str_namespace_path: Vec<&str> = unresolved_reference
             .namespace_path
             .iter()
@@ -84,38 +108,12 @@ impl<'a> Reference<'a> {
                 (
                     defining_pack,
                     Some(relative_defining_file),
-                    &constant.fully_qualified_name,
+                    constant.fully_qualified_name.clone(),
                 )
             } else {
                 // Contant name is not known, so we'll just use the unresolved name for now
-                (None, None, &unresolved_reference.name)
+                (None, None, unresolved_reference.name.clone())
             };
-
-        let constant_name = constant_name.clone();
-
-        let referencing_pack = configuration
-            .pack_set
-            .for_file(referencing_file_path)
-            .unwrap_or_else(|| {
-                panic!(
-                    "Could not find pack for referencing file path: {}",
-                    &referencing_file_path.display()
-                )
-            });
-
-        let loc = &unresolved_reference.location;
-        let source_location = SourceLocation {
-            line: loc.start_row,
-            column: loc.start_col,
-        };
-
-        let relative_referencing_file_path = referencing_file_path
-            .strip_prefix(&configuration.absolute_root)
-            .unwrap()
-            .to_path_buf();
-
-        let relative_referencing_file =
-            relative_referencing_file_path.to_str().unwrap().to_string();
 
         Reference {
             constant_name,
