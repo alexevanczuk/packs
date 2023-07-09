@@ -1,3 +1,8 @@
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
+
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use crate::packs::{
@@ -12,7 +17,9 @@ pub mod constant_resolver;
 pub(crate) mod parser;
 
 pub fn get_experimental_constant_resolver(
+    absolute_root: &Path,
     processed_files: &Vec<ProcessedFile>,
+    ignored_definitions: &HashMap<String, HashSet<PathBuf>>,
 ) -> Box<dyn ConstantResolver + Send + Sync> {
     let constants = processed_files
         .into_par_iter()
@@ -34,7 +41,11 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<ConstantDefinition>>();
 
-    ExperimentalConstantResolver::create(constants)
+    ExperimentalConstantResolver::create(
+        constants,
+        absolute_root,
+        ignored_definitions,
+    )
 }
 
 #[cfg(test)]
@@ -183,6 +194,39 @@ end
             "\
 class Foo
   def foo
+  end
+end
+            ",
+        );
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![];
+
+        let definitions = vec![ParsedDefinition {
+            fully_qualified_name: String::from("::Foo"),
+            location: Range {
+                start_row: 1,
+                start_col: 6,
+                end_row: 1,
+                end_col: 10,
+            },
+        }];
+
+        let actual = process_from_contents(contents, &absolute_path);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn class_definition_some_body_with_class_method() {
+        let contents: String = String::from(
+            "\
+class Foo
+  def self.foo
   end
 end
             ",

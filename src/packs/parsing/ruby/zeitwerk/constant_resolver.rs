@@ -46,7 +46,6 @@ impl ConstantResolver for ZeitwerkConstantResolver {
 impl ZeitwerkConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
-        disallow_multiple_definitions: bool,
     ) -> Box<dyn ConstantResolver + Send + Sync> {
         debug!("Building constant resolver from constants vector");
 
@@ -70,12 +69,10 @@ impl ZeitwerkConstantResolver {
 
                 // Later, we can allow the checkers to skip over constants where it's pointing at a pack that defines it as an ignored_monkeypatch: path/to/definition.rb
                 // We should be sure to validate that ignored_monkeypatch paths match the absolute_path_to_definition of the constant.
-                if disallow_multiple_definitions {
-                    panic!(
-                        "Found two constants with the same name: {:?} and {:?}",
-                        existing_constant, constant
-                    );
-                }
+                panic!(
+                    "Found two constants with the same name: {:?} and {:?}",
+                    existing_constant, constant
+                );
             } else {
                 fully_qualified_constant_to_constant_map
                     .insert(fully_qualified_constant_name, vec![constant]);
