@@ -52,7 +52,7 @@ pub struct Reference<'a> {
 impl<'a> Reference<'a> {
     fn from_unresolved_reference(
         configuration: &'a Configuration,
-        constant_resolver: &'a Box<dyn ConstantResolver + Send + Sync>,
+        constant_resolver: &'a (dyn ConstantResolver + Send + Sync),
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {
@@ -266,7 +266,7 @@ fn get_all_violations(
                         processed_file.absolute_path.clone();
                     Reference::from_unresolved_reference(
                         configuration,
-                        &constant_resolver,
+                        constant_resolver.as_ref(),
                         unresolved_ref,
                         &absolute_path_of_referring_file,
                     )
