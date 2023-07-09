@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -14,4 +14,8 @@ pub trait ConstantResolver {
         fully_or_partially_qualified_constant: &str,
         namespace_path: &[&str],
     ) -> Option<ConstantDefinition>;
+
+    fn fully_qualified_constant_name_to_constant_definition_map(
+        &self,
+    ) -> &HashMap<String, ConstantDefinition>;
 }

@@ -7,10 +7,7 @@ pub(crate) mod test_util {
 
     use packs::configuration;
 
-    use crate::packs::{
-        self,
-        parsing::ruby::zeitwerk::constant_resolver::ZeitwerkConstantResolver,
-    };
+    use crate::packs::{self, constant_resolver::ConstantResolver};
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";
 
@@ -20,7 +17,7 @@ pub(crate) mod test_util {
 
     pub fn get_zeitwerk_constant_resolver_for_fixture(
         fixture_name: &str,
-    ) -> ZeitwerkConstantResolver {
+    ) -> Box<dyn ConstantResolver> {
         let absolute_root = get_absolute_root(fixture_name);
         let configuration = configuration::get(&absolute_root);
 

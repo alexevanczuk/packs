@@ -15,8 +15,9 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::caching::Cache;
+use super::constant_resolver::ConstantResolver;
 use super::pack::Pack;
-use super::parsing::ruby::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
+
 use super::UnresolvedReference;
 
 pub mod architecture;
@@ -51,7 +52,7 @@ pub struct Reference<'a> {
 impl<'a> Reference<'a> {
     fn from_unresolved_reference(
         configuration: &'a Configuration,
-        constant_resolver: &'a ZeitwerkConstantResolver,
+        constant_resolver: &'a Box<dyn ConstantResolver + Send + Sync>,
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
     ) -> Reference<'a> {

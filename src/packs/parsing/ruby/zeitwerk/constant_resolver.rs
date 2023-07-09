@@ -3,7 +3,7 @@ use tracing::debug;
 use std::collections::HashMap;
 
 use crate::packs::{
-    constant_resolver::ConstantDefinition,
+    constant_resolver::{ConstantDefinition, ConstantResolver},
     parsing::ruby::namespace_calculator::combine_namespace_with_constant_name,
 };
 
@@ -13,8 +13,8 @@ pub struct ZeitwerkConstantResolver {
         HashMap<String, ConstantDefinition>,
 }
 
-impl ZeitwerkConstantResolver {
-    pub fn resolve(
+impl ConstantResolver for ZeitwerkConstantResolver {
+    fn resolve(
         &self,
         fully_or_partially_qualified_constant: &str,
         namespace_path: &[&str],
@@ -35,13 +35,19 @@ impl ZeitwerkConstantResolver {
 
         self.resolve_constant(const_name, namespace_path, const_name)
     }
+
+    fn fully_qualified_constant_name_to_constant_definition_map(
+        &self,
+    ) -> &HashMap<String, ConstantDefinition> {
+        &self.fully_qualified_constant_name_to_constant_definition_map
+    }
 }
 
 impl ZeitwerkConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
         disallow_multiple_definitions: bool,
-    ) -> ZeitwerkConstantResolver {
+    ) -> Box<dyn ConstantResolver + Send + Sync> {
         debug!("Building constant resolver from constants vector");
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
@@ -78,10 +84,10 @@ impl ZeitwerkConstantResolver {
 
         debug!("Finished building constant resolver");
 
-        ZeitwerkConstantResolver {
+        Box::new(ZeitwerkConstantResolver {
             fully_qualified_constant_name_to_constant_definition_map:
                 fully_qualified_constant_to_constant_map,
-        }
+        })
     }
 
     fn resolve_constant<'a>(
