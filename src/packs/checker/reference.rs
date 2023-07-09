@@ -71,14 +71,17 @@ impl<'a> Reference<'a> {
                     .pack_set
                     .for_file(absolute_path_of_definition);
 
-                (
-                    defining_pack,
-                    Some(relative_defining_file),
-                    constant.fully_qualified_name.clone(),
-                )
+                let relative_defining_file = Some(relative_defining_file);
+                let constant_name = constant.fully_qualified_name.clone();
+
+                (defining_pack, relative_defining_file, constant_name)
             } else {
+                let defining_pack = None;
+                let relative_defining_file = None;
                 // Contant name is not known, so we'll just use the unresolved name for now
-                (None, None, unresolved_reference.name.clone())
+                let constant_name = unresolved_reference.name.clone();
+
+                (defining_pack, relative_defining_file, constant_name)
             };
 
         vec![Reference {
