@@ -16,6 +16,8 @@ use crate::packs::{
 
 use self::constant_resolver::{ConstantDefinition, ZeitwerkConstantResolver};
 
+use super::inflector_shim;
+
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
     absolute_root: &Path,
@@ -142,8 +144,7 @@ fn inferred_constant_from_file(
     let relative_path = relative_path.with_extension("");
 
     let relative_path_str = relative_path.to_str().unwrap();
-    let camelized_path =
-        crate::packs::inflector_shim::camelize(relative_path_str, acronyms);
+    let camelized_path = inflector_shim::camelize(relative_path_str, acronyms);
     let fully_qualified_name = format!("::{}", camelized_path);
 
     let absolute_path_of_definition = absolute_path.to_path_buf();

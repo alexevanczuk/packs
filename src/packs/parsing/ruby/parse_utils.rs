@@ -3,10 +3,9 @@ use std::collections::HashSet;
 use lib_ruby_parser::{nodes, Loc, Node};
 use line_col::LineColLookup;
 
-use crate::packs::{
-    inflector_shim::to_class_case,
-    parsing::{ParsedDefinition, Range, UnresolvedReference},
-};
+use crate::packs::parsing::{ParsedDefinition, Range, UnresolvedReference};
+
+use super::inflector_shim::to_class_case;
 
 #[derive(Debug)]
 pub enum ParseError {
