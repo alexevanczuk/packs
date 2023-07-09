@@ -37,7 +37,7 @@ regex = "1.7.3"
 serde = { version = "~1", features = ["derive"] } # de(serialization)
 serde_yaml = "0.9.19" # de(serialization)
 serde_json = "1.0.96" # de(serialization)
-serde_magnus = "0.2.2" # permits a ruby gem to interface with this library
+serde_magnus = "0.7.0" # permits a ruby gem to interface with this library
 tracing = "0.1.37" # logging
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] } # logging
 glob = "0.3.1" # globbing
