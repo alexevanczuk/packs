@@ -16,7 +16,6 @@ use tracing::debug;
 
 use super::caching::Cache;
 use super::constant_resolver::ConstantResolver;
-use super::pack::Pack;
 
 use super::UnresolvedReference;
 
@@ -24,6 +23,9 @@ pub mod architecture;
 pub mod dependency;
 pub mod privacy;
 pub mod visibility;
+
+pub(crate) mod reference;
+use reference::Reference;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
@@ -38,16 +40,6 @@ pub struct ViolationIdentifier {
 pub struct Violation {
     message: String,
     pub identifier: ViolationIdentifier,
-}
-
-#[derive(Debug)]
-pub struct Reference<'a> {
-    constant_name: String,
-    defining_pack: Option<&'a Pack>,
-    relative_defining_file: Option<String>,
-    referencing_pack: &'a Pack,
-    relative_referencing_file: String,
-    source_location: SourceLocation,
 }
 
 impl<'a> Reference<'a> {
