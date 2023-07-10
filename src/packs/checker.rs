@@ -136,7 +136,7 @@ pub(crate) fn update(
 
     let violations = get_all_violations(
         &configuration,
-        configuration.intersect_files(vec![]),
+        configuration.included_files.clone(),
         cache,
     );
 
