@@ -64,7 +64,7 @@ impl ValidatorInterface for Checker {
             let error_message = format!(
                 "
 Found {} strongly connected components (i.e. dependency cycles)
-The following groups of packages from a cycle:
+The following groups of packages form a cycle:
 
 {}",
                 sccs.len(),
@@ -236,7 +236,7 @@ mod tests {
         let expected_message = String::from(
             "
 Found 1 strongly connected components (i.e. dependency cycles)
-The following groups of packages from a cycle:
+The following groups of packages form a cycle:
 
 packs/foo, packs/bar",
         );

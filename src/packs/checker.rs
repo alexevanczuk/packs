@@ -92,16 +92,6 @@ pub(crate) fn check_all(
         errors_present = true;
     }
 
-    let validation_errors = validate(&configuration);
-    if !validation_errors.is_empty() {
-        errors_present = true;
-
-        println!("{} validation error(s) detected:", validation_errors.len());
-        for validation_error in validation_errors.iter() {
-            println!("{}\n", validation_error);
-        }
-    }
-
     if errors_present {
         Err("Packwerk check failed".into())
     } else {
@@ -123,6 +113,24 @@ fn validate(configuration: &Configuration) -> Vec<String> {
 
     validation_errors
 }
+
+pub(crate) fn validate_all(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let validation_errors = validate(configuration);
+    if !validation_errors.is_empty() {
+        println!("{} validation error(s) detected:", validation_errors.len());
+        for validation_error in validation_errors.iter() {
+            println!("{}\n", validation_error);
+        }
+
+        Err("Packwerk validate failed".into())
+    } else {
+        println!("Packwerk validate succeeded!");
+        Ok(())
+    }
+}
+
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
