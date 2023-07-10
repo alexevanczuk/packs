@@ -10,15 +10,15 @@ struct Person {
 pub(crate) fn execute(_configuration: super::Configuration) {
     let conn = Connection::open("test.db").unwrap();
 
-    // conn.execute(
-    //     "CREATE TABLE person (
-    //         id    INTEGER PRIMARY KEY,
-    //         name  TEXT NOT NULL,
-    //         data  BLOB
-    //     )",
-    //     (), // empty list of parameters.
-    // )
-    // .unwrap();
+    conn.execute(
+        "CREATE TABLE person (
+            id    INTEGER PRIMARY KEY,
+            name  TEXT NOT NULL,
+            data  BLOB
+        )",
+        (), // empty list of parameters.
+    )
+    .unwrap();
 
     let me = Person {
         id: 0,

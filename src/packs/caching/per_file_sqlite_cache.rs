@@ -1,8 +1,8 @@
 use crate::packs::parsing::ParsedDefinition;
-use crate::packs::parsing::Range;
-use crate::packs::parsing::UnresolvedReference;
+use crate::packs::Configuration;
 use crate::packs::ProcessedFile;
 use crate::packs::SourceLocation;
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
 use std::fs::File;
@@ -86,6 +86,17 @@ impl Cache for PerFileCache {
     }
 }
 
+fn setup_cache(configuration: &Configuration) {
+    let conn = Connection::open("test.db").unwrap();
+
+    conn.execute(
+        "CREATE TABLE processed_files (
+            data  BLOB
+        )",
+        (), // empty list of parameters.
+    )
+    .unwrap();
+}
 fn cache_entry_from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
     let cache_file_path = &empty.cache_file_path;
 
@@ -97,6 +108,7 @@ fn cache_entry_from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
         None
     }
 }
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
@@ -119,41 +131,6 @@ impl CacheEntry {
             definitions: self.definitions,
         }
     }
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize, Eq)]
-pub struct ReferenceEntry {
-    constant_name: String,
-    namespace_path: Vec<String>,
-    relative_path: String,
-    source_location: SourceLocation,
-}
-
-impl ReferenceEntry {
-    fn to_unresolved_reference(&self) -> UnresolvedReference {
-        UnresolvedReference {
-            name: self.constant_name.to_owned(),
-            namespace_path: self.namespace_path.to_owned(),
-            location: Range {
-                start_row: self.source_location.line,
-                start_col: self.source_location.column,
-                // The end row and end col can be improved here but we are limited
-                // because the cache does not store this data.
-                // Instead, we might just return a (resolved) Reference
-                end_row: self.source_location.line,
-                end_col: self.source_location.column + self.constant_name.len(),
-            },
-        }
-    }
-}
-
-pub fn read_json_file(
-    path: &PathBuf,
-) -> Result<CacheEntry, Box<dyn std::error::Error>> {
-    let file = std::fs::File::open(path)?;
-    let reader = std::io::BufReader::new(file);
-    let data = serde_json::from_reader(reader)?;
-    Ok(data)
 }
 
 #[cfg(test)]
