@@ -1,14 +1,34 @@
 # Experimental Parser Usage
 
-TLDR:
+# TLDR:
+## Why
 - This allows `packs` to work in Ruby applications that are not compatible with `packwerk` (e.g. non-Rails and/or non-Zeitwerk apps)
-- `packs --experimental-parser update` and `packs --experimental-parser check` OR use `experimental_parser: true` in your `packwerk.yml`.
+- See usage with `packs --help`:
+  - `packs -e update` and `packs -e check` OR use `experimental_parser: true` in your `packwerk.yml`.
 - When switching between the `experimental` and `packwerk` parser, run `packs delete-cache` – the two caches are not compatible!
 - `packwerk` infers constant definitions based on file names
 - The `experimental` parser explicitly parses constant definitions from files
 - There are some limitations still that might produce unexpected behavior. Please share your feedback!
+- This is experimental API that could change!
 
-## What's the difference?
+# Other Usage
+## Ignoring definitions
+You may want to ignore a definition, such as if there is a monkey patch that you do not want considered or any other issue.
+
+You can configure this in `packwerk.yml` like so:
+```yml
+ignored_definitions:
+  ::String:
+    - lib/monkey_patches.rb
+```
+
+## Finding multiple definitions
+With the experimental parser, a reference to a constant defined in N places produces N references.
+
+To find these constants defined in multiple locations, you can run:
+`packs -e list-definitions --ambiguous`
+
+# What's the difference?
 Let's start with some example:
 ```ruby
 # foo.rb
@@ -57,23 +77,14 @@ First, some context:
 - The *experimental* parser, in contrast, works as follows:
   - A reference is parsed just like it is with the `packwerk` parser, except definitions do not count as references.
   - Definitions are parsed directly from the file, rather than inferring them from file names.
-  - We could consider `foo/bar.rb` to define both `Foo` and `Foo::Bar`, since it opens up `Foo`. However, this might cause very noisy results when multiple packs open up the same namespaces.
   - The approach the experimental parser takes is that any file defines a constant if it changes behavior within that constant. So for example, `foo/bar.rb` actually defines nothing (since it does not change behavior). `foo/baz.rb` defines `Foo::Baz` (since it changes behavior within `Foo::Baz`), and `foo/boo.rb` defines both `Foo` and `Foo::Boo` (since it changes behavior within both).
 
-## Usage Notes
-- See usage with `packs --help`:
-  - TLDR `packs -e update` and `packs -e check` OR use `experimental_parser: true` in your `packwerk.yml`.
-- This is experimental API that could change!
-- While the cache formats for the two parsers are the same, the packwerk resolver always caches an empty list of definitions. To switch between the two parsers and have expected results, you must clear the cache. You can do this with `packs delete-cache`.
-- If you're unclear where `packs` thinks a constant is defined, you can use `packs -e list-definitions`
-
-# Upcoming Developments + Limitations
+# Limitations
 - There may be some definition constructs that are not properly parsed yet.
-- There is currently no strong support for ignoring monkey patches. For example, if one pack monkey patches `String`, then every pack would get a violation against that pack every time they use `String`. I'm looking into allowing a pack to register its monkey patches, thereby ignoring them. Similarly, we could have a function like `list-monkey-patches` which lists all constants that are defined multiple times. 
-  - We could actually consider pointing `packs` at the ruby standard library to get all constants defined by the standard library. We could hard-code this list in `packs` so that we could get a clear list of places where an app monkey patches the standard library
-  - We could consider *every* time a constant is opened up (i.e. a `class` or `module` keyword) to be "defining" a constant. This would mean that tons of files define the same constants. This is not a problem unless *different packs* define the same constant. This implementation would be very strict against monkey patches.
-  - We could allow a monkey patch to be defined within `packwerk.yml`, so that it can be ignored as a definition. For example, if the root pack opens up `String`, we might have `String: config/initializers/string_extensions.rb` in our `packwerk.yml`.
-- Right now, if multiple files define the same constant, we just choose the *first* one. This is not an ideal implementation at all. Instead, we should think about having constants be able to be defined by multiple files. Instead of having a "primary" definition, we can create one reference for each definition. For example, if `packs/a` and `packs/b` define `Foo`, then using `Foo` creates one reference to each of those packs.
+
+# Alternative Implementations
+- We could consider *every* time a constant is opened up (i.e. a `class` or `module` keyword) to be "defining" a constant. This would mean that tons of files define the same constants. This is not a problem unless *different packs* define the same constant. This implementation would be very strict against monkey patches.
+- We might force the user to define a primary definition when a constant is defined in multiple places
 
 # Advantages
 - Simpler – parsing files directly is conceptually simpler than inferring constants from file names based on zeitwerk conventions, which require handling of inflections, default namespaces, collapsed directories, and more. The implementation is simpler to maintain as well.

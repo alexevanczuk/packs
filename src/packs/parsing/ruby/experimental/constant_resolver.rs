@@ -1,6 +1,9 @@
 use tracing::debug;
 
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
 
 use crate::packs::{
     constant_resolver::{ConstantDefinition, ConstantResolver},
@@ -46,6 +49,8 @@ impl ConstantResolver for ExperimentalConstantResolver {
 impl ExperimentalConstantResolver {
     pub fn create(
         constants: Vec<ConstantDefinition>,
+        absolute_root: &Path,
+        ignored_definitions: &HashMap<String, HashSet<PathBuf>>,
     ) -> Box<dyn ConstantResolver + Send + Sync> {
         debug!("Building constant resolver from constants vector");
 
@@ -55,6 +60,24 @@ impl ExperimentalConstantResolver {
         > = HashMap::new();
 
         for constant in constants {
+            if let Some(definition_location) =
+                ignored_definitions.get(&constant.fully_qualified_name)
+            {
+                let relative_path = constant
+                    .absolute_path_of_definition
+                    .strip_prefix(absolute_root)
+                    .unwrap();
+
+                if definition_location.contains(relative_path) {
+                    debug!(
+                        "Ignoring definition of {:?} from {:?}",
+                        constant.fully_qualified_name,
+                        constant.absolute_path_of_definition
+                    );
+                    continue;
+                }
+            }
+
             let fully_qualified_constant_name =
                 constant.fully_qualified_name.clone();
 

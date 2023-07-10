@@ -1,12 +1,38 @@
 use crate::packs;
 use crate::packs::checker;
+
 use clap::{Parser, Subcommand};
+use clap_derive::Args;
 use std::path::PathBuf;
 use tracing::debug;
 
 use super::logger::install_logger;
 
 use super::Configuration;
+
+/// A CLI to interact with packs
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[command(subcommand)]
+    command: Command,
+
+    /// Path for the root of the project
+    #[arg(long, default_value = ".")]
+    project_root: PathBuf,
+
+    /// Run with performance debug mode
+    #[arg(short, long)]
+    debug: bool,
+
+    /// Run with the experimental parser, which gets constant definitions directly from the AST
+    #[arg(short, long)]
+    experimental_parser: bool,
+
+    /// Run without the cache (good for CI, testing)
+    #[arg(long)]
+    no_cache: bool,
+}
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -42,31 +68,14 @@ enum Command {
     #[clap(
         about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
-    ListDefinitions,
+    ListDefinitions(ListDefinitionsArgs),
 }
 
-/// A CLI to interact with packs
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Command,
-
-    /// Path for the root of the project
-    #[arg(long, default_value = ".")]
-    project_root: PathBuf,
-
-    /// Run with performance debug mode
+#[derive(Debug, Args)]
+struct ListDefinitionsArgs {
+    /// Show constants with multiple definitions only
     #[arg(short, long)]
-    debug: bool,
-
-    /// Run with the experimental parser, which gets constant definitions directly from the AST
-    #[arg(short, long)]
-    experimental_parser: bool,
-
-    /// Run without the cache (good for CI, testing)
-    #[arg(long)]
-    no_cache: bool,
+    ambiguous: bool,
 }
 
 impl Args {
@@ -124,8 +133,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             packs::delete_cache(configuration);
             Ok(())
         }
-        Command::ListDefinitions => {
-            packs::list_definitions(&configuration);
+        Command::ListDefinitions(args) => {
+            let ambiguous = args.ambiguous;
+            packs::list_definitions(&configuration, ambiguous);
             Ok(())
         }
     }

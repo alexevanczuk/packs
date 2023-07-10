@@ -151,6 +151,11 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         self.behavioral_change_in_namespace = true;
         lib_ruby_parser::traverse::visitor::visit_def(self, node);
     }
+
+    fn on_defs(&mut self, node: &nodes::Defs) {
+        self.behavioral_change_in_namespace = true;
+        lib_ruby_parser::traverse::visitor::visit_defs(self, node);
+    }
 }
 
 pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {

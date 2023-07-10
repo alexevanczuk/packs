@@ -1,4 +1,8 @@
-use std::{fs::File, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -78,6 +82,10 @@ pub(crate) struct RawConfiguration {
     // Experimental parser
     #[serde(default)]
     pub experimental_parser: bool,
+
+    // Ignored monkey patches
+    #[serde(default)]
+    pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
 }
 
 // Normally if a key is not set, serde will use the default value for that type.

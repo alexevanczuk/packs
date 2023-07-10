@@ -34,7 +34,8 @@ pub fn get_zeitwerk_constant_resolver(
         cache_dir,
         cache_disabled,
     );
-    ZeitwerkConstantResolver::create(constants, true)
+
+    ZeitwerkConstantResolver::create(constants)
 }
 
 fn inferred_constants_from_pack_set(

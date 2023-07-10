@@ -4,6 +4,7 @@ use std::fs;
 // For more information about this file's naming convention, see
 // https://doc.rust-lang.org/book/ch11-03-test-organization.html
 //
+#[allow(dead_code)]
 pub fn teardown() {
     // Delete tmp/cache/directory across all fixture directories
     // Specifically, find directories matching the pattern:

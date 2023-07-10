@@ -65,7 +65,7 @@ pub struct SourceLocation {
     column: usize,
 }
 
-pub(crate) fn list_definitions(configuration: &Configuration) {
+pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
     let initialized_dir =
         create_cache_dir_idempotently(&configuration.cache_directory);
 
@@ -77,8 +77,15 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
             true,
         );
 
-        get_experimental_constant_resolver(&processed_files)
+        get_experimental_constant_resolver(
+            &configuration.absolute_root,
+            &processed_files,
+            &configuration.ignored_definitions,
+        )
     } else {
+        if ambiguous {
+            panic!("Ambiguous mode is not supported for the Zeitwerk parser");
+        }
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
             &configuration.absolute_root,
@@ -91,6 +98,10 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
         .fully_qualified_constant_name_to_constant_definition_map();
 
     for (name, definitions) in constant_definition_map {
+        if ambiguous && definitions.len() == 1 {
+            continue;
+        }
+
         for definition in definitions {
             let relative_path = definition
                 .absolute_path_of_definition
