@@ -30,6 +30,7 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+    pub stdin_file_path: Option<PathBuf>,
     // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
     // and configure logging in one place. As the complexity of how/why we want to see different logs
     // grows, we can refactor this.
@@ -115,6 +116,7 @@ pub(crate) fn from_raw(
 
     debug!("Finished building configuration");
 
+    let stdin_file_path: Option<PathBuf> = None;
     let print_files = false;
 
     Configuration {
@@ -127,6 +129,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         custom_associations,
+        stdin_file_path,
         print_files,
     }
 }

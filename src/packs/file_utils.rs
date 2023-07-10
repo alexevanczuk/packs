@@ -1,10 +1,11 @@
 use std::{
     collections::HashSet,
-    fs,
+    fs, io,
     io::Read,
     path::{Path, PathBuf},
 };
 
+use crate::packs::Configuration;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use regex::Regex;
 
@@ -114,4 +115,42 @@ pub(crate) fn file_content_digest(file: &Path) -> String {
 
     // Compute the MD5 digest
     format!("{:x}", md5::compute(&file_content))
+}
+
+pub fn file_read_contents(
+    path: &Path,
+    configuration: &Configuration,
+) -> String {
+    if is_stdin_file(path, configuration) {
+        io::read_to_string(io::stdin()).unwrap_or_else(|_| {
+            panic!(
+                "Failed to read contents of {} from stdin",
+                path.to_string_lossy()
+            )
+        })
+    } else {
+        fs::read_to_string(path).unwrap_or_else(|_| {
+            panic!("Failed to read contents of {}", path.to_string_lossy())
+        })
+    }
+}
+
+pub fn is_stdin_file(path: &Path, configuration: &Configuration) -> bool {
+    match &configuration.stdin_file_path {
+        Some(stdin_path) => path == stdin_path.as_path(),
+        _ => false,
+    }
+}
+
+pub fn get_absolute_path(
+    path: String,
+    configuration: &Configuration,
+) -> PathBuf {
+    let path = PathBuf::from(path);
+
+    if path.is_absolute() {
+        path
+    } else {
+        configuration.absolute_root.join(path)
+    }
 }

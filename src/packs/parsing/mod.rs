@@ -10,6 +10,7 @@ pub(crate) mod erb;
 pub(crate) use erb::experimental::parser::process_from_path as process_from_erb_path_experimental;
 pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
 
+use crate::packs::file_utils::is_stdin_file;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
@@ -91,13 +92,17 @@ pub fn process_files_with_cache(
     paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            match cache.get(absolute_path) {
-                CacheResult::Processed(processed_file) => processed_file,
-                CacheResult::Miss(empty_cache_entry) => {
-                    let processed_file =
-                        process_file(absolute_path, configuration);
-                    cache.write(&empty_cache_entry, &processed_file);
-                    processed_file
+            if is_stdin_file(absolute_path, configuration) {
+                process_file(absolute_path, configuration)
+            } else {
+                match cache.get(absolute_path) {
+                    CacheResult::Processed(processed_file) => processed_file,
+                    CacheResult::Miss(empty_cache_entry) => {
+                        let processed_file =
+                            process_file(absolute_path, configuration);
+                        cache.write(&empty_cache_entry, &processed_file);
+                        processed_file
+                    }
                 }
             }
         })

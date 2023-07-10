@@ -1,3 +1,4 @@
+use crate::packs::file_utils::file_read_contents;
 use crate::packs::{
     parsing::{
         ruby::parse_utils::{
@@ -13,7 +14,7 @@ use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
 };
 use line_col::LineColLookup;
-use std::{fs, path::Path};
+use std::path::Path;
 
 struct ReferenceCollector<'a> {
     pub references: Vec<UnresolvedReference>,
@@ -169,10 +170,7 @@ pub(crate) fn process_from_path(
     path: &Path,
     configuration: &Configuration,
 ) -> ProcessedFile {
-    let contents = fs::read_to_string(path).unwrap_or_else(|_| {
-        panic!("Failed to read contents of {}", path.to_string_lossy())
-    });
-
+    let contents = file_read_contents(path, configuration);
     process_from_contents(contents, path, configuration)
 }
 
