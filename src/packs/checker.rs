@@ -150,6 +150,38 @@ fn get_all_violations(
     absolute_paths: &HashSet<PathBuf>,
     cache: Box<dyn Cache + Send + Sync>,
 ) -> Vec<Violation> {
+    let references = get_all_references(configuration, absolute_paths, cache);
+
+    debug!("Running checkers on resolved references");
+    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
+        Box::new(dependency::Checker {}),
+        Box::new(privacy::Checker {}),
+        Box::new(visibility::Checker {}),
+        Box::new(architecture::Checker {
+            layers: configuration.layers.clone(),
+        }),
+    ];
+
+    let violations: Vec<Violation> = checkers
+        .into_par_iter()
+        .flat_map(|c| {
+            references
+                .par_iter()
+                .flat_map(|r| c.check(r, configuration))
+                .collect::<Vec<Violation>>()
+        })
+        .collect();
+
+    debug!("Finished running checkers");
+
+    violations
+}
+
+fn get_all_references(
+    configuration: &Configuration,
+    absolute_paths: &HashSet<PathBuf>,
+    cache: Box<dyn Cache + Send + Sync>,
+) -> Vec<Reference> {
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
@@ -198,27 +230,5 @@ fn get_all_violations(
 
     debug!("Finished turning unresolved references into fully qualified references");
 
-    debug!("Running checkers on resolved references");
-    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
-        Box::new(dependency::Checker {}),
-        Box::new(privacy::Checker {}),
-        Box::new(visibility::Checker {}),
-        Box::new(architecture::Checker {
-            layers: configuration.layers.clone(),
-        }),
-    ];
-
-    let violations: Vec<Violation> = checkers
-        .into_par_iter()
-        .flat_map(|c| {
-            references
-                .par_iter()
-                .flat_map(|r| c.check(r, configuration))
-                .collect::<Vec<Violation>>()
-        })
-        .collect();
-
-    debug!("Finished running checkers");
-
-    violations
+    references
 }
