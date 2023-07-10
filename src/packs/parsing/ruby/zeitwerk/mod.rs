@@ -253,11 +253,11 @@ mod tests {
     #[test]
     fn unnested_reference_to_unnested_constant() {
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: get_absolute_root(SIMPLE_APP)
                     .join("packs/foo/app/services/foo.rb")
-            },
+            }],
             get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
                 .resolve(&String::from("Foo"), &[])
                 .unwrap()
@@ -272,11 +272,11 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb")
-            },
+            }],
             resolver
                 .resolve(&String::from("Foo"), &["Foo", "Bar", "Baz"])
                 .unwrap()
@@ -290,11 +290,11 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
-            },
+            }],
             resolver.resolve("Bar", &["Foo"]).unwrap()
         );
 
@@ -307,11 +307,11 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
 
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
-            },
+            }],
             resolver.resolve("::Bar", &["Foo"]).unwrap()
         );
 
@@ -323,11 +323,11 @@ mod tests {
         let absolute_root = get_absolute_root(SIMPLE_APP);
         let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Bar::BAR".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb")
-            },
+            }],
             resolver.resolve(&String::from("::Bar::BAR"), &[]).unwrap()
         );
 
@@ -341,22 +341,22 @@ mod tests {
         let resolver = get_zeitwerk_constant_resolver_for_fixture(app);
 
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::MyModule::SomeAPIClass".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/my_module/some_api_class.rb")
-            },
+            }],
             resolver
                 .resolve(&String::from("::MyModule::SomeAPIClass"), &[])
                 .unwrap()
         );
 
         assert_eq!(
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::MyModule::SomeCSVClass".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/my_module/some_csv_class.rb")
-            },
+            }],
             resolver
                 .resolve(&String::from("::MyModule::SomeCSVClass"), &[])
                 .unwrap()
@@ -387,52 +387,52 @@ mod tests {
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(
             String::from("::Foo::Bar"),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb"),
-            },
+            }],
         );
 
         expected_constant_map.insert(
             "::Bar".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::Baz".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Baz".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/baz/app/services/baz.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::Foo".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::SomeConcern".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::SomeConcern".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/models/concerns/some_concern.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::SomeRootClass".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::SomeRootClass".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/some_root_class.rb"),
-            },
+            }],
         );
         assert_eq!(&expected_constant_map, actual_constant_map);
 

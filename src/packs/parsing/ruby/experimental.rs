@@ -5,7 +5,9 @@ use crate::packs::{
     ProcessedFile,
 };
 
-use super::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
+use self::constant_resolver::ExperimentalConstantResolver;
+
+pub mod constant_resolver;
 
 pub(crate) mod parser;
 
@@ -21,11 +23,6 @@ pub fn get_experimental_constant_resolver(
                 .map(|definition| {
                     let fully_qualified_name =
                         definition.fully_qualified_name.to_owned();
-                    // The parser does not (but maybe should) add a leading "::" to the
-                    // definitions, since the convention is to represent fully qualified constant names
-                    // with a leading "::". Eventually we can push this responsibility into the parser.
-                    // let fully_qualified_name =
-                    //     format!("::{}", fully_qualified_name);
                     ConstantDefinition {
                         fully_qualified_name,
                         absolute_path_of_definition: processed_file
@@ -37,7 +34,7 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<ConstantDefinition>>();
 
-    ZeitwerkConstantResolver::create(constants, false)
+    ExperimentalConstantResolver::create(constants)
 }
 
 #[cfg(test)]

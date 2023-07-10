@@ -59,7 +59,7 @@ pub struct ProcessedFile {
     pub definitions: Vec<ParsedDefinition>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq, Clone)]
 pub struct SourceLocation {
     line: usize,
     column: usize,
@@ -87,19 +87,18 @@ pub(crate) fn list_definitions(configuration: &Configuration) {
         )
     };
 
-    let constants = constant_resolver
-        .fully_qualified_constant_name_to_constant_definition_map()
-        .values();
+    let constant_definition_map = constant_resolver
+        .fully_qualified_constant_name_to_constant_definition_map();
 
-    for constant in constants {
-        let relative_path = constant
-            .absolute_path_of_definition
-            .strip_prefix(&configuration.absolute_root)
-            .unwrap();
-        println!(
-            "{:?} is defined at {:?}",
-            constant.fully_qualified_name, relative_path
-        );
+    for (name, definitions) in constant_definition_map {
+        for definition in definitions {
+            let relative_path = definition
+                .absolute_path_of_definition
+                .strip_prefix(&configuration.absolute_root)
+                .unwrap();
+
+            println!("{:?} is defined at {:?}", name, relative_path);
+        }
     }
 }
 
