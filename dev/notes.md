@@ -1,10 +1,5 @@
 # TODO
-## Refactors
-- In order to reduce duplication of getting constant resolver + processed files, we should see if there's some abstraction like `PackageGraphBuilder` that can build a `PackageGraph`. This might also improve performance for the `packwerk` implementation, since the packwerk implementation can build the constant resolver before the files have been processed.
-
 ## Features
-- Refactor common methods from experimental and packwerk parsers
-- Think through how to handle monkey patches / opening up other modules in experimental parser
 - `packs init | create | move`
 - CLI could have `-i` interactive mode (like `use_packs`, also see https://github.com/mikaelmello/inquire)
 - Unnecessary dependency validation
