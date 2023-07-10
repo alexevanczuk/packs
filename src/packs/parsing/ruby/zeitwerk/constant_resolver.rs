@@ -10,7 +10,7 @@ use crate::packs::{
 #[derive(Default, Debug)]
 pub struct ZeitwerkConstantResolver {
     pub fully_qualified_constant_name_to_constant_definition_map:
-        HashMap<String, ConstantDefinition>,
+        HashMap<String, Vec<ConstantDefinition>>,
 }
 
 impl ConstantResolver for ZeitwerkConstantResolver {
@@ -38,7 +38,7 @@ impl ConstantResolver for ZeitwerkConstantResolver {
 
     fn fully_qualified_constant_name_to_constant_definition_map(
         &self,
-    ) -> &HashMap<String, ConstantDefinition> {
+    ) -> &HashMap<String, Vec<ConstantDefinition>> {
         &self.fully_qualified_constant_name_to_constant_definition_map
     }
 }
@@ -52,7 +52,7 @@ impl ZeitwerkConstantResolver {
 
         let mut fully_qualified_constant_to_constant_map: HashMap<
             String,
-            ConstantDefinition,
+            Vec<ConstantDefinition>,
         > = HashMap::new();
 
         // TODO: Do this in parallel?
@@ -78,7 +78,7 @@ impl ZeitwerkConstantResolver {
                 }
             } else {
                 fully_qualified_constant_to_constant_map
-                    .insert(fully_qualified_constant_name, constant);
+                    .insert(fully_qualified_constant_name, vec![constant]);
             }
         }
 
@@ -202,11 +202,11 @@ impl ZeitwerkConstantResolver {
         &self,
         fully_qualified_name: &String,
     ) -> Option<&ConstantDefinition> {
-        if let Some(constant) = self
+        if let Some(definitions) = self
             .fully_qualified_constant_name_to_constant_definition_map
             .get(fully_qualified_name)
         {
-            return Some(constant);
+            return Some(definitions.first().unwrap());
         }
 
         None

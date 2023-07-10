@@ -387,52 +387,52 @@ mod tests {
         let mut expected_constant_map = HashMap::new();
         expected_constant_map.insert(
             String::from("::Foo::Bar"),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb"),
-            },
+            }],
         );
 
         expected_constant_map.insert(
             "::Bar".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Bar".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/services/bar.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::Baz".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Baz".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/baz/app/services/baz.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::Foo".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::Foo".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::SomeConcern".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::SomeConcern".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/bar/app/models/concerns/some_concern.rb"),
-            },
+            }],
         );
         expected_constant_map.insert(
             "::SomeRootClass".to_owned(),
-            ConstantDefinition {
+            vec![ConstantDefinition {
                 fully_qualified_name: "::SomeRootClass".to_owned(),
                 absolute_path_of_definition: absolute_root
                     .join("app/services/some_root_class.rb"),
-            },
+            }],
         );
         assert_eq!(&expected_constant_map, actual_constant_map);
 

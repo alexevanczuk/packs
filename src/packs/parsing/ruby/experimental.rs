@@ -5,7 +5,9 @@ use crate::packs::{
     ProcessedFile,
 };
 
-use super::zeitwerk::constant_resolver::ZeitwerkConstantResolver;
+use self::constant_resolver::ExperimentalConstantResolver;
+
+pub mod constant_resolver;
 
 pub(crate) mod parser;
 
@@ -32,7 +34,7 @@ pub fn get_experimental_constant_resolver(
         })
         .collect::<Vec<ConstantDefinition>>();
 
-    ZeitwerkConstantResolver::create(constants, false)
+    ExperimentalConstantResolver::create(constants)
 }
 
 #[cfg(test)]

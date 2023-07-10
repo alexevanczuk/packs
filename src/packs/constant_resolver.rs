@@ -17,5 +17,5 @@ pub trait ConstantResolver {
 
     fn fully_qualified_constant_name_to_constant_definition_map(
         &self,
-    ) -> &HashMap<String, ConstantDefinition>;
+    ) -> &HashMap<String, Vec<ConstantDefinition>>;
 }
