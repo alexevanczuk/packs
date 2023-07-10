@@ -4,6 +4,7 @@ use super::{file_utils::file_content_digest, ProcessedFile};
 pub(crate) mod cache;
 pub(crate) mod noop_cache;
 pub(crate) mod per_file_cache;
+pub(crate) mod per_file_sqlite_cache;
 
 pub enum CacheResult {
     Processed(ProcessedFile),
