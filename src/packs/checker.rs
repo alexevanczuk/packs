@@ -64,12 +64,8 @@ pub(crate) fn check_all(
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    let violations: Vec<Violation> = get_all_violations(
-        &configuration,
-        absolute_paths,
-        cache,
-        configuration.experimental_parser,
-    );
+    let violations: Vec<Violation> =
+        get_all_violations(&configuration, absolute_paths, cache);
     let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
@@ -142,7 +138,6 @@ pub(crate) fn update(
         &configuration,
         configuration.intersect_files(vec![]),
         cache,
-        configuration.experimental_parser,
     );
 
     package_todo::write_violations_to_disk(configuration, violations);
@@ -154,14 +149,13 @@ fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: HashSet<PathBuf>,
     cache: Box<dyn Cache + Send + Sync>,
-    experimental_parser: bool,
 ) -> Vec<Violation> {
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
         &absolute_paths,
         cache,
-        experimental_parser,
+        configuration.experimental_parser,
     );
 
     let constant_resolver = if configuration.experimental_parser {
