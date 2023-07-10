@@ -78,14 +78,20 @@ The following groups of packages from a cycle:
 // TODO: Add test for ignored_dependencies
 // Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
-    fn check(&self, reference: &Reference) -> Option<Violation> {
-        let referencing_pack = reference.referencing_pack;
+    fn check(
+        &self,
+        reference: &Reference,
+        configuration: &Configuration,
+    ) -> Option<Violation> {
+        let referencing_pack =
+            reference.referencing_pack(&configuration.pack_set);
+
         if referencing_pack.enforce_dependencies.is_false() {
             return None;
         }
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack;
+        let defining_pack = &reference.defining_pack(&configuration.pack_set);
 
         if defining_pack.is_none() {
             return None;
@@ -165,12 +171,8 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/foo")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack_name: Some(String::from("packs/foo")),
+            referencing_pack_name: String::from("packs/foo"),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -179,7 +181,7 @@ mod tests {
             )),
             source_location: SourceLocation { line: 3, column: 1 },
         };
-        assert_eq!(None, checker.check(&reference))
+        assert_eq!(None, checker.check(&reference, &configuration))
     }
 
     #[test]
@@ -193,12 +195,8 @@ mod tests {
         );
         let reference = Reference {
             constant_name: String::from("::Bar"),
-            defining_pack: Some(
-                configuration.pack_set.for_pack(&String::from("packs/bar")),
-            ),
-            referencing_pack: configuration
-                .pack_set
-                .for_pack(&String::from("packs/foo")),
+            defining_pack_name: Some(String::from("packs/bar")),
+            referencing_pack_name: String::from("packs/foo"),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -218,7 +216,10 @@ mod tests {
                 defining_pack_name: String::from("packs/bar"),
             },
         };
-        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+        assert_eq!(
+            expected_violation,
+            checker.check(&reference, &configuration).unwrap()
+        )
     }
 
     #[test]

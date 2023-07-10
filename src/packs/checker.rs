@@ -40,7 +40,11 @@ pub struct Violation {
 }
 
 pub(crate) trait CheckerInterface {
-    fn check(&self, reference: &Reference) -> Option<Violation>;
+    fn check(
+        &self,
+        reference: &Reference,
+        configuration: &Configuration,
+    ) -> Option<Violation>;
 }
 
 pub(crate) trait ValidatorInterface {
@@ -203,7 +207,7 @@ fn get_all_violations(
         .flat_map(|c| {
             references
                 .par_iter()
-                .flat_map(|r| c.check(r))
+                .flat_map(|r| c.check(r, configuration))
                 .collect::<Vec<Violation>>()
         })
         .collect();

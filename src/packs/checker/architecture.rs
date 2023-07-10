@@ -1,6 +1,6 @@
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::Violation;
+use crate::packs::{Configuration, Violation};
 
 #[derive(Default, Clone)]
 pub struct Layers {
@@ -39,12 +39,19 @@ pub struct Checker {
 }
 
 impl CheckerInterface for Checker {
-    fn check(&self, reference: &Reference) -> Option<Violation> {
-        let referencing_pack = &reference.referencing_pack;
+    fn check(
+        &self,
+        reference: &Reference,
+        configuration: &Configuration,
+    ) -> Option<Violation> {
+        let pack_set = &configuration.pack_set;
+
+        let referencing_pack = &reference.referencing_pack(pack_set);
+
         let relative_defining_file = &reference.relative_defining_file;
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack;
+        let defining_pack = &reference.defining_pack(pack_set);
         if defining_pack.is_none() {
             return None;
         }
@@ -106,9 +113,11 @@ impl CheckerInterface for Checker {
 #[cfg(test)]
 mod tests {
 
+    use std::collections::{HashMap, HashSet};
+
     use crate::packs::{
         pack::{CheckerSetting, Pack},
-        SourceLocation,
+        PackSet, SourceLocation,
     };
 
     use super::*;
@@ -131,8 +140,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/foo/app/services/foo.rb",
             ),
@@ -141,7 +150,15 @@ mod tests {
             )),
             source_location: SourceLocation { line: 3, column: 1 },
         };
-        assert_eq!(None, checker.check(&reference))
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
+        };
+        assert_eq!(None, checker.check(&reference, &configuration))
     }
 
     #[test]
@@ -168,8 +185,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),
@@ -177,6 +194,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
         };
 
         let expected_violation = Violation {
@@ -189,7 +214,10 @@ mod tests {
                 defining_pack_name: String::from("packs/foo"),
             },
         };
-        assert_eq!(expected_violation, checker.check(&reference).unwrap())
+        assert_eq!(
+            expected_violation,
+            checker.check(&reference, &configuration).unwrap()
+        )
     }
 
     #[test]
@@ -216,8 +244,8 @@ mod tests {
 
         let reference = Reference {
             constant_name: String::from("::Foo"),
-            defining_pack: Some(&defining_pack),
-            referencing_pack: &referencing_pack,
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
             relative_referencing_file: String::from(
                 "packs/bar/app/services/bar.rb",
             ),
@@ -227,6 +255,14 @@ mod tests {
             source_location: SourceLocation { line: 3, column: 1 },
         };
 
-        assert_eq!(None, checker.check(&reference))
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
+        };
+
+        assert_eq!(None, checker.check(&reference, &configuration))
     }
 }
