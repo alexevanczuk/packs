@@ -12,6 +12,7 @@ use crate::packs::walk_directory::WalkDirectoryResult;
 
 use crate::packs::walk_directory;
 
+use crate::packs::file_utils::FileSource;
 use std::collections::HashMap;
 use std::{
     collections::HashSet,
@@ -30,6 +31,7 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+    pub file_source: FileSource,
     // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
     // and configure logging in one place. As the complexity of how/why we want to see different logs
     // grows, we can refactor this.
@@ -61,12 +63,11 @@ impl Configuration {
         // value returned by
         _initialized_dir: InitializedCacheDirectory,
     ) -> Box<dyn Cache + Send + Sync> {
-        if self.cache_enabled {
-            Box::new(PerFileCache {
+        match (self.cache_enabled, self.file_source) {
+            (true, FileSource::Disk) => Box::new(PerFileCache {
                 cache_dir: self.cache_directory.to_owned(),
-            })
-        } else {
-            Box::new(NoopCache {})
+            }),
+            _ => Box::new(NoopCache {}),
         }
     }
 }
@@ -114,6 +115,7 @@ pub(crate) fn from_raw(
 
     debug!("Finished building configuration");
 
+    let file_source = FileSource::Disk;
     let print_files = false;
 
     Configuration {
@@ -126,6 +128,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         custom_associations,
+        file_source,
         print_files,
     }
 }
