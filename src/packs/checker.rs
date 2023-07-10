@@ -14,8 +14,6 @@ use rayon::prelude::ParallelIterator;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
-use super::caching::Cache;
-
 pub mod architecture;
 pub mod dependency;
 pub mod privacy;
@@ -56,16 +54,11 @@ pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let initialized_dir =
-        create_cache_dir_idempotently(&configuration.cache_directory);
-
-    let cache = configuration.get_cache(initialized_dir);
-
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let violations: Vec<Violation> =
-        get_all_violations(&configuration, &absolute_paths, cache);
+        get_all_violations(&configuration, &absolute_paths);
     let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
@@ -130,15 +123,8 @@ pub(crate) fn validate_all(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let initialized_dir =
-        create_cache_dir_idempotently(&configuration.cache_directory);
-    let cache = configuration.get_cache(initialized_dir);
-
-    let violations = get_all_violations(
-        &configuration,
-        &configuration.included_files,
-        cache,
-    );
+    let violations =
+        get_all_violations(&configuration, &configuration.included_files);
 
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
@@ -148,9 +134,8 @@ pub(crate) fn update(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-    cache: Box<dyn Cache + Send + Sync>,
 ) -> Vec<Violation> {
-    let references = get_all_references(configuration, absolute_paths, cache);
+    let references = get_all_references(configuration, absolute_paths);
 
     debug!("Running checkers on resolved references");
     let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
@@ -180,8 +165,12 @@ fn get_all_violations(
 fn get_all_references(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-    cache: Box<dyn Cache + Send + Sync>,
 ) -> Vec<Reference> {
+    let initialized_dir =
+        create_cache_dir_idempotently(&configuration.cache_directory);
+
+    let cache = configuration.get_cache(initialized_dir);
+
     debug!("Getting unresolved references (using cache if possible)");
     let processed_files: Vec<ProcessedFile> = process_files_with_cache(
         &configuration.absolute_root,
