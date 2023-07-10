@@ -63,7 +63,6 @@ Directions:
 - Follow [INSTALLATION.md](https://github.com/alexevanczuk/packs/blob/main/INSTALLATION.md) instructions to install `packs`
 - Follow the [configuration](https://github.com/rubyatscale/packwerk-vscode/tree/main#configuration) directions to configure the extension to use `packs` instead of the ruby gem by setting the executable to `packs check`
 
-
 # Verification
 As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
 
