@@ -2,7 +2,6 @@
 ## Features
 - `packs init | create | move`
 - CLI could have `-i` interactive mode (like `use_packs`, also see https://github.com/mikaelmello/inquire)
-- Unnecessary dependency validation
 - Privacy violation inversion?
 
 ## Performance
