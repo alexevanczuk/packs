@@ -116,7 +116,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::Check { files } => checker::check_all(configuration, files),
         Command::Update => checker::update(configuration),
-        Command::Validate => Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into()),
+        Command::Validate => {
+            checker::validate_all(&configuration)
+            // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
+        }
         Command::DeleteCache => {
             packs::delete_cache(configuration);
             Ok(())
