@@ -11,6 +11,7 @@ use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 
+use std::collections::HashMap;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
@@ -129,6 +130,47 @@ pub(crate) fn update(
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
     Ok(())
+}
+
+pub(crate) fn list_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let references =
+        get_all_references(configuration, &configuration.included_files);
+    let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
+    for reference in references {
+        let defining_pack_name = reference.defining_pack_name;
+        if let Some(defining_pack_name) = defining_pack_name {
+            let edge_key =
+                (reference.referencing_pack_name, defining_pack_name);
+
+            edge_counts
+                .entry(edge_key)
+                .and_modify(|f| *f += 1)
+                .or_insert(1);
+        }
+    }
+
+    let mut error = false;
+    for pack in &configuration.pack_set.packs {
+        for dependency_name in &pack.dependencies {
+            let edge_key = (pack.name.clone(), dependency_name.clone());
+            let edge_count = edge_counts.get(&edge_key).unwrap_or(&0);
+            if edge_count == &0 {
+                error = true;
+                println!(
+                    "{} depends on {} but does not use it",
+                    pack.name, dependency_name
+                )
+            }
+        }
+    }
+
+    if error {
+        Err("List unnecessary dependencies failed".into())
+    } else {
+        Ok(())
+    }
 }
 
 fn get_all_violations(
