@@ -66,6 +66,8 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
+        self.behavioral_change_in_namespace = true;
+
         let association_reference =
             get_reference_from_active_record_association(
                 node,
