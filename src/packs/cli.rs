@@ -80,6 +80,17 @@ enum Command {
         about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
     ListDefinitions(ListDefinitionsArgs),
+<<<<<<< HEAD
+=======
+
+    #[clap(
+        about = "List dependencies that when removed produce no violations."
+    )]
+    ListUnnecessaryDependencies,
+
+    #[clap(about = "SQLite Experiment")]
+    ExperimentWithSqlLite,
+>>>>>>> 650fc6a (add test logic)
 }
 
 #[derive(Debug, Args)]
@@ -156,6 +167,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::ListDefinitions(args) => {
             let ambiguous = args.ambiguous;
             packs::list_definitions(&configuration, ambiguous);
+            Ok(())
+        }
+        Command::ExperimentWithSqlLite => {
+            packs::execute_sqlite_test(configuration);
             Ok(())
         }
     }

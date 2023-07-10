@@ -10,6 +10,7 @@ pub(crate) mod constant_resolver;
 pub(crate) mod pack;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
+pub(crate) mod sqlite_test;
 pub(crate) mod walk_directory;
 
 mod file_utils;
@@ -43,6 +44,10 @@ pub fn list(configuration: Configuration) {
     for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())
     }
+}
+
+pub fn execute_sqlite_test(configuration: Configuration) {
+    sqlite_test::execute(configuration);
 }
 
 pub fn delete_cache(configuration: Configuration) {
