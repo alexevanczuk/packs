@@ -115,12 +115,9 @@ mod tests {
 
     use std::collections::{HashMap, HashSet};
 
-    use crate::{
-        packs::{
-            pack::{CheckerSetting, Pack},
-            PackSet, SourceLocation,
-        },
-        test_util::default_test_pack,
+    use crate::packs::{
+        pack::{CheckerSetting, Pack},
+        PackSet, SourceLocation,
     };
 
     use super::*;
@@ -134,11 +131,11 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/foo"),
             enforce_visibility: CheckerSetting::True,
-            ..default_test_pack()
+            ..Pack::default()
         };
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..default_test_pack()
+            ..Pack::default()
         };
 
         let reference = Reference {
@@ -177,13 +174,13 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/foo"),
             layer: Some(String::from("product")),
-            ..default_test_pack()
+            ..Pack::default()
         };
         let referencing_pack = Pack {
             name: String::from("packs/bar"),
             layer: Some(String::from("utilities")),
             enforce_architecture: CheckerSetting::True,
-            ..default_test_pack()
+            ..Pack::default()
         };
 
         let reference = Reference {
@@ -236,13 +233,13 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/foo"),
             layer: Some(String::from("utilities")),
-            ..default_test_pack()
+            ..Pack::default()
         };
         let referencing_pack = Pack {
             name: String::from("packs/bar"),
             layer: Some(String::from("product")),
             enforce_architecture: CheckerSetting::True,
-            ..default_test_pack()
+            ..Pack::default()
         };
 
         let reference = Reference {
