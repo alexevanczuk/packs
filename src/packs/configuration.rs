@@ -109,7 +109,13 @@ pub(crate) fn from_raw(
 
     let ignored_definitions = raw_config.ignored_definitions;
 
-    let custom_associations = raw_config.custom_associations;
+    let custom_associations = raw_config
+        .custom_associations
+        .iter()
+        // In packwerk, custom_associations are an array of symbols. We strip the leading : so this configuration is compatible with the rust implementation.
+        .map(|a| a.trim_start_matches(':').to_owned())
+        .collect();
+
     debug!("Finished building configuration");
 
     Configuration {
@@ -285,5 +291,27 @@ mod tests {
         .into_iter()
         .collect::<HashSet<PathBuf>>();
         assert_eq!(actual_paths, expected_paths);
+    }
+
+    #[test]
+    fn with_symbols_as_custom_associations() {
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let raw = RawConfiguration {
+            custom_associations: vec![":my_association".to_owned()],
+            ..RawConfiguration::default()
+        };
+
+        let walk_directory_result = WalkDirectoryResult {
+            included_files: Default::default(),
+            included_packs: Default::default(),
+            owning_package_yml_for_file: Default::default(),
+        };
+
+        let configuration =
+            configuration::from_raw(&absolute_root, raw, walk_directory_result);
+        let actual_associations = configuration.custom_associations;
+        let expected_paths = vec!["my_association".to_owned()];
+
+        assert_eq!(actual_associations, expected_paths);
     }
 }
