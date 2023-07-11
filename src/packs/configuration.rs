@@ -35,7 +35,16 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         let default_absolute_root = std::env::current_dir().unwrap();
-        from_raw(&default_absolute_root, RawConfiguration::default())
+        let walk_directory_result = WalkDirectoryResult {
+            included_files: HashSet::new(),
+            included_packs: HashSet::new(),
+            owning_package_yml_for_file: HashMap::new(),
+        };
+        from_raw(
+            &default_absolute_root,
+            RawConfiguration::default(),
+            walk_directory_result,
+        )
     }
 }
 
@@ -86,18 +95,22 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     debug!("Beginning to build configuration");
 
     let raw_config = raw_configuration::get(absolute_root);
-    from_raw(absolute_root, raw_config)
+    let walk_directory_result =
+        walk_directory(absolute_root.to_path_buf(), &raw_config);
+
+    from_raw(absolute_root, raw_config, walk_directory_result)
 }
 
 pub(crate) fn from_raw(
     absolute_root: &Path,
     raw_config: RawConfiguration,
+    walk_directory_result: WalkDirectoryResult,
 ) -> Configuration {
     let WalkDirectoryResult {
         included_files,
         included_packs,
         owning_package_yml_for_file,
-    } = walk_directory(absolute_root.to_path_buf(), &raw_config);
+    } = walk_directory_result;
 
     let absolute_root = absolute_root.to_path_buf();
     let pack_set = PackSet::build(included_packs, owning_package_yml_for_file);
