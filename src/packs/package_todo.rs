@@ -1,3 +1,4 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tracing::debug;
@@ -151,20 +152,25 @@ pub fn write_violations_to_disk(
     let package_todos_by_pack_name =
         package_todos_for_pack_name(violations_by_responsible_pack);
 
-    for (responsible_pack_name, package_todo) in package_todos_by_pack_name {
-        write_package_todo_to_disk(
-            &configuration,
-            responsible_pack_name,
-            package_todo,
-        );
-    }
+    let all_packs = &configuration.pack_set.packs;
+    all_packs.par_iter().for_each(|p| {
+        let package_todo = package_todos_by_pack_name.get(&p.name);
+        match package_todo {
+            Some(package_todo) => write_package_todo_to_disk(
+                &configuration,
+                &p.name,
+                package_todo,
+            ),
+            None => delete_package_todo_from_disk(&configuration, &p.name),
+        }
+    });
 
     debug!("Finished writing violations to disk");
 }
 
 fn serialize_package_todo(
     responsible_pack_name: &String,
-    package_todo: PackageTodo,
+    package_todo: &PackageTodo,
 ) -> String {
     let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
 
@@ -177,11 +183,11 @@ fn serialize_package_todo(
 
 fn write_package_todo_to_disk(
     configuration: &Configuration,
-    responsible_pack_name: String,
-    package_todo: PackageTodo,
+    responsible_pack_name: &String,
+    package_todo: &PackageTodo,
 ) {
     let responsible_pack =
-        configuration.pack_set.for_pack(&responsible_pack_name);
+        configuration.pack_set.for_pack(responsible_pack_name);
     let package_todo_yml_absolute_filepath = responsible_pack
         .yml
         .parent()
@@ -193,10 +199,28 @@ fn write_package_todo_to_disk(
     }
 
     let package_todo_yml =
-        serialize_package_todo(&responsible_pack_name, package_todo);
+        serialize_package_todo(responsible_pack_name, package_todo);
 
     std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
         .unwrap();
+}
+
+fn delete_package_todo_from_disk(
+    configuration: &Configuration,
+    responsible_pack_name: &str,
+) {
+    let responsible_pack =
+        configuration.pack_set.for_pack(responsible_pack_name);
+    let package_todo_yml_absolute_filepath = responsible_pack
+        .yml
+        .parent()
+        .unwrap()
+        .join("package_todo.yml");
+
+    if package_todo_yml_absolute_filepath.exists() {
+        // Delete package_todo_yml_absolute_filepath
+        std::fs::remove_file(package_todo_yml_absolute_filepath).unwrap();
+    }
 }
 
 fn header(responsible_pack_name: &String) -> String {
@@ -361,7 +385,7 @@ packs/bar:
             example_package_todo(String::from("packs/bar"));
         let actual = serialize_package_todo(
             &String::from("packs/foo"),
-            actual_package_todo,
+            &actual_package_todo,
         );
 
         assert_eq!(expected, actual);
@@ -402,7 +426,7 @@ packs/bar:
         let actual_package_todo = example_package_todo(String::from("."));
         let actual = serialize_package_todo(
             &String::from("packs/foo"),
-            actual_package_todo,
+            &actual_package_todo,
         );
 
         assert_eq!(expected, actual);
