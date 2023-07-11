@@ -1,5 +1,6 @@
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
+use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -103,8 +104,12 @@ impl CheckerInterface for Checker {
             defining_pack_name: defining_pack_name.clone(),
         };
 
+        let strict_mode =
+            referencing_pack.enforce_privacy == CheckerSetting::Strict;
+
         Some(Violation {
             message,
+            strict_mode,
             identifier,
         })
     }
@@ -188,6 +193,7 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
+            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),
@@ -279,6 +285,7 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
+            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),
@@ -373,6 +380,7 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
+            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),
@@ -428,6 +436,7 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar::BarChild` is private to `packs/bar`, but referenced from `packs/foo`"),
+            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("privacy"),
                 file: String::from("packs/foo/app/services/foo.rb"),

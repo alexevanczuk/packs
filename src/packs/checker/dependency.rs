@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::Pack;
+use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
@@ -143,8 +143,12 @@ impl CheckerInterface for Checker {
                 defining_pack_name: defining_pack_name.clone(),
             };
 
+            let strict_mode =
+                referencing_pack.enforce_dependencies == CheckerSetting::Strict;
+
             return Some(Violation {
                 message,
+                strict_mode,
                 identifier,
             });
         }
@@ -208,6 +212,7 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."),
+            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("dependency"),
                 file: String::from("packs/foo/app/services/foo.rb"),
