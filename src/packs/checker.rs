@@ -219,6 +219,7 @@ fn get_all_references(
         absolute_paths,
         cache,
         configuration.experimental_parser,
+        configuration,
     );
 
     let constant_resolver = if configuration.experimental_parser {

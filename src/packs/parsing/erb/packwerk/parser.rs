@@ -1,25 +1,30 @@
 use crate::packs::{
     file_utils::convert_erb_to_ruby_without_sourcemaps, parsing::Range,
-    ProcessedFile, UnresolvedReference,
+    Configuration, ProcessedFile, UnresolvedReference,
 };
 use std::{fs, path::Path};
 
 use crate::packs::parsing::ruby::packwerk::parser::process_from_contents as process_from_ruby_contents;
 
-pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {
+pub(crate) fn process_from_path(
+    path: &Path,
+    configuration: &Configuration,
+) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    process_from_contents(contents, path)
+    process_from_contents(contents, path, configuration)
 }
 
 pub(crate) fn process_from_contents(
     contents: String,
     path: &Path,
+    configuration: &Configuration,
 ) -> ProcessedFile {
     let ruby_contents = convert_erb_to_ruby_without_sourcemaps(contents);
-    let processed_file = process_from_ruby_contents(ruby_contents, path);
+    let processed_file =
+        process_from_ruby_contents(ruby_contents, path, configuration);
     let references = processed_file.unresolved_references;
     // let references_without_range = references
     let references_without_range = references

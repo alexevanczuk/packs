@@ -7,25 +7,32 @@ mod tests {
 
     use crate::packs::parsing::erb::packwerk::parser::process_from_contents;
     use crate::packs::parsing::Range;
-    use crate::packs::UnresolvedReference;
+    use crate::packs::{Configuration, UnresolvedReference};
 
     #[test]
     fn trivial_case() {
         let contents: String = String::from("<%= Foo %>");
+        let configuration = Configuration::default();
+
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
     #[test]
     fn multiple_references() {
         let contents: String = String::from("<%= Foo %><%= Bar %>");
+        let configuration = Configuration::default();
         assert_eq!(
             vec![
                 UnresolvedReference {
@@ -39,8 +46,12 @@ mod tests {
                     location: Range::default()
                 }
             ],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
     #[test]
@@ -52,14 +63,20 @@ mod tests {
 %>
         ",
         );
+
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -72,14 +89,19 @@ mod tests {
   <%- end %>
         ",
         );
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -99,14 +121,19 @@ mod tests {
 </div>
         ",
         );
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -123,14 +150,19 @@ mod tests {
 %>
         ",
         );
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
                 namespace_path: vec![],
                 location: Range::default()
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -165,6 +197,7 @@ mod tests {
 </html>
         ",
         );
+        let configuration = Configuration::default();
         assert_eq!(
             vec![
                 UnresolvedReference {
@@ -193,8 +226,12 @@ mod tests {
                     location: Range::default()
                 }
             ],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 }

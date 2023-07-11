@@ -6,11 +6,12 @@ mod tests {
 
     use crate::packs::parsing::ruby::packwerk::parser::process_from_contents;
     use crate::packs::parsing::Range;
-    use crate::packs::UnresolvedReference;
+    use crate::packs::{Configuration, UnresolvedReference};
 
     #[test]
     fn trivial_case() {
         let contents: String = String::from("Foo");
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo"),
@@ -22,14 +23,19 @@ mod tests {
                     end_col: 4
                 }
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
     #[test]
     fn nested_constant() {
         let contents: String = String::from("Foo::Bar");
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo::Bar"),
@@ -41,14 +47,19 @@ mod tests {
                     end_col: 9
                 }
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
     #[test]
     fn deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz");
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo::Bar::Baz"),
@@ -60,14 +71,19 @@ mod tests {
                     end_col: 14
                 }
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
     #[test]
     fn very_deeply_nested_constant() {
         let contents: String = String::from("Foo::Bar::Baz::Boo");
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("Foo::Bar::Baz::Boo"),
@@ -79,8 +95,12 @@ mod tests {
                     end_col: 19
                 }
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -93,6 +113,7 @@ end
             ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             vec![UnresolvedReference {
                 name: String::from("::Foo"),
@@ -104,8 +125,12 @@ end
                     end_col: 10
                 }
             }],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
         );
     }
 
@@ -119,6 +144,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Bar"),
@@ -130,10 +156,14 @@ end
                     end_col: 6
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(1)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(1)
+            .unwrap()
         );
     }
 
@@ -149,6 +179,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Baz"),
@@ -160,10 +191,14 @@ end
                     end_col: 8
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(2)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(2)
+            .unwrap()
         );
     }
 
@@ -181,6 +216,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Boo"),
@@ -196,10 +232,14 @@ end
                     end_col: 10
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(3)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(3)
+            .unwrap()
         );
     }
 
@@ -213,6 +253,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             vec![
                 UnresolvedReference {
@@ -236,8 +277,12 @@ end
                     }
                 }
             ],
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references,
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references,
         );
     }
 
@@ -253,6 +298,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Baz"),
@@ -264,10 +310,14 @@ end
                     end_col: 8
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(2)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(2)
+            .unwrap()
         );
     }
 
@@ -285,6 +335,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Boo"),
@@ -300,10 +351,14 @@ end
                     end_col: 10
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(3)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(3)
+            .unwrap()
         );
     }
 
@@ -321,6 +376,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Boo"),
@@ -336,10 +392,14 @@ end
                     end_col: 10
                 },
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(3)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(3)
+            .unwrap()
         );
     }
 
@@ -354,6 +414,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Baz"),
@@ -365,10 +426,14 @@ end
                     end_col: 6
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(1)
-                .unwrap(),
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(1)
+            .unwrap(),
         );
     }
 
@@ -384,6 +449,7 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
             UnresolvedReference {
                 name: String::from("::Foo::Bar::Baz"),
@@ -395,10 +461,14 @@ end
                     end_col: 13
                 }
             },
-            *process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references
-                .get(1)
-                .unwrap()
+            *process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references
+            .get(1)
+            .unwrap()
         );
     }
 
@@ -406,13 +476,20 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_constant() {
         let contents: String = String::from("[Foo]");
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Foo"),
@@ -431,13 +508,19 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_multiple_constants() {
         let contents: String = String::from("[Foo, Bar]");
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let reference1 = references
             .get(0)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Foo"),
@@ -454,6 +537,7 @@ end
         let reference2 = references
             .get(1)
             .expect("There should be a reference at index 1");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Bar"),
@@ -473,13 +557,19 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn array_of_nested_constant() {
         let contents: String = String::from("[Baz::Boo]");
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Baz::Boo"),
@@ -499,13 +589,19 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn globally_referenced_constant() {
         let contents: String = String::from("::Foo");
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("::Foo"),
@@ -525,9 +621,15 @@ end
     // https://www.rubydoc.info/gems/rubocop/RuboCop/Cop/Style/ClassAndModuleChildren
     fn metaprogrammatically_referenced_constant() {
         let contents: String = String::from("described_class::Foo");
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 0);
     }
 
@@ -544,9 +646,14 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references,
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references,
             vec![UnresolvedReference {
                 name: String::from("::Foo"),
                 namespace_path: vec![],
@@ -575,9 +682,14 @@ end
         ",
         );
 
+        let configuration = Configuration::default();
         assert_eq!(
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references,
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration
+            )
+            .unresolved_references,
             vec![
                 UnresolvedReference {
                     name: String::from("::Foo"),
@@ -612,9 +724,14 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(0)
@@ -642,10 +759,14 @@ class Foo::Bar
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
@@ -676,9 +797,14 @@ end
         ",
         );
 
-        let references: Vec<UnresolvedReference> =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references: Vec<UnresolvedReference> = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(
             references,
             vec![
@@ -712,14 +838,20 @@ end
 FOO = BAR
 ",
         );
-        let references: Vec<UnresolvedReference> =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references: Vec<UnresolvedReference> = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
 
         assert_eq!(references.len(), 1);
         let first_reference = references
             .get(0)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("BAR"),
@@ -745,13 +877,20 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("SomeUserModel"),
@@ -777,13 +916,20 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("User"),
@@ -808,14 +954,20 @@ class Foo
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("SomeUserModel"),
@@ -841,13 +993,20 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
             .expect("There should be a reference at index 0");
+
         assert_eq!(
             UnresolvedReference {
                 name: String::from("MyStatus"),
@@ -872,10 +1031,14 @@ class Foo
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -905,9 +1068,14 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -936,10 +1104,14 @@ class Foo
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -960,6 +1132,45 @@ end
     }
 
     #[test]
+    fn association_with_user_inputted_custom_inflection_3() {
+        let contents: String = String::from(
+            "\
+class Foo
+  cache_belongs_to :data
+end
+        ",
+        );
+        let configuration = Configuration {
+            custom_associations: vec!["cache_belongs_to".to_owned()],
+            ..Configuration::default()
+        };
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
+        assert_eq!(references.len(), 2);
+        let first_reference = references
+            .get(1)
+            .expect("There should be a reference at index 0");
+        assert_eq!(
+            UnresolvedReference {
+                name: String::from("Datum"),
+                namespace_path: vec![String::from("Foo")],
+                location: Range {
+                    start_row: 2,
+                    start_col: 2,
+                    end_row: 2,
+                    end_col: 25
+                }
+            },
+            *first_reference,
+        );
+    }
+
+    #[test]
     fn has_many_association_with_class_name_after_block() {
         let contents: String = String::from(
             "\
@@ -968,10 +1179,14 @@ class Foo
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
@@ -1002,9 +1217,14 @@ end
         ",
         );
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let configuration = Configuration::default();
+
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 3);
         let reference = references
             .get(2)
@@ -1035,10 +1255,14 @@ class Foo
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(0)
@@ -1060,10 +1284,14 @@ class Foo::Bar
 end
         ",
         );
+        let configuration = Configuration::default();
 
-        let references =
-            process_from_contents(contents, &PathBuf::from("path/to/file.rb"))
-                .unresolved_references;
+        let references = process_from_contents(
+            contents,
+            &PathBuf::from("path/to/file.rb"),
+            &configuration,
+        )
+        .unresolved_references;
         assert_eq!(references.len(), 1);
         let reference = references
             .get(0)

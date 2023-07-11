@@ -100,18 +100,32 @@ fn fetch_casgn_name(node: &nodes::Casgn) -> Result<String, ParseError> {
     }
 }
 
+const ASSOCIATION_METHOD_NAMES: [&str; 4] = [
+    "has_one",
+    "has_many",
+    "belongs_to",
+    "has_and_belongs_to_many",
+];
+
 pub fn get_reference_from_active_record_association(
     node: &nodes::Send,
     current_namespaces: &[String],
     line_col_lookup: &LineColLookup,
+    custom_associations: &[String],
 ) -> Option<UnresolvedReference> {
     // TODO: Read in args, process associations as a separate class
     // These can get complicated! e.g. we can specify a class name
-    if node.method_name == *"has_one"
-        || node.method_name == *"has_many"
-        || node.method_name == *"belongs_to"
-        || node.method_name == *"has_and_belongs_to_many"
-    {
+    let combined_associations: Vec<String> = custom_associations
+        .iter()
+        .map(|s| s.to_owned())
+        .chain(ASSOCIATION_METHOD_NAMES.iter().copied().map(String::from))
+        .collect();
+
+    let is_association = combined_associations
+        .iter()
+        .any(|association_method| node.method_name == *association_method);
+
+    if is_association {
         let first_arg: Option<&Node> = node.args.get(0);
 
         let mut name: Option<String> = None;
