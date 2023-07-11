@@ -72,12 +72,14 @@ pub(crate) fn check_all(
     debug!("Finished filtering out recorded violations");
 
     debug!("Finding stale violations");
-    let violation_identifiers: HashSet<&ViolationIdentifier> =
+    let found_violation_identifiers: HashSet<&ViolationIdentifier> =
         found_violations.par_iter().map(|v| &v.identifier).collect();
 
     let stale_violations = recorded_violations
         .par_iter()
-        .filter(|v_identifier| !violation_identifiers.contains(v_identifier))
+        .filter(|v_identifier| {
+            !found_violation_identifiers.contains(v_identifier)
+        })
         .collect::<Vec<&ViolationIdentifier>>();
 
     debug!("Finished finding stale violations");
