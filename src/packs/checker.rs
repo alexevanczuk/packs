@@ -84,6 +84,13 @@ pub(crate) fn check_all(
 
     debug!("Finished finding stale violations");
 
+    // Right now, strict mode detection only looks at package_todo.yml files to be compatible with packwerk
+    // In the future, we should perhaps make `update` error if you attempt to record a violation that goes
+    // against strict mode
+    debug!("Finding strict mode violations");
+
+    debug!("Finished finding strict mode violations");
+
     let mut errors_present = false;
 
     if !unrecorded_violations.is_empty() {
