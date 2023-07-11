@@ -7,7 +7,7 @@ use crate::packs::{
         },
         ParsedDefinition, UnresolvedReference,
     },
-    ProcessedFile,
+    Configuration, ProcessedFile,
 };
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
@@ -21,6 +21,7 @@ struct ReferenceCollector<'a> {
     pub current_namespaces: Vec<String>,
     pub line_col_lookup: LineColLookup<'a>,
     pub behavioral_change_in_namespace: bool,
+    pub custom_associations: Vec<String>,
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -73,6 +74,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                 node,
                 &self.current_namespaces,
                 &self.line_col_lookup,
+                &self.custom_associations,
             );
 
         if let Some(association_reference) = association_reference {
@@ -160,17 +162,21 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 }
 
-pub(crate) fn process_from_path(path: &Path) -> ProcessedFile {
+pub(crate) fn process_from_path(
+    path: &Path,
+    configuration: &Configuration,
+) -> ProcessedFile {
     let contents = fs::read_to_string(path).unwrap_or_else(|_| {
         panic!("Failed to read contents of {}", path.to_string_lossy())
     });
 
-    process_from_contents(contents, path)
+    process_from_contents(contents, path, configuration)
 }
 
 pub(crate) fn process_from_contents(
     contents: String,
     path: &Path,
+    configuration: &Configuration,
 ) -> ProcessedFile {
     let options = ParserOptions {
         buffer_name: "".to_string(),
@@ -200,6 +206,7 @@ pub(crate) fn process_from_contents(
         definitions: vec![],
         line_col_lookup: lookup,
         behavioral_change_in_namespace: false,
+        custom_associations: configuration.custom_associations.clone(),
     };
 
     collector.visit(&ast);

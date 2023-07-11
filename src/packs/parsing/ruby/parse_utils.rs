@@ -111,6 +111,7 @@ pub fn get_reference_from_active_record_association(
     node: &nodes::Send,
     current_namespaces: &[String],
     line_col_lookup: &LineColLookup,
+    custom_associations: &[String],
 ) -> Option<UnresolvedReference> {
     // TODO: Read in args, process associations as a separate class
     // These can get complicated! e.g. we can specify a class name

@@ -16,24 +16,29 @@ use serde::{Deserialize, Serialize};
 use super::{
     caching::{Cache, CacheResult},
     file_utils::{get_file_type, SupportedFileType},
-    ProcessedFile,
+    Configuration, ProcessedFile,
 };
 
-pub fn process_file(path: &Path, experimental_parser: bool) -> ProcessedFile {
+pub fn process_file(
+    path: &Path,
+    // TODO: This experimental_parser can be removed since we are already passing in configuration
+    experimental_parser: bool,
+    configuration: &Configuration,
+) -> ProcessedFile {
     let file_type_option = get_file_type(path);
 
     if let Some(file_type) = file_type_option {
         match file_type {
             SupportedFileType::Ruby => {
                 if experimental_parser {
-                    process_from_ruby_path_experimental(path)
+                    process_from_ruby_path_experimental(path, configuration)
                 } else {
                     process_from_ruby_path(path)
                 }
             }
             SupportedFileType::Erb => {
                 if experimental_parser {
-                    process_from_erb_path_experimental(path)
+                    process_from_erb_path_experimental(path, configuration)
                 } else {
                     process_from_erb_path(path)
                 }
@@ -75,7 +80,9 @@ pub fn process_files_with_cache(
     absolute_root: &Path,
     paths: &HashSet<PathBuf>,
     cache: Box<dyn Cache + Send + Sync>,
+    // TODO: Experimental parser can be removed
     experimental_parser: bool,
+    configuration: &Configuration,
 ) -> Vec<ProcessedFile> {
     paths
         .par_iter()
@@ -83,8 +90,11 @@ pub fn process_files_with_cache(
             match cache.get(absolute_root, absolute_path) {
                 CacheResult::Processed(processed_file) => processed_file,
                 CacheResult::Miss(empty_cache_entry) => {
-                    let processed_file =
-                        process_file(absolute_path, experimental_parser);
+                    let processed_file = process_file(
+                        absolute_path,
+                        experimental_parser,
+                        configuration,
+                    );
                     cache.write(&empty_cache_entry, &processed_file);
                     processed_file
                 }

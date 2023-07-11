@@ -75,6 +75,7 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
             &configuration.included_files,
             configuration.get_cache(initialized_dir),
             true,
+            configuration,
         );
 
         get_experimental_constant_resolver(

@@ -54,13 +54,14 @@ mod tests {
 
     use crate::packs::parsing::ruby::experimental::parser::process_from_contents;
     use crate::packs::parsing::{ParsedDefinition, Range};
-    use crate::packs::{ProcessedFile, UnresolvedReference};
+    use crate::packs::{Configuration, ProcessedFile, UnresolvedReference};
     use pretty_assertions::assert_eq;
 
     #[test]
     fn trivial_case() {
         let contents: String = String::from("Foo");
 
+        let configuration = Configuration::default();
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![UnresolvedReference {
             name: String::from("Foo"),
@@ -75,7 +76,8 @@ mod tests {
 
         let definitions = vec![];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -86,6 +88,7 @@ mod tests {
 
     #[test]
     fn nested_constant() {
+        let configuration = Configuration::default();
         let contents: String = String::from("Foo::Bar");
 
         let absolute_path = PathBuf::from("path/to/file.rb");
@@ -102,7 +105,8 @@ mod tests {
 
         let definitions = vec![];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -113,6 +117,8 @@ mod tests {
 
     #[test]
     fn deeply_nested_constant() {
+        let configuration = Configuration::default();
+
         let contents: String = String::from("Foo::Bar::Baz");
 
         let absolute_path = PathBuf::from("path/to/file.rb");
@@ -129,7 +135,8 @@ mod tests {
 
         let definitions = vec![];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -140,6 +147,8 @@ mod tests {
 
     #[test]
     fn very_deeply_nested_constant() {
+        let configuration = Configuration::default();
+
         let contents: String = String::from("Foo::Bar::Baz::Boo");
 
         let absolute_path = PathBuf::from("path/to/file.rb");
@@ -156,7 +165,8 @@ mod tests {
 
         let definitions = vec![];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -174,12 +184,15 @@ end
             ",
         );
 
+        let configuration = Configuration::default();
+
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
         let definitions = vec![];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -199,6 +212,8 @@ end
             ",
         );
 
+        let configuration = Configuration::default();
+
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
@@ -212,7 +227,8 @@ end
             },
         }];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -232,6 +248,8 @@ end
             ",
         );
 
+        let configuration = Configuration::default();
+
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
@@ -245,7 +263,8 @@ end
             },
         }];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,
@@ -264,6 +283,8 @@ end
             ",
         );
 
+        let configuration = Configuration::default();
+
         let absolute_path = PathBuf::from("path/to/file.rb");
         let unresolved_references = vec![];
 
@@ -277,7 +298,8 @@ end
             },
         }];
 
-        let actual = process_from_contents(contents, &absolute_path);
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
         let expected = ProcessedFile {
             absolute_path,
             unresolved_references,

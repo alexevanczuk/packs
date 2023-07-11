@@ -29,6 +29,7 @@ pub struct Configuration {
     pub layers: Layers,
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
+    pub custom_associations: Vec<String>,
 }
 
 impl Configuration {
@@ -98,6 +99,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
 
     let ignored_definitions = raw_config.ignored_definitions;
 
+    let custom_associations = raw_config.custom_associations;
     debug!("Finished building configuration");
 
     Configuration {
@@ -109,6 +111,7 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
         layers,
         experimental_parser,
         ignored_definitions,
+        custom_associations,
     }
 }
 

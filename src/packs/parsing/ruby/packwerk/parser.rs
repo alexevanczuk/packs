@@ -32,6 +32,7 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub in_superclass: bool,
     pub superclasses: Vec<SuperclassReference>,
+    pub custom_associations: Vec<String>,
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -90,6 +91,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
                 node,
                 &self.current_namespaces,
                 &self.line_col_lookup,
+                &self.custom_associations,
             );
 
         if let Some(association_reference) = association_reference {
@@ -236,6 +238,7 @@ pub(crate) fn process_from_contents(
         line_col_lookup: lookup,
         in_superclass: false,
         superclasses: vec![],
+        custom_associations: vec![],
     };
 
     collector.visit(&ast);
