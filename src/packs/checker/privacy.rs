@@ -507,4 +507,44 @@ mod tests {
         };
         assert_eq!(None, checker.check(&reference, &configuration))
     }
+
+    #[test]
+    fn test_private_constants_does_include_referenced_public_constant() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
+            enforce_privacy: CheckerSetting::True,
+            ..Pack::default()
+        };
+
+        let referencing_pack = Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/public/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
+        };
+        assert_eq!(None, checker.check(&reference, &configuration))
+    }
 }
