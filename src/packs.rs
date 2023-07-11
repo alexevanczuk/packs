@@ -1,5 +1,5 @@
 pub(crate) mod configuration;
-mod pack;
+pub(crate) mod pack;
 mod raw_configuration;
 mod raw_pack;
 use serde::Deserialize;

@@ -7,6 +7,7 @@ pub(crate) mod test_util {
 
     use packs::configuration;
 
+    use crate::packs::pack::Pack;
     use crate::packs::{self, constant_resolver::ConstantResolver};
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";
@@ -27,5 +28,28 @@ pub(crate) mod test_util {
             &configuration.cache_directory,
             true,
         )
+    }
+
+    // Note that instead, we could derive the `Default` trait on `Pack`
+    // However, there should be no reason the "production" code ever initializes
+    // a default Pack directly, so this implementation is test only.
+    pub fn default_test_pack() -> Pack {
+        Pack {
+            yml: Default::default(),
+            name: Default::default(),
+            relative_path: Default::default(),
+            dependencies: Default::default(),
+            ignored_dependencies: Default::default(),
+            ignored_private_constants: Default::default(),
+            private_constants: Default::default(),
+            package_todo: Default::default(),
+            visible_to: Default::default(),
+            public_folder: Default::default(),
+            layer: Default::default(),
+            enforce_dependencies: Default::default(),
+            enforce_privacy: Default::default(),
+            enforce_visibility: Default::default(),
+            enforce_architecture: Default::default(),
+        }
     }
 }

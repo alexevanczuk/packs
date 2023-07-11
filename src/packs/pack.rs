@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use super::{checker::ViolationIdentifier, raw_pack::RawPack, PackageTodo};
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 pub struct Pack {
     #[serde(skip_deserializing)]
     pub yml: PathBuf,

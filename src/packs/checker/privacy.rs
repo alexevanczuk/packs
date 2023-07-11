@@ -115,9 +115,12 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     use super::*;
-    use crate::packs::{
-        pack::{CheckerSetting, Pack},
-        *,
+    use crate::{
+        packs::{
+            pack::{CheckerSetting, Pack},
+            *,
+        },
+        test_util::default_test_pack,
     };
 
     #[test]
@@ -127,12 +130,12 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/foo"),
             enforce_privacy: CheckerSetting::True,
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
         let reference = Reference {
             constant_name: String::from("::Foo"),
@@ -165,12 +168,12 @@ mod tests {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
             public_folder: PathBuf::from("packs/bar/app/public"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
@@ -218,12 +221,12 @@ mod tests {
             name: String::from("packs/foo"),
             enforce_privacy: CheckerSetting::True,
             ignored_private_constants: HashSet::from([String::from("::Foo")]),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/bar"),
-            ..Pack::default()
+            ..default_test_pack()
         };
         let reference = Reference {
             constant_name: String::from("::Foo"),
@@ -256,12 +259,12 @@ mod tests {
             name: String::from("packs/bar"),
             enforce_privacy: CheckerSetting::True,
             public_folder: PathBuf::from("packs/bar/app/public"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
@@ -309,12 +312,12 @@ mod tests {
             name: String::from("packs/bar"),
             public_folder: PathBuf::from("packs/bar/app/api"),
             enforce_privacy: CheckerSetting::True,
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
@@ -350,12 +353,12 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: CheckerSetting::True,
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
@@ -405,12 +408,12 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: CheckerSetting::True,
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
@@ -460,12 +463,12 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: CheckerSetting::True,
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let referencing_pack = Pack {
             name: String::from("packs/foo"),
-            ..Pack::default()
+            ..default_test_pack()
         };
 
         let reference = Reference {
