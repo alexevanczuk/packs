@@ -72,7 +72,7 @@ pub(crate) fn check_all(
     debug!("Finished filtering out recorded violations");
 
     debug!("Finding stale violations");
-    let violation_identifiers: Vec<&ViolationIdentifier> =
+    let violation_identifiers: HashSet<&ViolationIdentifier> =
         found_violations.par_iter().map(|v| &v.identifier).collect();
 
     let stale_violations = recorded_violations
