@@ -72,3 +72,23 @@ fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
     common::teardown();
     Ok(())
 }
+
+#[test]
+fn test_check_with_strict_mode() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/uses_strict_mode")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "packs/foo cannot have privacy violations on packs/bar because strict mode is enabled for privacy violations in the enforcing pack's package.yml file",
+        ))
+        .stdout(predicate::str::contains(
+            "packs/foo cannot have dependency violations on packs/bar because strict mode is enabled for dependency violations in the enforcing pack's package.yml file",
+        ));
+
+    common::teardown();
+    Ok(())
+}
