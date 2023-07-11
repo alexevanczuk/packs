@@ -58,13 +58,13 @@ pub(crate) fn check_all(
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    let violations: HashSet<Violation> =
+    let found_violations: HashSet<Violation> =
         get_all_violations(&configuration, &absolute_paths);
 
     let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
-    let unrecorded_violations = violations
+    let unrecorded_violations = found_violations
         .iter()
         .filter(|v| !recorded_violations.contains(&v.identifier))
         .collect::<Vec<&Violation>>();
@@ -73,7 +73,7 @@ pub(crate) fn check_all(
 
     debug!("Finding stale violations");
     let violation_identifiers: Vec<&ViolationIdentifier> =
-        violations.par_iter().map(|v| &v.identifier).collect();
+        found_violations.par_iter().map(|v| &v.identifier).collect();
 
     let stale_violations = recorded_violations
         .par_iter()
