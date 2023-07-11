@@ -131,7 +131,7 @@ pub fn package_todos_for_pack_name(
 }
 pub fn write_violations_to_disk(
     configuration: Configuration,
-    violations: Vec<Violation>,
+    violations: HashSet<Violation>,
 ) {
     debug!("Starting writing violations to disk");
     // First we need to group the violations by the repsonsible pack, which today is always the referencing pack

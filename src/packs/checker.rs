@@ -58,8 +58,9 @@ pub(crate) fn check_all(
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
-    let violations: Vec<Violation> =
+    let violations: HashSet<Violation> =
         get_all_violations(&configuration, &absolute_paths);
+
     let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
@@ -70,6 +71,17 @@ pub(crate) fn check_all(
 
     debug!("Finished filtering out recorded violations");
 
+    debug!("Finding stale violations");
+    let violation_identifiers: Vec<&ViolationIdentifier> =
+        violations.par_iter().map(|v| &v.identifier).collect();
+
+    let stale_violations = recorded_violations
+        .par_iter()
+        .filter(|v_identifier| !violation_identifiers.contains(v_identifier))
+        .collect::<Vec<&ViolationIdentifier>>();
+
+    debug!("Finished finding stale violations");
+
     let mut errors_present = false;
 
     if !unrecorded_violations.is_empty() {
@@ -79,6 +91,13 @@ pub(crate) fn check_all(
 
         println!("{} violation(s) detected:", unrecorded_violations.len());
 
+        errors_present = true;
+    }
+
+    if !stale_violations.is_empty() {
+        println!(
+            "There were stale violations found, please run `packs update`"
+        );
         errors_present = true;
     }
 
@@ -176,7 +195,7 @@ pub(crate) fn list_unnecessary_dependencies(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-) -> Vec<Violation> {
+) -> HashSet<Violation> {
     let references = get_all_references(configuration, absolute_paths);
 
     debug!("Running checkers on resolved references");
@@ -189,13 +208,13 @@ fn get_all_violations(
         }),
     ];
 
-    let violations: Vec<Violation> = checkers
+    let violations: HashSet<Violation> = checkers
         .into_par_iter()
         .flat_map(|c| {
             references
                 .par_iter()
                 .flat_map(|r| c.check(r, configuration))
-                .collect::<Vec<Violation>>()
+                .collect::<HashSet<Violation>>()
         })
         .collect();
 
