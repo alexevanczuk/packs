@@ -33,14 +33,14 @@ pub fn process_file(
                 if experimental_parser {
                     process_from_ruby_path_experimental(path, configuration)
                 } else {
-                    process_from_ruby_path(path)
+                    process_from_ruby_path(path, configuration)
                 }
             }
             SupportedFileType::Erb => {
                 if experimental_parser {
                     process_from_erb_path_experimental(path, configuration)
                 } else {
-                    process_from_erb_path(path)
+                    process_from_erb_path(path, configuration)
                 }
             }
         }
