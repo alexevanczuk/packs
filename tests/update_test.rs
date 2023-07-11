@@ -2,6 +2,7 @@ use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{error::Error, path::Path, process::Command};
 mod common;
+use pretty_assertions::assert_eq;
 
 #[test]
 fn test_update() -> Result<(), Box<dyn Error>> {
@@ -87,6 +88,55 @@ packs/bar:
     assert_eq!(expected, actual);
 
     common::teardown();
+
+    Ok(())
+}
+
+#[test]
+fn test_update_with_stale_violations() -> Result<(), Box<dyn Error>> {
+    common::set_up_fixtures();
+
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/contains_stale_violations")
+        .arg("update")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Successfully updated package_todo.yml files!",
+        ));
+
+    let package_todo_yml_filepath = Path::new(
+        "tests/fixtures/contains_stale_violations/packs/foo/package_todo.yml",
+    );
+    let actual = std::fs::read_to_string(package_todo_yml_filepath)?;
+    let expected = String::from(
+        "\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+packs/bar:
+  \"::Bar\":
+    violations:
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
+",
+    );
+
+    assert_eq!(expected, actual);
+
+    let package_todo_yml_filepath = Path::new(
+        "tests/fixtures/contains_stale_violations/packs/bar/package_todo.yml",
+    );
+    assert!(!package_todo_yml_filepath.exists());
+    common::set_up_fixtures();
 
     Ok(())
 }

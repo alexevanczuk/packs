@@ -1,0 +1,15 @@
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+packs/bar:
+  "::Bar":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb

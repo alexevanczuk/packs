@@ -32,3 +32,60 @@ pub fn teardown() {
     //     );
     // }
 }
+
+// In case we want our tests to call `update`
+#[allow(dead_code)]
+pub fn set_up_fixtures() {
+    let contains_stale_violations_bar_todo = String::from("\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+packs/foo:
+  \"::Foo\":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/bar/app/services/bar.rb
+
+");
+
+    // Rewrite tests/fixtures/contains_stale_violations/packs/bar/package_todo.yml with the above contents,
+    // whether it is present or not:
+    fs::write(
+        "tests/fixtures/contains_stale_violations/packs/bar/package_todo.yml",
+        contains_stale_violations_bar_todo,
+    )
+    .unwrap();
+
+    let contains_stale_violations_foo_todo = String::from("\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# bin/packwerk update-todo
+---
+packs/bar:
+  \"::Bar\":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
+");
+
+    // Rewrite tests/fixtures/contains_stale_violations/packs/bar/package_todo.yml with the above contents,
+    // whether it is present or not:
+    fs::write(
+        "tests/fixtures/contains_stale_violations/packs/foo/package_todo.yml",
+        contains_stale_violations_foo_todo,
+    )
+    .unwrap();
+}

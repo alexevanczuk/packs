@@ -55,3 +55,20 @@ fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
     common::teardown();
     Ok(())
 }
+
+#[test]
+fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/contains_stale_violations")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "There were stale violations found, please run `packs update`",
+        ));
+
+    common::teardown();
+    Ok(())
+}
