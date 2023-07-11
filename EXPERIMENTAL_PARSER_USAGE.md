@@ -29,7 +29,7 @@ To find these constants defined in multiple locations, you can run:
 `packs -e list-definitions --ambiguous`
 
 # What's the difference?
-Let's start with some example:
+Here are some example definitions which I'll refer to below:
 ```ruby
 # foo.rb
 class Foo; end
