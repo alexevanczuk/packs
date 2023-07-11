@@ -218,7 +218,6 @@ fn get_all_references(
         &configuration.absolute_root,
         absolute_paths,
         cache,
-        configuration.experimental_parser,
         configuration,
     );
 

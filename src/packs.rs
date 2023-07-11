@@ -74,7 +74,6 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
             &configuration.absolute_root,
             &configuration.included_files,
             configuration.get_cache(initialized_dir),
-            true,
             configuration,
         );
 
