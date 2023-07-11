@@ -44,6 +44,14 @@ pub(crate) trait CheckerInterface {
         reference: &Reference,
         configuration: &Configuration,
     ) -> Option<Violation>;
+
+    fn is_strict_mode_violation(
+        &self,
+        offense: &ViolationIdentifier,
+        configuration: &Configuration,
+    ) -> bool;
+
+    fn violation_type(&self) -> String;
 }
 
 pub(crate) trait ValidatorInterface {
@@ -55,11 +63,13 @@ pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let checkers = get_checkers(&configuration);
+
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let found_violations: HashSet<Violation> =
-        get_all_violations(&configuration, &absolute_paths);
+        get_all_violations(&configuration, &absolute_paths, &checkers);
 
     let recorded_violations = &configuration.pack_set.all_violations;
 
@@ -84,6 +94,30 @@ pub(crate) fn check_all(
 
     debug!("Finished finding stale violations");
 
+    // Right now, strict mode detection only looks at package_todo.yml files to be compatible with packwerk
+    // In the future, we should perhaps make `update` error if you attempt to record a violation that goes
+    // against strict mode
+    debug!("Finding strict mode violations");
+    let mut indexed_checkers: HashMap<
+        String,
+        &Box<dyn CheckerInterface + Send + Sync>,
+    > = HashMap::new();
+    for checker in &checkers {
+        indexed_checkers.insert(checker.violation_type(), checker);
+    }
+
+    let strict_mode_violations: Vec<&ViolationIdentifier> = recorded_violations
+        .iter()
+        .filter(|v| {
+            indexed_checkers
+                .get(&v.violation_type)
+                .unwrap()
+                .is_strict_mode_violation(v, &configuration)
+        })
+        .collect();
+
+    debug!("Finished finding strict mode violations");
+
     let mut errors_present = false;
 
     if !unrecorded_violations.is_empty() {
@@ -100,6 +134,20 @@ pub(crate) fn check_all(
         println!(
             "There were stale violations found, please run `packs update`"
         );
+        errors_present = true;
+    }
+
+    if !strict_mode_violations.is_empty() {
+        for v in strict_mode_violations {
+            let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
+                v.referencing_pack_name,
+                v.violation_type,
+                v.defining_pack_name,
+                v.violation_type
+            );
+            println!("{}", error_message);
+        }
+
         errors_present = true;
     }
 
@@ -145,8 +193,13 @@ pub(crate) fn validate_all(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let violations =
-        get_all_violations(&configuration, &configuration.included_files);
+    let checkers = get_checkers(&configuration);
+
+    let violations = get_all_violations(
+        &configuration,
+        &configuration.included_files,
+        &checkers,
+    );
 
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
@@ -197,18 +250,11 @@ pub(crate) fn list_unnecessary_dependencies(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
+    checkers: &Vec<Box<dyn CheckerInterface + Send + Sync>>,
 ) -> HashSet<Violation> {
     let references = get_all_references(configuration, absolute_paths);
 
     debug!("Running checkers on resolved references");
-    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
-        Box::new(dependency::Checker {}),
-        Box::new(privacy::Checker {}),
-        Box::new(visibility::Checker {}),
-        Box::new(architecture::Checker {
-            layers: configuration.layers.clone(),
-        }),
-    ];
 
     let violations: HashSet<Violation> = checkers
         .into_par_iter()
@@ -283,4 +329,17 @@ fn get_all_references(
     debug!("Finished turning unresolved references into fully qualified references");
 
     references
+}
+
+fn get_checkers(
+    configuration: &Configuration,
+) -> Vec<Box<dyn CheckerInterface + Send + Sync>> {
+    vec![
+        Box::new(dependency::Checker {}),
+        Box::new(privacy::Checker {}),
+        Box::new(visibility::Checker {}),
+        Box::new(architecture::Checker {
+            layers: configuration.layers.clone(),
+        }),
+    ]
 }

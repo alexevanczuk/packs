@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::Pack;
+use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
@@ -150,6 +150,22 @@ impl CheckerInterface for Checker {
         }
 
         None
+    }
+
+    fn is_strict_mode_violation(
+        &self,
+        violation: &ViolationIdentifier,
+        configuration: &Configuration,
+    ) -> bool {
+        let referencing_pack = configuration
+            .pack_set
+            .for_pack(&violation.referencing_pack_name);
+
+        referencing_pack.enforce_dependencies == CheckerSetting::Strict
+    }
+
+    fn violation_type(&self) -> String {
+        "dependency".to_owned()
     }
 }
 

@@ -1,5 +1,6 @@
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
+use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -107,6 +108,22 @@ impl CheckerInterface for Checker {
             message,
             identifier,
         })
+    }
+
+    fn is_strict_mode_violation(
+        &self,
+        violation: &ViolationIdentifier,
+        configuration: &Configuration,
+    ) -> bool {
+        let defining_pack = configuration
+            .pack_set
+            .for_pack(&violation.defining_pack_name);
+
+        defining_pack.enforce_privacy == CheckerSetting::Strict
+    }
+
+    fn violation_type(&self) -> String {
+        "privacy".to_owned()
     }
 }
 
