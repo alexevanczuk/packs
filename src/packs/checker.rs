@@ -55,11 +55,13 @@ pub(crate) fn check_all(
     configuration: Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let checkers = get_checkers(&configuration);
+
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let found_violations: HashSet<Violation> =
-        get_all_violations(&configuration, &absolute_paths);
+        get_all_violations(&configuration, &absolute_paths, checkers);
 
     let recorded_violations = &configuration.pack_set.all_violations;
 
@@ -152,8 +154,13 @@ pub(crate) fn validate_all(
 pub(crate) fn update(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let violations =
-        get_all_violations(&configuration, &configuration.included_files);
+    let checkers = get_checkers(&configuration);
+
+    let violations = get_all_violations(
+        &configuration,
+        &configuration.included_files,
+        checkers,
+    );
 
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
@@ -204,18 +211,11 @@ pub(crate) fn list_unnecessary_dependencies(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
+    checkers: Vec<Box<dyn CheckerInterface + Send + Sync>>,
 ) -> HashSet<Violation> {
     let references = get_all_references(configuration, absolute_paths);
 
     debug!("Running checkers on resolved references");
-    let checkers: Vec<Box<dyn CheckerInterface + Send + Sync>> = vec![
-        Box::new(dependency::Checker {}),
-        Box::new(privacy::Checker {}),
-        Box::new(visibility::Checker {}),
-        Box::new(architecture::Checker {
-            layers: configuration.layers.clone(),
-        }),
-    ];
 
     let violations: HashSet<Violation> = checkers
         .into_par_iter()
@@ -290,4 +290,17 @@ fn get_all_references(
     debug!("Finished turning unresolved references into fully qualified references");
 
     references
+}
+
+fn get_checkers(
+    configuration: &Configuration,
+) -> Vec<Box<dyn CheckerInterface + Send + Sync>> {
+    vec![
+        Box::new(dependency::Checker {}),
+        Box::new(privacy::Checker {}),
+        Box::new(visibility::Checker {}),
+        Box::new(architecture::Checker {
+            layers: configuration.layers.clone(),
+        }),
+    ]
 }
