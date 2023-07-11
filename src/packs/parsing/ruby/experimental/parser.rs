@@ -67,20 +67,23 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
-        self.behavioral_change_in_namespace = true;
+        if node.method_name == "private_constant" {
+            // `private_constant` is not considered to be a behavioral change
+        } else {
+            self.behavioral_change_in_namespace = true;
 
-        let association_reference =
-            get_reference_from_active_record_association(
-                node,
-                &self.current_namespaces,
-                &self.line_col_lookup,
-                &self.custom_associations,
-            );
+            let association_reference =
+                get_reference_from_active_record_association(
+                    node,
+                    &self.current_namespaces,
+                    &self.line_col_lookup,
+                    &self.custom_associations,
+                );
 
-        if let Some(association_reference) = association_reference {
-            self.references.push(association_reference);
+            if let Some(association_reference) = association_reference {
+                self.references.push(association_reference);
+            }
         }
-
         lib_ruby_parser::traverse::visitor::visit_send(self, node);
     }
 

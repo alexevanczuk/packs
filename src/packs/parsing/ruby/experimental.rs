@@ -307,4 +307,43 @@ end
         };
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn class_definition_with_private_constant() {
+        let contents: String = String::from(
+            "\
+class Foo
+  class Bar
+    def bar; end
+  end
+
+  private_constant :Bar
+end
+            ",
+        );
+
+        let configuration = Configuration::default();
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![];
+
+        let definitions = vec![ParsedDefinition {
+            fully_qualified_name: String::from("::Foo::Bar"),
+            location: Range {
+                start_row: 2,
+                start_col: 8,
+                end_row: 2,
+                end_col: 12,
+            },
+        }];
+
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+        assert_eq!(expected, actual);
+    }
 }
