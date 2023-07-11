@@ -121,6 +121,10 @@ impl CheckerInterface for Checker {
 
         referencing_pack.enforce_architecture == CheckerSetting::Strict
     }
+
+    fn violation_type(&self) -> String {
+        "architecture".to_owned()
+    }
 }
 
 #[cfg(test)]

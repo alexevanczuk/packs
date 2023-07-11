@@ -50,6 +50,8 @@ pub(crate) trait CheckerInterface {
         offense: &ViolationIdentifier,
         configuration: &Configuration,
     ) -> bool;
+
+    fn violation_type(&self) -> String;
 }
 
 pub(crate) trait ValidatorInterface {
@@ -67,7 +69,7 @@ pub(crate) fn check_all(
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let found_violations: HashSet<Violation> =
-        get_all_violations(&configuration, &absolute_paths, checkers);
+        get_all_violations(&configuration, &absolute_paths, &checkers);
 
     let recorded_violations = &configuration.pack_set.all_violations;
 
@@ -96,6 +98,23 @@ pub(crate) fn check_all(
     // In the future, we should perhaps make `update` error if you attempt to record a violation that goes
     // against strict mode
     debug!("Finding strict mode violations");
+    let mut indexed_checkers: HashMap<
+        String,
+        &Box<dyn CheckerInterface + Send + Sync>,
+    > = HashMap::new();
+    for checker in &checkers {
+        indexed_checkers.insert(checker.violation_type(), checker);
+    }
+
+    let strict_mode_violations: Vec<&ViolationIdentifier> = recorded_violations
+        .iter()
+        .filter(|v| {
+            indexed_checkers
+                .get(&v.violation_type)
+                .unwrap()
+                .is_strict_mode_violation(v, &configuration)
+        })
+        .collect();
 
     debug!("Finished finding strict mode violations");
 
@@ -115,6 +134,20 @@ pub(crate) fn check_all(
         println!(
             "There were stale violations found, please run `packs update`"
         );
+        errors_present = true;
+    }
+
+    if !strict_mode_violations.is_empty() {
+        for v in strict_mode_violations {
+            let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
+                v.referencing_pack_name,
+                v.violation_type,
+                v.defining_pack_name,
+                v.violation_type
+            );
+            println!("{}", error_message);
+        }
+
         errors_present = true;
     }
 
@@ -165,7 +198,7 @@ pub(crate) fn update(
     let violations = get_all_violations(
         &configuration,
         &configuration.included_files,
-        checkers,
+        &checkers,
     );
 
     package_todo::write_violations_to_disk(configuration, violations);
@@ -217,7 +250,7 @@ pub(crate) fn list_unnecessary_dependencies(
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-    checkers: Vec<Box<dyn CheckerInterface + Send + Sync>>,
+    checkers: &Vec<Box<dyn CheckerInterface + Send + Sync>>,
 ) -> HashSet<Violation> {
     let references = get_all_references(configuration, absolute_paths);
 

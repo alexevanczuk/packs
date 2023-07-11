@@ -78,7 +78,11 @@ impl CheckerInterface for Checker {
             .pack_set
             .for_pack(&violation.defining_pack_name);
 
-        defining_pack.enforce_architecture == CheckerSetting::Strict
+        defining_pack.enforce_visibility == CheckerSetting::Strict
+    }
+
+    fn violation_type(&self) -> String {
+        "visibility".to_owned()
     }
 }
 

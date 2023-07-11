@@ -161,7 +161,11 @@ impl CheckerInterface for Checker {
             .pack_set
             .for_pack(&violation.referencing_pack_name);
 
-        referencing_pack.enforce_architecture == CheckerSetting::Strict
+        referencing_pack.enforce_dependencies == CheckerSetting::Strict
+    }
+
+    fn violation_type(&self) -> String {
+        "dependency".to_owned()
     }
 }
 
