@@ -94,6 +94,6 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
 
 # Kudos
-- Current and Ex-Shopifolks (@exterm, @wildmaples) for open-sourcing `packwerk`
+- Current (@gmcgibbon, @rafaelfranca), and Ex-Shopifolks (@exterm, @wildmaples) for open-sourcing and maintaining `packwerk`
 - Gusties, and the [Ruby/Rails Modularity Slack Server](https://join.slack.com/t/rubymod/shared_invite/zt-1dgyrxji9-sihGNX43mVh5T6tw18hFaQ), for continued feedback and support
 - @mzruya for the initial implementation and Rust inspiration
