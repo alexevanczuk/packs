@@ -44,6 +44,12 @@ pub(crate) trait CheckerInterface {
         reference: &Reference,
         configuration: &Configuration,
     ) -> Option<Violation>;
+
+    fn is_strict_mode_violation(
+        &self,
+        offense: &ViolationIdentifier,
+        configuration: &Configuration,
+    ) -> bool;
 }
 
 pub(crate) trait ValidatorInterface {

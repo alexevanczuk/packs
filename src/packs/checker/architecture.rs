@@ -1,5 +1,6 @@
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
+use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 #[derive(Default, Clone)]
@@ -107,6 +108,18 @@ impl CheckerInterface for Checker {
             }
             _ => None,
         }
+    }
+
+    fn is_strict_mode_violation(
+        &self,
+        violation: &ViolationIdentifier,
+        configuration: &Configuration,
+    ) -> bool {
+        let referencing_pack = configuration
+            .pack_set
+            .for_pack(&violation.referencing_pack_name);
+
+        referencing_pack.enforce_architecture == CheckerSetting::Strict
     }
 }
 
