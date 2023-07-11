@@ -32,22 +32,6 @@ pub struct Configuration {
     pub custom_associations: Vec<String>,
 }
 
-impl Default for Configuration {
-    fn default() -> Self {
-        let default_absolute_root = std::env::current_dir().unwrap();
-        let walk_directory_result = WalkDirectoryResult {
-            included_files: HashSet::new(),
-            included_packs: HashSet::new(),
-            owning_package_yml_for_file: HashMap::new(),
-        };
-        from_raw(
-            &default_absolute_root,
-            RawConfiguration::default(),
-            walk_directory_result,
-        )
-    }
-}
-
 impl Configuration {
     pub(crate) fn intersect_files(
         &self,

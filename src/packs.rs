@@ -1,6 +1,6 @@
 pub(crate) mod configuration;
 pub(crate) mod pack;
-mod raw_configuration;
+pub(crate) mod raw_configuration;
 mod raw_pack;
 use serde::Deserialize;
 use serde::Serialize;
@@ -15,7 +15,7 @@ pub mod logger;
 mod pack_set;
 pub mod package_todo;
 pub mod parsing;
-mod walk_directory;
+pub(crate) mod walk_directory;
 
 // Re-exports: Eventually, these may be part of the public API for packs
 pub(crate) use crate::packs::checker::Violation;
