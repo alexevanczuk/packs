@@ -35,7 +35,6 @@ pub struct ViolationIdentifier {
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
-    strict_mode: bool,
     pub identifier: ViolationIdentifier,
 }
 
@@ -89,8 +88,6 @@ pub(crate) fn check_all(
     // In the future, we should perhaps make `update` error if you attempt to record a violation that goes
     // against strict mode
     debug!("Finding strict mode violations");
-    let strict_mode_violations =
-        recorded_violations.par_iter().map(|v| v.violation_type);
 
     debug!("Finished finding strict mode violations");
 

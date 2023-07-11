@@ -1,6 +1,5 @@
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -63,12 +62,8 @@ impl CheckerInterface for Checker {
             defining_pack_name: defining_pack_name.clone(),
         };
 
-        let strict_mode =
-            referencing_pack.enforce_visibility == CheckerSetting::Strict;
-
         Some(Violation {
             message,
-            strict_mode,
             identifier,
         })
     }
@@ -151,7 +146,6 @@ mod tests {
 
         let expected_violation = Violation {
             message: String::from("packs/bar/app/services/bar.rb:3:1\nVisibility violation: `::Foo` belongs to `packs/foo`, which is not visible to `packs/bar`"),
-            strict_mode: false,
             identifier: ViolationIdentifier {
                 violation_type: String::from("visibility"),
                 file: String::from("packs/bar/app/services/bar.rb"),
