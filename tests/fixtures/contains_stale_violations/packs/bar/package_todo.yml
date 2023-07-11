@@ -13,3 +13,4 @@ packs/foo:
     - privacy
     files:
     - packs/bar/app/services/bar.rb
+
