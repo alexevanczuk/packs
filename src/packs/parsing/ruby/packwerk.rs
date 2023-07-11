@@ -1136,11 +1136,14 @@ end
         let contents: String = String::from(
             "\
 class Foo
-  has_many :data
+  cache_belongs_to :data
 end
         ",
         );
-        let configuration = Configuration::default();
+        let configuration = Configuration {
+            custom_associations: vec!["cache_belongs_to".to_owned()],
+            ..Configuration::default()
+        };
 
         let references = process_from_contents(
             contents,
@@ -1148,12 +1151,10 @@ end
             &configuration,
         )
         .unresolved_references;
-
         assert_eq!(references.len(), 2);
         let first_reference = references
             .get(1)
             .expect("There should be a reference at index 0");
-
         assert_eq!(
             UnresolvedReference {
                 name: String::from("Datum"),
@@ -1162,7 +1163,7 @@ end
                     start_row: 2,
                     start_col: 2,
                     end_row: 2,
-                    end_col: 17
+                    end_col: 25
                 }
             },
             *first_reference,

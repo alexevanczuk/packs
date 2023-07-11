@@ -115,7 +115,13 @@ pub fn get_reference_from_active_record_association(
 ) -> Option<UnresolvedReference> {
     // TODO: Read in args, process associations as a separate class
     // These can get complicated! e.g. we can specify a class name
-    let is_association = ASSOCIATION_METHOD_NAMES
+    let combined_associations: Vec<String> = custom_associations
+        .iter()
+        .map(|s| s.to_owned())
+        .chain(ASSOCIATION_METHOD_NAMES.iter().copied().map(String::from))
+        .collect();
+
+    let is_association = combined_associations
         .iter()
         .any(|association_method| node.method_name == *association_method);
 
