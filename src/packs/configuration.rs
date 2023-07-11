@@ -3,6 +3,7 @@ use super::caching::per_file_cache::PerFileCache;
 use super::caching::InitializedCacheDirectory;
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
+use super::raw_configuration::RawConfiguration;
 use super::PackSet;
 use crate::packs::caching::Cache;
 
@@ -19,7 +20,6 @@ use std::{
 use tracing::debug;
 use walk_directory::walk_directory;
 
-#[derive(Default)]
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
     pub absolute_root: PathBuf,
@@ -30,6 +30,13 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+}
+
+impl Default for Configuration {
+    fn default() -> Self {
+        let default_absolute_root = std::env::current_dir().unwrap();
+        from_raw(&default_absolute_root, RawConfiguration::default())
+    }
 }
 
 impl Configuration {
@@ -79,7 +86,13 @@ pub(crate) fn get(absolute_root: &Path) -> Configuration {
     debug!("Beginning to build configuration");
 
     let raw_config = raw_configuration::get(absolute_root);
+    from_raw(absolute_root, raw_config)
+}
 
+pub(crate) fn from_raw(
+    absolute_root: &Path,
+    raw_config: RawConfiguration,
+) -> Configuration {
     let WalkDirectoryResult {
         included_files,
         included_packs,
