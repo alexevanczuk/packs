@@ -53,9 +53,12 @@ impl CheckerInterface for Checker {
             .unwrap()
             .starts_with(public_folder.to_string_lossy().as_ref());
 
-        let private_constants = &defining_pack.private_constants;
-
-        if is_public && private_constants.is_empty() {
+        // Note this means that if the constant is ALSO in the list of private_constants,
+        // it will be considered public.
+        // This is how packwerk does it today.
+        // Later we might want to add some sort of validation that a constant can be in the public folder OR in the list of private_constants,
+        // but not both.
+        if is_public {
             return None;
         }
 
@@ -367,6 +370,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
 
@@ -422,6 +426,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: CheckerSetting::True,
+            public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
 
