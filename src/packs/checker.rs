@@ -299,7 +299,7 @@ fn get_all_references(
         let all_processed_files: Vec<ProcessedFile> = process_files_with_cache(
             // The experimental parser needs *all* processed files to get definitions
             &configuration.absolute_root,
-            absolute_paths,
+            &configuration.included_files,
             cache,
             configuration,
         );
@@ -310,7 +310,14 @@ fn get_all_references(
             &configuration.ignored_definitions,
         );
 
-        (constant_resolver, all_processed_files)
+        let processed_files_to_check = all_processed_files
+            .into_iter()
+            .filter(|processed_file| {
+                absolute_paths.contains(&processed_file.absolute_path)
+            })
+            .collect();
+
+        (constant_resolver, processed_files_to_check)
     } else {
         let processed_files: Vec<ProcessedFile> = process_files_with_cache(
             &configuration.absolute_root,
