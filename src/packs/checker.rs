@@ -85,10 +85,21 @@ pub(crate) fn check_all(
     let found_violation_identifiers: HashSet<&ViolationIdentifier> =
         found_violations.par_iter().map(|v| &v.identifier).collect();
 
+    let relative_files = absolute_paths
+        .iter()
+        .map(|p| {
+            p.strip_prefix(&configuration.absolute_root)
+                .unwrap()
+                .to_str()
+                .unwrap()
+        })
+        .collect::<HashSet<&str>>();
+
     let stale_violations = recorded_violations
         .par_iter()
         .filter(|v_identifier| {
-            !found_violation_identifiers.contains(v_identifier)
+            relative_files.contains(&v_identifier.file.as_str())
+                && !found_violation_identifiers.contains(v_identifier)
         })
         .collect::<Vec<&ViolationIdentifier>>();
 
