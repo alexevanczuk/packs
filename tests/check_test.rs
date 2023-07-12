@@ -74,6 +74,27 @@ fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_check_without_stale_violations() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/contains_package_todo")
+        .arg("check")
+        .arg("packs/foo/app/services/foo.rb")
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains(
+                "There were stale violations found, please run `packs update`",
+            )
+            .not(),
+        );
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
 fn test_check_with_strict_mode() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")
         .unwrap()
