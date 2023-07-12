@@ -11,3 +11,4 @@ packs/bar:
     - dependency
     files:
     - packs/foo/app/services/foo.rb
+    - packs/foo/app/services/other_foo.rb
