@@ -61,3 +61,58 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
 Eventually, I'd like to port this idea over to `packs`.
 We might consider how we can have specific checkers/validators be responsible for their own portion of the deserialized properties in `package.yml` files.
+
+# Feature Ideas
+## Monkey-patch detection?
+Example:
+```
+$ packs --experimental-parser expose-monkey-patches --rubydir="/Users/alexevanczuk/.rbenv/versions/3.2.2/lib/ruby/3.2.0/" --gemdir="/Users/alexevanczuk/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0/gems"
+
+The following is a list of constants that are redefined by your app.
+
+# Ruby Standard Library
+These monkey patches redefine behavior in the Ruby standard library (as determined by parsing the contents of `/Users/alexevanczuk/.rbenv/versions/3.2.2/lib/ruby/3.2.0/`):
+
+::String is redefined at lib/string_extensions.rb
+::Date is redefined at lib/date_extensions.rb
+
+# Gems
+These monkey patches redefine behavior in gems your app depends on (as determined by parsing the contents of `vendor/bundle`):
+
+::Rails from gem `rails` is redefined at path/to/redefinition.rb
+::Thor from gem `thor` is redefined at other/path/to/redefinition.rb
+
+# app
+These monkey patches redefine behavior in a pack within your app (as determined by parsing your app's packs):
+
+::Foo is defined at packs/foo/app/services/foo.rb
+::Foo is defined at packs/bar/app/models/foo.rb
+```
+
+Error mode:
+```
+$ packs expose-monkey-patches --rubydir="/Users/alexevanczuk/.rbenv/versions/3.2.2/lib/ruby/3.2.0/" --gemdir="/Users/alexevanczuk/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0/gems"
+
+Error: This command is only supported with the experimental parser. See documentation for more information. Please file an issue if you have questions!
+```
+
+The general implementation of this would be to call `process_files_with_cache` on the globbed out rubydir/gemdir and on the project's included files. Then we build an (experimental) constant resolver with the processed files.
+
+In the constant resolver, for each constant we check if any of the definitions are in ruby, in a gem, or in our app. There are 9 possibilities, so we can use rust pattern matching and build a truth table:
+```rust
+match (defined_in_stdlib, defined_in_gems, defined_in_app, defined_in_app_count) {
+  // Ruby section monkey patches
+  (true, false, false, _) => {} // skip: ruby only
+  (true, true, false, _) => {} // skip: gems monkey patching ruby
+  (true, _, true, _) => {} // ruby_section += [*stdlib_definitions, *app_definitions]
+
+  // Gem monkey patches
+  (false, true, _, _) => {} // gem_section += [*gem_definitions, *app_definitions]
+  
+  // Application monkey patches
+  (_, _, true, 1) => {} // skip: single definition in app
+  (_, _, true, _) => {} // app_section += [*app_definitions]  
+}
+```
+
+With this, I think we could remove `--ambiguous` from `list-definitions` in favor of `expose-monkey-patches`.
