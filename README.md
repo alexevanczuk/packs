@@ -8,11 +8,11 @@
 A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for Ruby.
 
 # Goals:
-## To be a drop-in replacement for `packwerk` on most projects
+## Serve as a drop-in replacement for `packwerk` on most projects
 - Currently can serve as a drop-in replacement on Gusto's extra-large Rails monolith
 - This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `packs` is the same as `packwerk`.
 
-## To be 20x faster than `packwerk` on most projects
+## Run 20x faster than `packwerk` on most projects
 - Currently ~10-20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md).
 - Your mileage may vary!
 - Other performance improvements are coming soon!
