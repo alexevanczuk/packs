@@ -32,16 +32,16 @@ Welcome! Please see https://github.com/alexevanczuk/packs for more information!
 Usage: packs [OPTIONS] <COMMAND>
 
 Commands:
-  greet                          Just saying hi
-  check                          Look for violations in the codebase
-  update                         Update package_todo.yml files with the current violations
-  validate                       Look for validation errors in the codebase
-  delete-cache                   `rm -rf` on your cache directory, default `tmp/cache/packwerk`
-  list-packs                     List packs based on configuration in packwerk.yml (for debugging purposes)
-  list-included-files            List analyzed files based on configuration in packwerk.yml (for debugging purposes)
-  list-definitions               List the constants that packs sees and where it sees them (for debugging purposes)
-  list-unnecessary-dependencies  List dependencies that when removed produce no violations.
-  help                           Print this message or the help of the given subcommand(s)
+  greet                           Just saying hi
+  check                           Look for violations in the codebase
+  update                          Update package_todo.yml files with the current violations
+  validate                        Look for validation errors in the codebase
+  check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
+  delete-cache                    `rm -rf` on your cache directory, default `tmp/cache/packwerk`
+  list-packs                      List packs based on configuration in packwerk.yml (for debugging purposes)
+  list-included-files             List analyzed files based on configuration in packwerk.yml (for debugging purposes)
+  list-definitions                List the constants that packs sees and where it sees them (for debugging purposes)
+  help                            Print this message or the help of the given subcommand(s)
 
 Options:
       --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]

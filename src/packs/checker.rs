@@ -217,7 +217,7 @@ pub(crate) fn update(
     Ok(())
 }
 
-pub(crate) fn list_unnecessary_dependencies(
+pub(crate) fn check_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let references =

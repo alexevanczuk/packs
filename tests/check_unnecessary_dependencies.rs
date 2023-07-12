@@ -4,12 +4,12 @@ use std::{error::Error, process::Command};
 mod common;
 
 #[test]
-fn test_list_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
+fn test_check_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_dependency_cycles")
         .arg("--debug")
-        .arg("list-unnecessary-dependencies")
+        .arg("check-unnecessary-dependencies")
         .assert()
         .failure()
         .stdout(predicate::str::contains(
@@ -22,12 +22,13 @@ fn test_list_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn test_list_unnecessary_dependencies_no_issue() -> Result<(), Box<dyn Error>> {
+fn test_check_unnecessary_dependencies_no_issue() -> Result<(), Box<dyn Error>>
+{
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
-        .arg("list-unnecessary-dependencies")
+        .arg("check-unnecessary-dependencies")
         .assert()
         .success();
     Ok(())

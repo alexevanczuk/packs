@@ -51,6 +51,11 @@ enum Command {
     Validate,
 
     #[clap(
+        about = "Check for dependencies that when removed produce no violations."
+    )]
+    CheckUnnecessaryDependencies,
+
+    #[clap(
         about = "`rm -rf` on your cache directory, default `tmp/cache/packwerk`"
     )]
     DeleteCache,
@@ -69,11 +74,6 @@ enum Command {
         about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
     ListDefinitions(ListDefinitionsArgs),
-
-    #[clap(
-        about = "List dependencies that when removed produce no violations."
-    )]
-    ListUnnecessaryDependencies,
 }
 
 #[derive(Debug, Args)]
@@ -134,6 +134,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             checker::validate_all(&configuration)
             // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
         }
+        Command::CheckUnnecessaryDependencies => {
+            packs::checker::check_unnecessary_dependencies(&configuration)
+        }
         Command::DeleteCache => {
             packs::delete_cache(configuration);
             Ok(())
@@ -142,9 +145,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let ambiguous = args.ambiguous;
             packs::list_definitions(&configuration, ambiguous);
             Ok(())
-        }
-        Command::ListUnnecessaryDependencies => {
-            packs::checker::list_unnecessary_dependencies(&configuration)
         }
     }
 }
