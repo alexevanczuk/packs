@@ -292,30 +292,46 @@ fn get_all_references(
     let cache = configuration.get_cache(initialized_dir);
 
     debug!("Getting unresolved references (using cache if possible)");
-    let processed_files: Vec<ProcessedFile> = process_files_with_cache(
-        &configuration.absolute_root,
-        absolute_paths,
-        cache,
-        configuration,
-    );
 
-    let constant_resolver = if configuration.experimental_parser {
-        get_experimental_constant_resolver(
+    let (constant_resolver, processed_files_to_check) = if configuration
+        .experimental_parser
+    {
+        let all_processed_files: Vec<ProcessedFile> = process_files_with_cache(
+            // The experimental parser needs *all* processed files to get definitions
             &configuration.absolute_root,
-            &processed_files,
+            absolute_paths,
+            cache,
+            configuration,
+        );
+
+        let constant_resolver = get_experimental_constant_resolver(
+            &configuration.absolute_root,
+            &all_processed_files,
             &configuration.ignored_definitions,
-        )
+        );
+
+        (constant_resolver, all_processed_files)
     } else {
-        get_zeitwerk_constant_resolver(
+        let processed_files: Vec<ProcessedFile> = process_files_with_cache(
+            &configuration.absolute_root,
+            absolute_paths,
+            cache,
+            configuration,
+        );
+
+        // The zeitwerk constant resolver doesn't look at processed files to get definitions
+        let constant_resolver = get_zeitwerk_constant_resolver(
             &configuration.pack_set,
             &configuration.absolute_root,
             &configuration.cache_directory,
             !configuration.cache_enabled,
-        )
+        );
+
+        (constant_resolver, processed_files)
     };
 
     debug!("Turning unresolved references into fully qualified references");
-    let references: Vec<Reference> = processed_files
+    let references: Vec<Reference> = processed_files_to_check
         .par_iter()
         .flat_map(|processed_file| {
             let references: Vec<Reference> = processed_file
