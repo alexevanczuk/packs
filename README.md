@@ -48,6 +48,7 @@ Options:
   -d, --debug                        Run with performance debug mode
   -e, --experimental-parser          Run with the experimental parser, which gets constant definitions directly from the AST
       --no-cache                     Run without the cache (good for CI, testing)
+  -p, --print-files                  Print to console when files begin and finish processing (to identify files that panic when processing files concurrently)
   -h, --help                         Print help
   -V, --version                      Print version
 ```
