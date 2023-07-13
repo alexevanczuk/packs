@@ -1,10 +1,14 @@
 use std::{
     collections::{HashMap, HashSet},
+    fmt,
     fs::File,
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{self, value, SeqAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
 
 const CONFIG_FILE_NAME: &str = "packwerk.yml";
 
@@ -56,7 +60,10 @@ pub(crate) struct RawConfiguration {
     pub exclude: Vec<String>,
 
     // Patterns to find package configuration files
-    #[serde(default = "default_package_paths")]
+    #[serde(
+        default = "default_package_paths",
+        deserialize_with = "string_or_vec"
+    )]
     pub package_paths: Vec<String>,
 
     // List of custom associations, if any
@@ -128,6 +135,37 @@ fn default_cache_directory() -> String {
     String::from("tmp/cache/packwerk")
 }
 
+fn string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct StringOrVec;
+
+    impl<'de> Visitor<'de> for StringOrVec {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("glob string or list of glob strings")
+        }
+
+        fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(vec![s.to_owned()])
+        }
+
+        fn visit_seq<S>(self, seq: S) -> Result<Self::Value, S::Error>
+        where
+            S: SeqAccess<'de>,
+        {
+            Deserialize::deserialize(value::SeqAccessDeserializer::new(seq))
+        }
+    }
+
+    deserializer.deserialize_any(StringOrVec)
+}
+
 // Add a test that the default RawConfiguration tmp directory is tmp/cache/packwerk
 // Add a test that the default RawConfiguration cache is true
 #[cfg(test)]
@@ -140,5 +178,15 @@ mod tests {
 
         assert!(raw_configuration.cache);
         assert_eq!(raw_configuration.cache_directory, "tmp/cache/packwerk");
+    }
+
+    #[test]
+    fn test_deserialize_package_paths_as_string() {
+        let raw_configuration_string = String::from("package_paths: '**/*'");
+        let raw_configuration =
+            serde_yaml::from_str::<RawConfiguration>(&raw_configuration_string)
+                .expect("Could not deserialize package_paths as string");
+
+        assert_eq!(raw_configuration.package_paths, vec!["**/*"]);
     }
 }
