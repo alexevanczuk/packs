@@ -30,6 +30,10 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+    // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
+    // and configure logging in one place. As the complexity of how/why we want to see different logs
+    // grows, we can refactor this.
+    pub print_files: bool,
 }
 
 impl Configuration {
@@ -63,14 +67,6 @@ impl Configuration {
             })
         } else {
             Box::new(NoopCache {})
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn with_experimental_parser(self) -> Configuration {
-        Configuration {
-            experimental_parser: true,
-            ..self
         }
     }
 }
@@ -118,6 +114,8 @@ pub(crate) fn from_raw(
 
     debug!("Finished building configuration");
 
+    let print_files = false;
+
     Configuration {
         included_files,
         absolute_root,
@@ -128,6 +126,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         custom_associations,
+        print_files,
     }
 }
 
