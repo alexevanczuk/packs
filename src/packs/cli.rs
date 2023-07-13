@@ -101,15 +101,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.experimental_parser {
         debug!("Using experimental parser");
-        configuration = configuration.with_experimental_parser();
+        configuration.experimental_parser = true;
     }
 
     if args.no_cache {
         debug!("Cache is disabled");
-        configuration = Configuration {
-            cache_enabled: false,
-            ..configuration
-        };
+        configuration.cache_enabled = false
     }
 
     match args.command {
