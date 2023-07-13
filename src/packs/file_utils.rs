@@ -1,6 +1,6 @@
 use std::{
     collections::HashSet,
-    fs,
+    fs, io,
     io::Read,
     path::{Path, PathBuf},
 };
@@ -12,6 +12,12 @@ use regex::Regex;
 pub enum SupportedFileType {
     Ruby,
     Erb,
+}
+
+#[derive(Clone, Copy)]
+pub enum FileSource {
+    Disk,
+    Stdin,
 }
 
 pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
@@ -114,4 +120,20 @@ pub(crate) fn file_content_digest(file: &Path) -> String {
 
     // Compute the MD5 digest
     format!("{:x}", md5::compute(&file_content))
+}
+
+pub fn file_read_contents(path: &Path, file_source: FileSource) -> String {
+    match file_source {
+        FileSource::Disk => fs::read_to_string(path).unwrap_or_else(|_| {
+            panic!("Failed to read contents of {}", path.to_string_lossy())
+        }),
+        FileSource::Stdin => {
+            io::read_to_string(io::stdin()).unwrap_or_else(|_| {
+                panic!(
+                    "Failed to read contents of {} from stdin",
+                    path.to_string_lossy()
+                )
+            })
+        }
+    }
 }

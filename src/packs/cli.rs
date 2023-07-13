@@ -1,6 +1,7 @@
 use crate::packs;
 use crate::packs::checker;
 
+use crate::packs::file_utils::FileSource;
 use clap::{Parser, Subcommand};
 use clap_derive::Args;
 use std::path::PathBuf;
@@ -43,6 +44,9 @@ enum Command {
 
     #[clap(about = "Look for violations in the codebase")]
     Check { files: Vec<String> },
+
+    #[clap(about = "Check file contents piped to stdin")]
+    CheckContents { file: String },
 
     #[clap(
         about = "Update package_todo.yml files with the current violations"
@@ -132,6 +136,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::Check { files } => checker::check_all(configuration, files),
+        Command::CheckContents { file } => {
+            configuration.file_source = FileSource::Stdin;
+            checker::check_all(configuration, vec![file])
+        }
         Command::Update => checker::update(configuration),
         Command::Validate => {
             checker::validate_all(&configuration)
