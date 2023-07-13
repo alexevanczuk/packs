@@ -8,8 +8,6 @@ use tracing::debug;
 
 use super::logger::install_logger;
 
-use super::Configuration;
-
 /// A CLI to interact with packs
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -32,6 +30,10 @@ struct Args {
     /// Run without the cache (good for CI, testing)
     #[arg(long)]
     no_cache: bool,
+
+    /// Print to console when files begin and finish processing (to identify files that panic when processing files concurrently)
+    #[arg(short, long)]
+    print_files: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -98,6 +100,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     install_logger(args.debug);
 
     let mut configuration = packs::configuration::get(&absolute_root);
+
+    if args.print_files {
+        configuration.print_files = true;
+    }
 
     if args.experimental_parser {
         debug!("Using experimental parser");
