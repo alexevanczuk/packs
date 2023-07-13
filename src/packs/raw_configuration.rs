@@ -145,7 +145,7 @@ where
         type Value = Vec<String>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string or list of strings")
+            formatter.write_str("glob string or list of glob strings")
         }
 
         fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
