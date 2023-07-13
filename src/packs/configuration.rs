@@ -30,6 +30,9 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+    // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
+    // and configure logging in one place. As the complexity of how/why we want to see different logs
+    // grows, we can refactor this.
     pub print_files: bool,
 }
 
