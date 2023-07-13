@@ -23,9 +23,12 @@ pub fn process_file(
     path: &Path,
     configuration: &Configuration,
 ) -> ProcessedFile {
+    if configuration.print_files {
+        println!("Started processing {}", path.display());
+    }
     let file_type_option = get_file_type(path);
 
-    if let Some(file_type) = file_type_option {
+    let result = if let Some(file_type) = file_type_option {
         match file_type {
             SupportedFileType::Ruby => {
                 if configuration.experimental_parser {
@@ -50,7 +53,13 @@ pub fn process_file(
             unresolved_references: vec![],
             definitions: vec![], // TODO
         }
+    };
+
+    if configuration.print_files {
+        println!("Finished processing {}", path.display());
     }
+
+    result
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]

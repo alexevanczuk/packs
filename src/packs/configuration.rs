@@ -30,6 +30,7 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub custom_associations: Vec<String>,
+    pub print_files: bool,
 }
 
 impl Configuration {
@@ -118,6 +119,8 @@ pub(crate) fn from_raw(
 
     debug!("Finished building configuration");
 
+    let print_files = false;
+
     Configuration {
         included_files,
         absolute_root,
@@ -128,6 +131,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         custom_associations,
+        print_files,
     }
 }
 
