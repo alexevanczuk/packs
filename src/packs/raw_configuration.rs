@@ -141,4 +141,14 @@ mod tests {
         assert!(raw_configuration.cache);
         assert_eq!(raw_configuration.cache_directory, "tmp/cache/packwerk");
     }
+
+    #[test]
+    fn test_deserialize_package_paths_as_string() {
+        let raw_configuration_string = String::from("package_paths: '**/*'");
+        let raw_configuration =
+            serde_yaml::from_str::<RawConfiguration>(&raw_configuration_string)
+                .expect("Could not deserialize package_paths as string");
+
+        assert_eq!(raw_configuration.package_paths, vec!["**/*"]);
+    }
 }
