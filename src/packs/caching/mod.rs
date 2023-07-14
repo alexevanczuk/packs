@@ -7,8 +7,6 @@ pub enum CacheResult {
     Miss(EmptyCacheEntry),
 }
 
-pub struct InitializedCacheDirectory;
-
 pub(crate) mod noop_cache;
 pub(crate) mod per_file_cache;
 
@@ -58,10 +56,7 @@ pub trait Cache {
     );
 }
 
-pub fn create_cache_dir_idempotently(
-    cache_dir: &Path,
-) -> InitializedCacheDirectory {
+pub fn create_cache_dir_idempotently(cache_dir: &Path) {
     std::fs::create_dir_all(cache_dir)
         .expect("Failed to create cache directory");
-    InitializedCacheDirectory
 }

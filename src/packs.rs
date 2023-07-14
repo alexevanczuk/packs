@@ -26,8 +26,6 @@ use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
 
-use self::caching::create_cache_dir_idempotently;
-
 use self::parsing::ParsedDefinition;
 use self::parsing::UnresolvedReference;
 
@@ -66,14 +64,11 @@ pub struct SourceLocation {
 }
 
 pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
-    let initialized_dir =
-        create_cache_dir_idempotently(&configuration.cache_directory);
-
     let constant_resolver = if configuration.experimental_parser {
         let processed_files: Vec<ProcessedFile> = process_files_with_cache(
             &configuration.absolute_root,
             &configuration.included_files,
-            configuration.get_cache(initialized_dir),
+            configuration.get_cache(),
             configuration,
         );
 

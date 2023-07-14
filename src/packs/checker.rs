@@ -1,4 +1,3 @@
-use crate::packs::caching::create_cache_dir_idempotently;
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
@@ -286,10 +285,7 @@ fn get_all_references(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
 ) -> Vec<Reference> {
-    let initialized_dir =
-        create_cache_dir_idempotently(&configuration.cache_directory);
-
-    let cache = configuration.get_cache(initialized_dir);
+    let cache = configuration.get_cache();
 
     debug!("Getting unresolved references (using cache if possible)");
 
