@@ -5,7 +5,6 @@
 - This allows `packs` to work in Ruby applications that are not compatible with `packwerk` (e.g. non-Rails and/or non-Zeitwerk apps)
 - See usage with `packs --help`:
   - `packs -e update` and `packs -e check` OR use `experimental_parser: true` in your `packwerk.yml`.
-- When switching between the `experimental` and `packwerk` parser, run `packs delete-cache` – the two caches are not compatible!
 - `packwerk` infers constant definitions based on file names
 - The `experimental` parser explicitly parses constant definitions from files
 - There are some limitations still that might produce unexpected behavior. Please share your feedback!

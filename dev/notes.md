@@ -8,9 +8,7 @@
 Although `packs` is intended to be fast, there are ways it can be made a lot faster!
 
 - Explore alternate caching mechanisms:
-  - Convert existing cache to be `PackwerkCompatibleCache`.
   - Consider using SQLite cache (for less file IO)
-  - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, but it might work in the happy path.
 - Conditional cache usage. For example, implemented as an LSP, packs could always use cache and only bust specific caches (asychronously) when certain events (e.g. file changes) are received.
 - By using modified time, we can avoid opening the entire file and parsing it and calculating the md5 hash. It's possible this would not be a meaningful performance improvement.
 
@@ -56,6 +54,8 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 
 # Abandoned Performance Improvement Attempts
 - In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
+- We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, and the flamegraph shows that most of the time is spent opening files, not resolving constants. Furthermore, the experimental constant resolver resolves constant much more quickly.
+
 
 # Modular Architecture
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
