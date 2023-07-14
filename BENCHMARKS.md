@@ -1,56 +1,17 @@
-I use https://github.com/sharkdp/hyperfine to benchmark, which makes it easy to get consistent benchmarks.
+I use https://github.com/sharkdp/hyperfine to benchmark, which makes it easy to get consistent benchmarks. Note that benchmarks are done with cache only. While it's interesting to see the performance improvement on a cold cache, it's not representative of the performance of the tool in a real-world scenario, since most of the time the cache will be warm.
 
-## Cold Cache, without Spring
-```
-hyperfine --runs=3 --export-markdown cold-cache-without-spring.md \
-  --prepare 'rm -rf tmp/cache/packwerk' \
-  '../pks/target/release/pks check' \
-  'DISABLE_SPRING=1 bin/packwerk check'
-```
-
+## Hot Cache, with and without spring, entire codebase
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `../pks/target/release/pks check` | 4.876 ± 0.415 | 4.448 | 5.277 | 1.00 |
-| `DISABLE_SPRING=1 bin/packwerk check` | 65.161 ± 8.092 | 59.971 | 74.486 | 13.36 ± 2.01 |
+| `../pks/target/release/pks update` | 2.204 ± 0.092 | 2.103 | 2.284 | 1.00 |
+| `../pks/target/release/pks --experimental-parser update` | 2.770 ± 0.064 | 2.700 | 2.825 | 1.26 ± 0.06 |
+| `DISABLE_SPRING=1 bin/packwerk update` | 32.825 ± 3.670 | 30.010 | 36.976 | 14.90 ± 1.78 |
+| `bin/packwerk update` | 19.229 ± 2.226 | 17.544 | 21.753 | 8.73 ± 1.07 |
 
-```
-Benchmark 1: ../pks/target/release/pks check
-  Time (mean ± σ):      4.876 s ±  0.415 s    [User: 10.530 s, System: 6.823 s]
-  Range (min … max):    4.448 s …  5.277 s    3 runs
-
-Benchmark 2: DISABLE_SPRING=1 bin/packwerk check
-  Time (mean ± σ):     65.161 s ±  8.092 s    [User: 207.615 s, System: 46.733 s]
-  Range (min … max):   59.971 s … 74.486 s    3 runs
-
-Summary
-  ../pks/target/release/pks check ran
-   13.36 ± 2.01 times faster than DISABLE_SPRING=1 bin/packwerk check
-```
-
-## Hot Cache, without Spring
-```
-hyperfine --warmup=1 --runs=3 --export-markdown hot-cache-without-spring.md \
-  '../pks/target/release/pks check' \
-  'DISABLE_SPRING=1 bin/packwerk check'
-```
-
-| Command | Mean [s] | Min [s] | Max [s] | Relative |
+## Hot Cache, with and without spring, single file
+| Command | Mean [ms] | Min [ms] | Max [ms] | Relative |
 |:---|---:|---:|---:|---:|
-| `../pks/target/release/pks check` | 1.701 ± 0.016 | 1.691 | 1.719 | 1.00 |
-| `DISABLE_SPRING=1 bin/packwerk check` | 30.510 ± 1.431 | 28.859 | 31.393 | 17.94 ± 0.86 |
-
-```
-Benchmark 1: ../pks/target/release/pks check
-  Time (mean ± σ):      1.701 s ±  0.016 s    [User: 3.353 s, System: 4.176 s]
-  Range (min … max):    1.691 s …  1.719 s    3 runs
-
-Benchmark 2: DISABLE_SPRING=1 bin/packwerk check
-  Time (mean ± σ):     30.510 s ±  1.431 s    [User: 35.742 s, System: 32.449 s]
-  Range (min … max):   28.859 s … 31.393 s    3 runs
-
-  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet system without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
-
-Summary
-  ../pks/target/release/pks check ran
-   17.94 ± 0.86 times faster than DISABLE_SPRING=1 bin/packwerk check
-```
+| `../pks/target/release/pks check config/initializers/inflections.rb` | 585.5 ± 11.0 | 573.8 | 595.7 | 1.00 |
+| `../pks/target/release/pks --experimental-parser check config/initializers/inflections.rb` | 1064.9 ± 22.4 | 1040.4 | 1084.3 | 1.82 ± 0.05 |
+| `DISABLE_SPRING=1 bin/packwerk check config/initializers/inflections.rb` | 17143.4 ± 323.6 | 16790.5 | 17426.3 | 29.28 ± 0.78 |
+| `bin/packwerk check config/initializers/inflections.rb` | 6549.9 ± 116.2 | 6439.4 | 6671.0 | 11.19 ± 0.29 |
