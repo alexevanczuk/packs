@@ -12,6 +12,8 @@ use crate::packs::Configuration;
 use crate::packs::PackSet;
 
 // External imports
+use itertools::Itertools;
+use petgraph::visit::EdgeRef;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
@@ -21,6 +23,8 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::reference_extractor::get_all_references;
+
+use super::graph;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
@@ -331,4 +335,34 @@ fn get_checkers(
             layers: configuration.layers.clone(),
         }),
     ]
+}
+
+pub(crate) fn check_min_edges(configuration: &Configuration) {
+    let (graph, node_to_pack) = graph::of_violations(configuration);
+    let ret = petgraph::algo::feedback_arc_set::greedy_feedback_arc_set(&graph);
+
+    let mut pack_edges: HashSet<(String, String)> = HashSet::new();
+
+    for ele in ret {
+        let from_pack = node_to_pack
+            .get(&ele.source())
+            .expect("Could not find from_pack")
+            .to_owned();
+        let to_pack = node_to_pack
+            .get(&ele.target())
+            .expect("Could not find to_pack")
+            .to_owned();
+
+        pack_edges.insert((from_pack.name.clone(), to_pack.name.clone()));
+    }
+
+    for (from_pack_name, to_pack_name) in pack_edges
+        .iter()
+        .sorted_by(|(from1, _to1), (from2, _to2)| from1.cmp(from2))
+    {
+        println!(
+            "Remove all violations from {} to {}",
+            from_pack_name, to_pack_name
+        );
+    }
 }

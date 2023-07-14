@@ -67,6 +67,11 @@ enum Command {
     ExposeMonkeyPatches(ExposeMonkeyPatchesArgs),
 
     #[clap(
+        about = "Reports a small number of edges that when removed make the graph acyclic."
+    )]
+    CheckMinEdges,
+
+    #[clap(
         about = "`rm -rf` on your cache directory, default `tmp/cache/packwerk`"
     )]
     DeleteCache,
@@ -182,6 +187,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &args.rubydir,
                 &args.gemdir,
             );
+            Ok(())
+        }
+        Command::CheckMinEdges => {
+            packs::checker::check_min_edges(&configuration);
             Ok(())
         }
     }
