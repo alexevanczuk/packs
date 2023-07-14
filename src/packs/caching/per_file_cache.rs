@@ -123,31 +123,20 @@ mod tests {
     fn test_compatible_with_packwerk() {
         let contents: String = String::from(
             r#"{
-    "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
-    "processed_file": {
-        "absolute_path": "/tests/fixtures/simple_app/packs/foo/app/services/bar/foo.rb",
-        "unresolved_references": [
-            {
-                "name": "Bar",
-                "namespace_path": [
-                    "Foo",
-                    "Bar"
-                ],
-                location: {
-                    "start_row": 8,
-                    "start_col": 22,
-                    "end_row": 8,
-                    "end_col": 25
-                }
-            }
-        ],
-        "definitions": []
-    }
+  "file_contents_digest":"8f9efdcf2caa22fb7b1b4a8274e68d11",
+  "processed_file": {
+    "absolute_path":"/tests/fixtures/simple_app/packs/foo/app/services/bar/foo.rb",
+    "unresolved_references":[
+      {
+        "name":"Bar",
+        "namespace_path":["Foo","Bar"],
+        "location":{"start_row":8,"start_col":22,"end_row":8,"end_col":25}
+      }],
+    "definitions":[]
+  }
 }"#,
         );
 
-        let actual_serialized =
-            serde_json::from_str::<CacheEntry>(&contents).unwrap();
         let expected_serialized = CacheEntry {
             file_contents_digest: "8f9efdcf2caa22fb7b1b4a8274e68d11".to_owned(),
             processed_file: ProcessedFile {
@@ -165,6 +154,9 @@ mod tests {
                 definitions: vec![],
             }
         };
+
+        let actual_serialized =
+            serde_json::from_str::<CacheEntry>(&contents).unwrap();
 
         assert_eq!(expected_serialized, actual_serialized);
 
