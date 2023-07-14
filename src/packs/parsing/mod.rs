@@ -89,7 +89,7 @@ pub fn process_files_with_cache(
     cache: Box<dyn Cache + Send + Sync>,
     configuration: &Configuration,
 ) -> Vec<ProcessedFile> {
-    paths
+    let processed_files: Vec<ProcessedFile> = paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
             if is_stdin_file(absolute_path, configuration) {
@@ -106,7 +106,11 @@ pub fn process_files_with_cache(
                 }
             }
         })
-        .collect()
+        .collect();
+
+    cache.write_all(&processed_files);
+
+    processed_files
 }
 
 #[cfg(test)]

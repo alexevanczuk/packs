@@ -61,6 +61,14 @@ impl Cache for PerFileCache {
         file.write_all(cache_data.as_bytes())
             .expect("Failed to write cache file");
     }
+
+    fn setup(&mut self, _cache_dir: &Path) {
+        // Do nothing
+    }
+
+    fn write_all(&self, _processed_files: &[ProcessedFile]) {
+        // Do nothing
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

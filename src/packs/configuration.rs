@@ -1,7 +1,6 @@
 use super::caching::cache::Cache;
 use super::caching::create_cache_dir_idempotently;
 use super::caching::noop_cache::NoopCache;
-use super::caching::per_file_cache::PerFileCache;
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::raw_configuration::RawConfiguration;
@@ -65,8 +64,14 @@ impl Configuration {
             };
 
             create_cache_dir_idempotently(&cache_dir);
+            let mut cache = BulkCache {
+                cache_dir: self.cache_directory.to_owned(),
+                contents: BulkCacheEntry::default(),
+            };
+            cache.setup(&self.cache_directory);
 
-            Box::new(PerFileCache { cache_dir })
+            Box::new(cache)
+            // Box::new(PerFileCache { cache_dir })
         } else {
             Box::new(NoopCache {})
         }
