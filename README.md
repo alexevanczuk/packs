@@ -90,6 +90,11 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 - zeitwerk default namespaces
 - extensible plugin system
 
+# Behavioral differences
+There are still some known behavioral differences between `packs` and `packwerk`. If you find any, please file an issue!
+- `package_paths` must not end in a slash, e.g. `packs/*/` is not supported, but `packs/*` is.
+- A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `packs/**` is supported and will match `packs/*/*/package.yml`, but will not match `packs/*/package.yml`. `packs/*` must be used to match that.
+
 # Benchmarks
 See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
 

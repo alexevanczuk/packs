@@ -67,7 +67,7 @@ impl PackSet {
     pub fn for_file(&self, absolute_file_path: &Path) -> Option<&Pack> {
         self.owning_pack_name_for_file
             .get(absolute_file_path)
-            .map(|pack_name| self.for_pack(pack_name))
+            .map(|pack_name| self.for_pack(pack_name) )
     }
 
     pub fn for_pack(&self, pack_name: &str) -> &Pack {
