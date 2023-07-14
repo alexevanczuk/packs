@@ -84,7 +84,6 @@ pub struct ParsedDefinition {
 }
 
 pub fn process_files_with_cache(
-    absolute_root: &Path,
     paths: &HashSet<PathBuf>,
     cache: Box<dyn Cache + Send + Sync>,
     configuration: &Configuration,
@@ -92,7 +91,7 @@ pub fn process_files_with_cache(
     paths
         .par_iter()
         .map(|absolute_path| -> ProcessedFile {
-            match cache.get(absolute_root, absolute_path) {
+            match cache.get(absolute_path) {
                 CacheResult::Processed(processed_file) => processed_file,
                 CacheResult::Miss(empty_cache_entry) => {
                     let processed_file =

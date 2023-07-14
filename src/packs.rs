@@ -66,7 +66,6 @@ pub struct SourceLocation {
 pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
     let constant_resolver = if configuration.experimental_parser {
         let processed_files: Vec<ProcessedFile> = process_files_with_cache(
-            &configuration.absolute_root,
             &configuration.included_files,
             configuration.get_cache(),
             configuration,

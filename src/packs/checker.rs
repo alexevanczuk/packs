@@ -292,9 +292,8 @@ fn get_all_references(
     let (constant_resolver, processed_files_to_check) = if configuration
         .experimental_parser
     {
+        // The experimental parser needs *all* processed files to get definitions
         let all_processed_files: Vec<ProcessedFile> = process_files_with_cache(
-            // The experimental parser needs *all* processed files to get definitions
-            &configuration.absolute_root,
             &configuration.included_files,
             cache,
             configuration,
@@ -315,12 +314,8 @@ fn get_all_references(
 
         (constant_resolver, processed_files_to_check)
     } else {
-        let processed_files: Vec<ProcessedFile> = process_files_with_cache(
-            &configuration.absolute_root,
-            absolute_paths,
-            cache,
-            configuration,
-        );
+        let processed_files: Vec<ProcessedFile> =
+            process_files_with_cache(absolute_paths, cache, configuration);
 
         // The zeitwerk constant resolver doesn't look at processed files to get definitions
         let constant_resolver = get_zeitwerk_constant_resolver(
@@ -341,13 +336,11 @@ fn get_all_references(
                 .unresolved_references
                 .iter()
                 .flat_map(|unresolved_ref| {
-                    let absolute_path_of_referring_file =
-                        processed_file.absolute_path.clone();
                     Reference::from_unresolved_reference(
                         configuration,
                         constant_resolver.as_ref(),
                         unresolved_ref,
-                        &absolute_path_of_referring_file,
+                        &processed_file.absolute_path,
                     )
                 })
                 .collect::<Vec<Reference>>();

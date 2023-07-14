@@ -7,7 +7,7 @@ use super::{CacheResult, EmptyCacheEntry};
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn get(&self, _absolute_root: &Path, _path: &Path) -> CacheResult {
+    fn get(&self, _path: &Path) -> CacheResult {
         // Return nothing!
         CacheResult::Miss(EmptyCacheEntry::default())
     }
