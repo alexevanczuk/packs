@@ -1,8 +1,4 @@
-use crate::packs::parsing::ParsedDefinition;
-use crate::packs::parsing::Range;
-use crate::packs::parsing::UnresolvedReference;
 use crate::packs::ProcessedFile;
-use crate::packs::SourceLocation;
 use serde::{Deserialize, Serialize};
 
 use std::fs::File;
@@ -30,7 +26,7 @@ impl Cache for PerFileCache {
             if !file_digests_match {
                 CacheResult::Miss(empty_cache_entry)
             } else {
-                let processed_file = cache_entry.processed_file(path);
+                let processed_file = cache_entry.processed_file;
                 CacheResult::Processed(processed_file)
             }
         } else {
@@ -45,30 +41,12 @@ impl Cache for PerFileCache {
     ) {
         let file_contents_digest =
             empty_cache_entry.file_contents_digest.to_owned();
-        let unresolved_references: Vec<ReferenceEntry> = processed_file
-            .unresolved_references
-            .iter()
-            .map(|r| -> ReferenceEntry {
-                ReferenceEntry {
-                    constant_name: r.name.to_owned(),
-                    namespace_path: r.namespace_path.to_owned(),
-                    relative_path: empty_cache_entry
-                        .relative_path_string()
-                        .to_owned(),
-                    source_location: SourceLocation {
-                        line: r.location.start_row,
-                        column: r.location.start_col,
-                    },
-                }
-            })
-            .collect();
-
-        let definitions = processed_file.definitions.clone();
 
         let cache_entry = &CacheEntry {
             file_contents_digest,
-            unresolved_references,
-            definitions,
+            // Ideally we could pass by reference here, but in practice this cost should be paid on few files
+            // that have changed and need to be reprocessed.
+            processed_file: processed_file.clone(),
         };
 
         let cache_data = serde_json::to_string(&cache_entry)
@@ -100,51 +78,7 @@ fn cache_entry_from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
-    pub unresolved_references: Vec<ReferenceEntry>,
-    #[serde(default)]
-    pub definitions: Vec<ParsedDefinition>,
-}
-
-impl CacheEntry {
-    pub fn processed_file(self, absolute_path: &Path) -> ProcessedFile {
-        let unresolved_references = self
-            .unresolved_references
-            .iter()
-            .map(|reference| reference.to_unresolved_reference())
-            .collect();
-
-        ProcessedFile {
-            unresolved_references,
-            absolute_path: absolute_path.to_owned(),
-            definitions: self.definitions,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize, Eq)]
-pub struct ReferenceEntry {
-    constant_name: String,
-    namespace_path: Vec<String>,
-    relative_path: String,
-    source_location: SourceLocation,
-}
-
-impl ReferenceEntry {
-    fn to_unresolved_reference(&self) -> UnresolvedReference {
-        UnresolvedReference {
-            name: self.constant_name.to_owned(),
-            namespace_path: self.namespace_path.to_owned(),
-            location: Range {
-                start_row: self.source_location.line,
-                start_col: self.source_location.column,
-                // The end row and end col can be improved here but we are limited
-                // because the cache does not store this data.
-                // Instead, we might just return a (resolved) Reference
-                end_row: self.source_location.line,
-                end_col: self.source_location.column + self.constant_name.len(),
-            },
-        }
-    }
+    pub processed_file: ProcessedFile,
 }
 
 pub fn read_json_file(
@@ -158,7 +92,11 @@ pub fn read_json_file(
 
 #[cfg(test)]
 mod tests {
-    use crate::packs::{self, configuration, file_utils::file_content_digest};
+    use crate::packs::{
+        self, configuration,
+        file_utils::file_content_digest,
+        parsing::{Range, UnresolvedReference},
+    };
 
     use super::*;
 
@@ -185,83 +123,40 @@ mod tests {
     fn test_compatible_with_packwerk() {
         let contents: String = String::from(
             r#"{
-    "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
-    "unresolved_references": [
-        {
-            "constant_name": "Bar",
-            "namespace_path": [
-                "Foo",
-                "Bar"
-            ],
-            "relative_path": "packs/foo/app/services/bar/foo.rb",
-            "source_location": {
-                "line": 8,
-                "column": 22
-            }
-        }
-    ]
+  "file_contents_digest":"8f9efdcf2caa22fb7b1b4a8274e68d11",
+  "processed_file": {
+    "absolute_path":"/tests/fixtures/simple_app/packs/foo/app/services/bar/foo.rb",
+    "unresolved_references":[
+      {
+        "name":"Bar",
+        "namespace_path":["Foo","Bar"],
+        "location":{"start_row":8,"start_col":22,"end_row":8,"end_col":25}
+      }],
+    "definitions":[]
+  }
 }"#,
         );
 
-        let actual_serialized =
-            serde_json::from_str::<CacheEntry>(&contents).unwrap();
         let expected_serialized = CacheEntry {
             file_contents_digest: "8f9efdcf2caa22fb7b1b4a8274e68d11".to_owned(),
-            unresolved_references: vec![ReferenceEntry {
-                constant_name: "Bar".to_owned(),
-                namespace_path: vec!["Foo".to_owned(), "Bar".to_owned()],
-                relative_path: "packs/foo/app/services/bar/foo.rb".to_owned(),
-                source_location: SourceLocation {
-                    line: 8,
-                    column: 22,
-                },
-            }],
-            definitions: vec![],
-        };
-
-        assert_eq!(expected_serialized, actual_serialized);
-
-        teardown();
-    }
-
-    #[test]
-    fn test_compatible_with_alternate_parser() {
-        let contents: String = String::from(
-            r#"{
-    "file_contents_digest": "8f9efdcf2caa22fb7b1b4a8274e68d11",
-    "unresolved_references": [
-        {
-            "constant_name": "Bar",
-            "namespace_path": [
-                "Foo",
-                "Bar"
-            ],
-            "relative_path": "packs/foo/app/services/bar/foo.rb",
-            "source_location": {
-                "line": 8,
-                "column": 22
+            processed_file: ProcessedFile {
+                absolute_path: PathBuf::from("/tests/fixtures/simple_app/packs/foo/app/services/bar/foo.rb"),
+                unresolved_references: vec![UnresolvedReference {
+                    name: "Bar".to_owned(),
+                    namespace_path: vec!["Foo".to_owned(), "Bar".to_owned()],
+                    location: Range {
+                        start_row: 8,
+                        start_col: 22,
+                        end_row: 8,
+                        end_col: 25,
+                    }
+                }],
+                definitions: vec![],
             }
-        }
-    ],
-    "definitions": []
-}"#,
-        );
+        };
 
         let actual_serialized =
             serde_json::from_str::<CacheEntry>(&contents).unwrap();
-        let expected_serialized = CacheEntry {
-            file_contents_digest: "8f9efdcf2caa22fb7b1b4a8274e68d11".to_owned(),
-            unresolved_references: vec![ReferenceEntry {
-                constant_name: "Bar".to_owned(),
-                namespace_path: vec!["Foo".to_owned(), "Bar".to_owned()],
-                relative_path: "packs/foo/app/services/bar/foo.rb".to_owned(),
-                source_location: SourceLocation {
-                    line: 8,
-                    column: 22,
-                },
-            }],
-            definitions: vec![],
-        };
 
         assert_eq!(expected_serialized, actual_serialized);
 

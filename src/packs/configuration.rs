@@ -1,6 +1,6 @@
+use super::caching::create_cache_dir_idempotently;
 use super::caching::noop_cache::NoopCache;
 use super::caching::per_file_cache::PerFileCache;
-use super::caching::InitializedCacheDirectory;
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::raw_configuration::RawConfiguration;
@@ -55,16 +55,17 @@ impl Configuration {
         }
     }
 
-    pub(crate) fn get_cache(
-        &self,
-        // This takes an unused "InitializedCacheDirectory" argument, which is a sentinel
-        // value returned by
-        _initialized_dir: InitializedCacheDirectory,
-    ) -> Box<dyn Cache + Send + Sync> {
+    pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
-            Box::new(PerFileCache {
-                cache_dir: self.cache_directory.to_owned(),
-            })
+            let cache_dir = if self.experimental_parser {
+                self.cache_directory.join("experimental")
+            } else {
+                self.cache_directory.join("zeitwerk")
+            };
+
+            create_cache_dir_idempotently(&cache_dir);
+
+            Box::new(PerFileCache { cache_dir })
         } else {
             Box::new(NoopCache {})
         }

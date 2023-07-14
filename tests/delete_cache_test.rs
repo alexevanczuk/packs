@@ -27,7 +27,7 @@ fn test_delete_cache() -> Result<(), Box<dyn Error>> {
     // Write some dummy file to `tmp/cache/packwerk` to simulate a cache.
     let cache_dir =
         PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk");
-    // Write cache_dir dir
+
     fs::create_dir_all(&cache_dir)?;
     let dummy_file = cache_dir.join("dummy_file");
     fs::write(dummy_file, "dummy file")?;
