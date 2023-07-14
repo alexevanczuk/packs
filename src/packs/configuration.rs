@@ -56,15 +56,15 @@ impl Configuration {
     }
 
     pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
-        let cache_dir = if self.experimental_parser {
-            self.cache_directory.join("experimental")
-        } else {
-            self.cache_directory.join("zeitwerk")
-        };
-
-        create_cache_dir_idempotently(&cache_dir);
-
         if self.cache_enabled {
+            let cache_dir = if self.experimental_parser {
+                self.cache_directory.join("experimental")
+            } else {
+                self.cache_directory.join("zeitwerk")
+            };
+
+            create_cache_dir_idempotently(&cache_dir);
+
             Box::new(PerFileCache { cache_dir })
         } else {
             Box::new(NoopCache {})
