@@ -15,9 +15,8 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn get(&self, absolute_root: &Path, path: &Path) -> CacheResult {
-        let empty_cache_entry =
-            EmptyCacheEntry::new(absolute_root, &self.cache_dir, path);
+    fn get(&self, path: &Path) -> CacheResult {
+        let empty_cache_entry = EmptyCacheEntry::new(&self.cache_dir, path);
         let cache_entry = cache_entry_from_empty(&empty_cache_entry);
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
