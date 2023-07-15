@@ -18,14 +18,14 @@ pub struct Reference {
 impl Reference {
     pub fn defining_pack<'a>(&self, pack_set: &'a PackSet) -> Option<&'a Pack> {
         if let Some(name) = &self.defining_pack_name {
-            Some(pack_set.for_pack(name))
+            Some(pack_set.for_pack(name).unwrap_or_else(|_| panic!("Reference#defining_pack_name is {}, but that pack is not found in pack set.", &name)))
         } else {
             None
         }
     }
 
     pub fn referencing_pack<'a>(&self, pack_set: &'a PackSet) -> &'a Pack {
-        pack_set.for_pack(&self.referencing_pack_name)
+        pack_set.for_pack(&self.referencing_pack_name).unwrap_or_else(|_| panic!("Reference#referencing_pack_name is {}, but that pack is not found in pack set.", &self.referencing_pack_name))
     }
 }
 

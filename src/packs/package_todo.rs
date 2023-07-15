@@ -3,7 +3,7 @@ use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tracing::debug;
 
-use super::{Configuration, Violation};
+use super::{pack::Pack, Configuration, Violation};
 
 #[derive(PartialEq, Debug, Eq, Deserialize, Serialize, Default, Clone)]
 pub struct ViolationGroup {
@@ -156,12 +156,8 @@ pub fn write_violations_to_disk(
     all_packs.par_iter().for_each(|p| {
         let package_todo = package_todos_by_pack_name.get(&p.name);
         match package_todo {
-            Some(package_todo) => write_package_todo_to_disk(
-                &configuration,
-                &p.name,
-                package_todo,
-            ),
-            None => delete_package_todo_from_disk(&configuration, &p.name),
+            Some(package_todo) => write_package_todo_to_disk(p, package_todo),
+            None => delete_package_todo_from_disk(p),
         }
     });
 
@@ -182,12 +178,9 @@ fn serialize_package_todo(
 }
 
 fn write_package_todo_to_disk(
-    configuration: &Configuration,
-    responsible_pack_name: &String,
+    responsible_pack: &Pack,
     package_todo: &PackageTodo,
 ) {
-    let responsible_pack =
-        configuration.pack_set.for_pack(responsible_pack_name);
     let package_todo_yml_absolute_filepath = responsible_pack
         .yml
         .parent()
@@ -199,18 +192,13 @@ fn write_package_todo_to_disk(
     }
 
     let package_todo_yml =
-        serialize_package_todo(responsible_pack_name, package_todo);
+        serialize_package_todo(&responsible_pack.name, package_todo);
 
     std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
         .unwrap();
 }
 
-fn delete_package_todo_from_disk(
-    configuration: &Configuration,
-    responsible_pack_name: &str,
-) {
-    let responsible_pack =
-        configuration.pack_set.for_pack(responsible_pack_name);
+fn delete_package_todo_from_disk(responsible_pack: &Pack) {
     let package_todo_yml_absolute_filepath = responsible_pack
         .yml
         .parent()
