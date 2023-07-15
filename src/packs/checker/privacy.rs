@@ -120,7 +120,8 @@ impl CheckerInterface for Checker {
     ) -> bool {
         let defining_pack = configuration
             .pack_set
-            .for_pack(&violation.defining_pack_name);
+            .for_pack(&violation.defining_pack_name)
+                        .unwrap_or_else(|_| panic!("Violation refers to pack named {}, but it can't be found in the packset.", &violation.referencing_pack_name));
 
         defining_pack.enforce_privacy == CheckerSetting::Strict
     }

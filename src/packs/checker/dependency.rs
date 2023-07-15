@@ -25,8 +25,12 @@ impl ValidatorInterface for Checker {
         for pack in &configuration.pack_set.packs {
             for dependency_pack_name in &pack.dependencies {
                 let from_pack = pack;
-                let to_pack =
-                    configuration.pack_set.for_pack(dependency_pack_name);
+                let to_pack = configuration
+                    .pack_set
+                    .for_pack(dependency_pack_name)
+                    .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
+                        &pack.yml.to_string_lossy(),
+                        dependency_pack_name));
                 let from_node = pack_to_node
                     .get(&from_pack)
                     .expect("Could not find from_pack")
@@ -159,7 +163,8 @@ impl CheckerInterface for Checker {
     ) -> bool {
         let referencing_pack = configuration
             .pack_set
-            .for_pack(&violation.referencing_pack_name);
+            .for_pack(&violation.referencing_pack_name)
+            .unwrap_or_else(|_| panic!("Violation refers to pack named {}, but it can't be found in the packset.", &violation.referencing_pack_name));
 
         referencing_pack.enforce_dependencies == CheckerSetting::Strict
     }
