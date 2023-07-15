@@ -22,6 +22,9 @@ pub mod visibility;
 pub(crate) mod reference;
 use reference::Reference;
 
+use super::pack::Pack;
+use super::PackSet;
+
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
@@ -29,6 +32,45 @@ pub struct ViolationIdentifier {
     pub constant_name: String,
     pub referencing_pack_name: String,
     pub defining_pack_name: String,
+}
+
+pub fn get_defining_pack<'a>(
+    violation: &ViolationIdentifier,
+    packset: &'a PackSet,
+) -> &'a Pack {
+    let defining_pack_result = packset.for_pack(&violation.defining_pack_name);
+
+    // For some reason cargo fmt wasn't formatting this closure correctly when passed directly into unwrap_or_else
+    let error_closure = |_| {
+        let error_message = format!(
+            "ViolationIdentifier#defining_pack is {}, but that pack cannot be found in the packset.",
+            &violation.defining_pack_name
+        );
+
+        panic!("{}", &error_message);
+    };
+
+    defining_pack_result.unwrap_or_else(error_closure)
+}
+
+pub fn get_referencing_pack<'a>(
+    violation: &ViolationIdentifier,
+    packset: &'a PackSet,
+) -> &'a Pack {
+    let referencing_pack_result =
+        packset.for_pack(&violation.referencing_pack_name);
+
+    // For some reason cargo fmt wasn't formatting this closure correctly when passed directly into unwrap_or_else
+    let error_closure = |_| {
+        let error_message = format!(
+            "ViolationIdentifier#referencing_pack is {}, but that pack cannot be found in the packset.",
+            &violation.referencing_pack_name
+        );
+
+        panic!("{}", &error_message);
+    };
+
+    referencing_pack_result.unwrap_or_else(error_closure)
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]

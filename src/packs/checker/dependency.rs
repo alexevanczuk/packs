@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
+use super::{
+    get_referencing_pack, CheckerInterface, ValidatorInterface,
+    ViolationIdentifier,
+};
 use crate::packs::checker::Reference;
 use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
@@ -161,10 +164,8 @@ impl CheckerInterface for Checker {
         violation: &ViolationIdentifier,
         configuration: &Configuration,
     ) -> bool {
-        let referencing_pack = configuration
-            .pack_set
-            .for_pack(&violation.referencing_pack_name)
-            .unwrap_or_else(|_| panic!("Violation refers to pack named {}, but it can't be found in the packset.", &violation.referencing_pack_name));
+        let referencing_pack =
+            get_referencing_pack(violation, &configuration.pack_set);
 
         referencing_pack.enforce_dependencies == CheckerSetting::Strict
     }

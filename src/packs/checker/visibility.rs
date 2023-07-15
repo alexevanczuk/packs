@@ -1,4 +1,4 @@
-use super::{CheckerInterface, ViolationIdentifier};
+use super::{get_defining_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
@@ -74,14 +74,8 @@ impl CheckerInterface for Checker {
         violation: &ViolationIdentifier,
         configuration: &Configuration,
     ) -> bool {
-        let defining_pack = configuration
-            .pack_set
-
-
-            .for_pack(  &violation.defining_pack_name)
-            .unwrap_or_else(|_| panic!("Violation refers to pack named {}, but it can't be found in the packset.", 
-
-            &violation.defining_pack_name));
+        let defining_pack =
+            get_defining_pack(violation, &configuration.pack_set);
 
         defining_pack.enforce_visibility == CheckerSetting::Strict
     }
