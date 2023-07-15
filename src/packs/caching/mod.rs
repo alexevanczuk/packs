@@ -7,6 +7,7 @@ pub enum CacheResult {
     Miss(EmptyCacheEntry),
 }
 
+pub(crate) mod cache;
 pub(crate) mod noop_cache;
 pub(crate) mod per_file_cache;
 
@@ -33,16 +34,6 @@ impl EmptyCacheEntry {
             file_name_digest,
         }
     }
-}
-
-pub trait Cache {
-    fn get(&self, path: &Path) -> CacheResult;
-
-    fn write(
-        &self,
-        empty_cache_entry: &EmptyCacheEntry,
-        processed_file: &ProcessedFile,
-    );
 }
 
 pub fn create_cache_dir_idempotently(cache_dir: &Path) {

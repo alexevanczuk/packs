@@ -14,7 +14,7 @@ use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    caching::{Cache, CacheResult},
+    caching::{cache::Cache, CacheResult},
     file_utils::{get_file_type, SupportedFileType},
     Configuration, ProcessedFile,
 };

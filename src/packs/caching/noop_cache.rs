@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use crate::packs::{caching::Cache, ProcessedFile};
+use crate::packs::ProcessedFile;
 
-use super::{CacheResult, EmptyCacheEntry};
+use super::{cache::Cache, CacheResult, EmptyCacheEntry};
 
 pub struct NoopCache {}
 

@@ -1,3 +1,4 @@
+use super::caching::cache::Cache;
 use super::caching::create_cache_dir_idempotently;
 use super::caching::noop_cache::NoopCache;
 use super::caching::per_file_cache::PerFileCache;
@@ -5,7 +6,6 @@ use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::raw_configuration::RawConfiguration;
 use super::PackSet;
-use crate::packs::caching::Cache;
 
 use crate::packs::raw_configuration;
 use crate::packs::walk_directory::WalkDirectoryResult;
