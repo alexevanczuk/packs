@@ -6,7 +6,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use super::Cache;
+use super::cache::Cache;
 use super::CacheResult;
 use super::EmptyCacheEntry;
 
@@ -17,7 +17,7 @@ pub struct PerFileCache {
 impl Cache for PerFileCache {
     fn get(&self, path: &Path) -> CacheResult {
         let empty_cache_entry = EmptyCacheEntry::new(&self.cache_dir, path);
-        let cache_entry = cache_entry_from_empty(&empty_cache_entry);
+        let cache_entry = CacheEntry::from_empty(&empty_cache_entry);
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
                 == empty_cache_entry.file_contents_digest;
@@ -63,21 +63,24 @@ impl Cache for PerFileCache {
     }
 }
 
-fn cache_entry_from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
-    let cache_file_path = &empty.cache_file_path;
-
-    if cache_file_path.exists() {
-        Some(read_json_file(cache_file_path).unwrap_or_else(|_| {
-            panic!("Failed to read cache file {:?}", cache_file_path)
-        }))
-    } else {
-        None
-    }
-}
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry {
     pub file_contents_digest: String,
     pub processed_file: ProcessedFile,
+}
+
+impl CacheEntry {
+    pub fn from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
+        let cache_file_path = &empty.cache_file_path;
+
+        if cache_file_path.exists() {
+            Some(read_json_file(cache_file_path).unwrap_or_else(|_| {
+                panic!("Failed to read cache file {:?}", cache_file_path)
+            }))
+        } else {
+            None
+        }
+    }
 }
 
 pub fn read_json_file(

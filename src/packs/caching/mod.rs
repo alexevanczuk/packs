@@ -1,14 +1,14 @@
 use std::path::{Path, PathBuf};
 
 use super::{file_utils::file_content_digest, ProcessedFile};
+pub(crate) mod cache;
+pub(crate) mod noop_cache;
+pub(crate) mod per_file_cache;
 
 pub enum CacheResult {
     Processed(ProcessedFile),
     Miss(EmptyCacheEntry),
 }
-
-pub(crate) mod noop_cache;
-pub(crate) mod per_file_cache;
 
 #[derive(Debug, Default)]
 pub struct EmptyCacheEntry {
@@ -33,16 +33,6 @@ impl EmptyCacheEntry {
             file_name_digest,
         }
     }
-}
-
-pub trait Cache {
-    fn get(&self, path: &Path) -> CacheResult;
-
-    fn write(
-        &self,
-        empty_cache_entry: &EmptyCacheEntry,
-        processed_file: &ProcessedFile,
-    );
 }
 
 pub fn create_cache_dir_idempotently(cache_dir: &Path) {
