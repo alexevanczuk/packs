@@ -1,29 +1,28 @@
+// Module declarations
+pub(crate) mod architecture;
+pub(crate) mod dependency;
+pub(crate) mod privacy;
+pub(crate) mod reference;
+pub(crate) mod visibility;
+
+// Internal imports
+use crate::packs::pack::Pack;
 use crate::packs::package_todo;
 use crate::packs::parsing::process_files_with_cache;
 use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
 use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
-
 use crate::packs::Configuration;
+use crate::packs::PackSet;
 use crate::packs::ProcessedFile;
 
+// External imports
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
-
+use reference::Reference;
 use std::collections::HashMap;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
-
-pub mod architecture;
-pub mod dependency;
-pub mod privacy;
-pub mod visibility;
-
-pub(crate) mod reference;
-use reference::Reference;
-
-use super::pack::Pack;
-use super::PackSet;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
