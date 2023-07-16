@@ -16,11 +16,6 @@ pub(crate) mod raw_configuration;
 pub(crate) mod raw_pack;
 pub(crate) mod walk_directory;
 
-use serde::Deserialize;
-use serde::Serialize;
-
-use std::path::PathBuf;
-
 pub(crate) use self::checker::Violation;
 pub(crate) use self::pack_set::PackSet;
 pub(crate) use self::parsing::process_files_with_cache;
@@ -30,6 +25,10 @@ pub(crate) use self::parsing::ParsedDefinition;
 pub(crate) use self::parsing::UnresolvedReference;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
+
+use serde::Deserialize;
+use serde::Serialize;
+use std::path::PathBuf;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
