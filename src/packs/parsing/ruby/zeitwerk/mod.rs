@@ -88,20 +88,20 @@ fn inferred_constants_from_autoload_paths(
     // And we have a file at `packs/my_pack/app/models/concerns/foo.rb`, we want to say that the constant `Foo` is defined by the second autoload path.
     // This is because the second autoload path is the longest path that contains the file.
     // We do this by creating a map of each file to the longest autoload path that contains it.
-    let mut file_to_longest_path: HashMap<PathBuf, PathBuf> = HashMap::new();
+    let mut file_to_longest_path: HashMap<&PathBuf, &PathBuf> = HashMap::new();
 
     for (autoload_path, files) in &autoload_paths_to_their_globbed_files {
         for file in files {
             // Get the current longest path for this file, if it exists.
             let current_longest_path = file_to_longest_path
-                .entry(file.clone())
-                .or_insert_with(|| autoload_path.clone());
+                .entry(file)
+                .or_insert_with(|| autoload_path);
 
             // Update the longest path if the new path is longer.
             if autoload_path.components().count()
                 > current_longest_path.components().count()
             {
-                *current_longest_path = autoload_path.clone();
+                *current_longest_path = autoload_path;
             }
         }
     }
@@ -116,16 +116,17 @@ fn inferred_constants_from_autoload_paths(
         .map(|(absolute_path_of_definition, absolute_autoload_path)| {
             if let Some(fully_qualified_name) = cache_data
                 .file_definition_map
-                .get(&absolute_path_of_definition)
+                .get(absolute_path_of_definition)
             {
                 ConstantDefinition {
                     fully_qualified_name: fully_qualified_name.to_owned(),
-                    absolute_path_of_definition,
+                    absolute_path_of_definition: absolute_path_of_definition
+                        .to_owned(),
                 }
             } else {
                 inferred_constant_from_file(
-                    &absolute_path_of_definition,
-                    &absolute_autoload_path,
+                    absolute_path_of_definition,
+                    absolute_autoload_path,
                     acronyms,
                 )
             }
