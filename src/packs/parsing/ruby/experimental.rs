@@ -1,20 +1,17 @@
-use std::{
-    collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
-};
+pub(crate) mod constant_resolver;
+pub(crate) mod parser;
 
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-
+use self::constant_resolver::ExperimentalConstantResolver;
 use crate::packs::{
     constant_resolver::{ConstantDefinition, ConstantResolver},
     ProcessedFile,
 };
 
-use self::constant_resolver::ExperimentalConstantResolver;
-
-pub mod constant_resolver;
-
-pub(crate) mod parser;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use std::{
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+};
 
 pub fn get_experimental_constant_resolver(
     absolute_root: &Path,
