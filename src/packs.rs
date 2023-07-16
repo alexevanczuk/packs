@@ -1,4 +1,5 @@
-// Public APIs
+// Currently there are no supported library APIs for packs. The public API is the CLI.
+// This may change in the future! Please file an issue if you have a use case for a library API.
 pub mod cli;
 
 pub(crate) mod caching;
