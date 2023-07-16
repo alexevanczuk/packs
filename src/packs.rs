@@ -7,16 +7,17 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
-pub(crate) mod file_utils;
-pub(crate) mod logger;
 pub(crate) mod pack;
-pub(crate) mod pack_set;
-pub(crate) mod package_todo;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
-pub(crate) mod raw_pack;
-pub(crate) mod reference_extractor;
 pub(crate) mod walk_directory;
+
+mod file_utils;
+mod logger;
+mod pack_set;
+mod package_todo;
+mod raw_pack;
+mod reference_extractor;
 
 // Internal imports
 pub(crate) use self::checker::Violation;

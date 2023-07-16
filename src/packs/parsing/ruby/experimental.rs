@@ -1,4 +1,4 @@
-pub(crate) mod constant_resolver;
+mod constant_resolver;
 pub(crate) mod parser;
 
 use self::constant_resolver::ExperimentalConstantResolver;

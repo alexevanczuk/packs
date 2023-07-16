@@ -6,7 +6,7 @@ use std::{
 pub(crate) mod ruby;
 pub(crate) use ruby::experimental::parser::process_from_path as process_from_ruby_path_experimental;
 pub(crate) use ruby::packwerk::parser::process_from_path as process_from_ruby_path;
-pub(crate) mod erb;
+mod erb;
 pub(crate) use erb::experimental::parser::process_from_path as process_from_erb_path_experimental;
 pub(crate) use erb::packwerk::parser::process_from_path as process_from_erb_path;
 

@@ -1,7 +1,7 @@
 pub mod packs;
 
 #[cfg(test)]
-pub(crate) mod test_util {
+mod test_util {
     use configuration::Configuration;
     use packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
     use std::collections::{HashMap, HashSet};
@@ -13,7 +13,8 @@ pub(crate) mod test_util {
     use crate::packs::pack::Pack;
     use crate::packs::raw_configuration::RawConfiguration;
     use crate::packs::walk_directory::WalkDirectoryResult;
-    use crate::packs::{self, constant_resolver::ConstantResolver};
+    use crate::packs::{self};
+    use crate::packs::constant_resolver::ConstantResolver;
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";
 

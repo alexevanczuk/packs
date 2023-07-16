@@ -1,9 +1,9 @@
 // Module declarations
 pub(crate) mod architecture;
-pub(crate) mod dependency;
-pub(crate) mod privacy;
+mod dependency;
+mod privacy;
 pub(crate) mod reference;
-pub(crate) mod visibility;
+mod visibility;
 
 // Internal imports
 use crate::packs::pack::Pack;
