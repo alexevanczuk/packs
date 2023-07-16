@@ -2,6 +2,7 @@
 // This may change in the future! Please file an issue if you have a use case for a library API.
 pub mod cli;
 
+// Module declarations
 pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
@@ -16,6 +17,7 @@ pub(crate) mod raw_configuration;
 pub(crate) mod raw_pack;
 pub(crate) mod walk_directory;
 
+// Internal re-exports
 pub(crate) use self::checker::Violation;
 pub(crate) use self::pack_set::PackSet;
 pub(crate) use self::parsing::process_files_with_cache;
