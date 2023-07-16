@@ -56,6 +56,10 @@ impl PackSet {
 
         let indexed_packs = indexed_packs_by_name;
 
+        if indexed_packs.get(".").is_none() {
+            panic!("No root pack found. First double check a root pack exists (a package.yml file in the application root). Secondly, double check your packwerk.yml `package_paths` includes the root pack by using command packs list-packs.");
+        }
+
         PackSet {
             indexed_packs,
             packs,
@@ -85,5 +89,13 @@ impl PackSet {
         } else {
             Err("No pack found.")
         }
+    }
+
+    pub fn root_pack(&self) -> &Pack {
+        self.indexed_packs.get(".").unwrap_or_else(|| {
+            panic!(
+                "No root pack found. This error should have been caught when buiding the pack set"
+            )
+        })
     }
 }
