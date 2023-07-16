@@ -301,9 +301,15 @@ mod tests {
             ..RawConfiguration::default()
         };
 
+        let included_packs: HashSet<Pack> = vec![Pack {
+            name: String::from("."),
+            ..Pack::default()
+        }]
+        .into_iter()
+        .collect();
         let walk_directory_result = WalkDirectoryResult {
             included_files: Default::default(),
-            included_packs: Default::default(),
+            included_packs,
             owning_package_yml_for_file: Default::default(),
         };
 

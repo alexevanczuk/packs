@@ -64,9 +64,17 @@ pub(crate) mod test_util {
     impl Default for Configuration {
         fn default() -> Self {
             let default_absolute_root = std::env::current_dir().unwrap();
+            let root_pack = Pack {
+                name: ".".to_owned(),
+                ..Pack::default()
+            };
+
+            let included_packs: HashSet<Pack> =
+                vec![root_pack].into_iter().collect();
+
             let walk_directory_result = WalkDirectoryResult {
                 included_files: HashSet::new(),
-                included_packs: HashSet::new(),
+                included_packs,
                 owning_package_yml_for_file: HashMap::new(),
             };
             from_raw(

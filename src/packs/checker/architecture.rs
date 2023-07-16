@@ -167,9 +167,18 @@ mod tests {
             source_location: SourceLocation { line: 3, column: 1 },
         };
 
+        let root_pack = Pack {
+            name: String::from("."),
+            ..Pack::default()
+        };
+
         let configuration = Configuration {
             pack_set: PackSet::build(
-                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashSet::from_iter(vec![
+                    root_pack,
+                    defining_pack,
+                    referencing_pack,
+                ]),
                 HashMap::new(),
             ),
             ..Configuration::default()
@@ -199,6 +208,11 @@ mod tests {
             ..Pack::default()
         };
 
+        let root_pack = Pack {
+            name: String::from("."),
+            ..Pack::default()
+        };
+
         let reference = Reference {
             constant_name: String::from("::Foo"),
             defining_pack_name: Some(defining_pack.name.to_owned()),
@@ -214,7 +228,11 @@ mod tests {
 
         let configuration = Configuration {
             pack_set: PackSet::build(
-                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashSet::from_iter(vec![
+                    root_pack,
+                    defining_pack,
+                    referencing_pack,
+                ]),
                 HashMap::new(),
             ),
             ..Configuration::default()
@@ -271,9 +289,18 @@ mod tests {
             source_location: SourceLocation { line: 3, column: 1 },
         };
 
+        let root_pack = Pack {
+            name: String::from("."),
+            ..Pack::default()
+        };
+
         let configuration = Configuration {
             pack_set: PackSet::build(
-                HashSet::from_iter(vec![defining_pack, referencing_pack]),
+                HashSet::from_iter(vec![
+                    root_pack,
+                    defining_pack,
+                    referencing_pack,
+                ]),
                 HashMap::new(),
             ),
             ..Configuration::default()
