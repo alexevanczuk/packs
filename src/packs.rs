@@ -1,16 +1,18 @@
+// Public APIs
+pub mod cli;
+
 pub(crate) mod caching;
 pub(crate) mod checker;
-pub mod cli;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
 pub(crate) mod file_utils;
-pub mod logger;
+pub(crate) mod logger;
 pub(crate) mod pack;
-mod pack_set;
-pub mod package_todo;
-pub mod parsing;
+pub(crate) mod pack_set;
+pub(crate) mod package_todo;
+pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
-mod raw_pack;
+pub(crate) mod raw_pack;
 pub(crate) mod walk_directory;
 
 use serde::Deserialize;
