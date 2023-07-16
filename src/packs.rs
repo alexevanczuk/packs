@@ -15,6 +15,7 @@ pub(crate) mod package_todo;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
 pub(crate) mod raw_pack;
+pub(crate) mod reference_extractor;
 pub(crate) mod walk_directory;
 
 // Internal imports
