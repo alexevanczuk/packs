@@ -21,17 +21,15 @@ use serde::Serialize;
 
 use std::path::PathBuf;
 
-// Re-exports: Eventually, these may be part of the public API for packs
-pub(crate) use crate::packs::checker::Violation;
-pub(crate) use crate::packs::pack_set::PackSet;
-use crate::packs::parsing::process_files_with_cache;
-use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
-use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
+pub(crate) use self::checker::Violation;
+pub(crate) use self::pack_set::PackSet;
+pub(crate) use self::parsing::process_files_with_cache;
+pub(crate) use self::parsing::ruby::experimental::get_experimental_constant_resolver;
+pub(crate) use self::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
+pub(crate) use self::parsing::ParsedDefinition;
+pub(crate) use self::parsing::UnresolvedReference;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
-
-use self::parsing::ParsedDefinition;
-use self::parsing::UnresolvedReference;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
