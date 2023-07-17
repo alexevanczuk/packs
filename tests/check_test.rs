@@ -166,12 +166,12 @@ fn test_check_contents() -> Result<(), Box<dyn Error>> {
         .arg("--debug")
         .arg("check-contents")
         .arg(relative_path)
-        .write_stdin(foo_rb_contents)
+        .write_stdin(format!("\n\n\n{}", foo_rb_contents))
         .assert()
         .failure()
         .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:6:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
+        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:6:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
