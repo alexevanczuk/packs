@@ -10,11 +10,11 @@ mod test_util {
     use packs::configuration;
 
     use crate::packs::configuration::from_raw;
+    use crate::packs::constant_resolver::ConstantResolver;
     use crate::packs::pack::Pack;
     use crate::packs::raw_configuration::RawConfiguration;
     use crate::packs::walk_directory::WalkDirectoryResult;
     use crate::packs::{self};
-    use crate::packs::constant_resolver::ConstantResolver;
 
     pub const SIMPLE_APP: &str = "tests/fixtures/simple_app";
 
