@@ -34,6 +34,7 @@ Usage: packs [OPTIONS] <COMMAND>
 Commands:
   greet                           Just saying hi
   check                           Look for violations in the codebase
+  check-contents                  Check file contents piped to stdin
   update                          Update package_todo.yml files with the current violations
   validate                        Look for validation errors in the codebase
   check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
