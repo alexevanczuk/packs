@@ -1,33 +1,39 @@
-pub(crate) mod configuration;
-pub(crate) mod pack;
-pub(crate) mod raw_configuration;
-mod raw_pack;
-use serde::Deserialize;
-use serde::Serialize;
+// Currently there are no supported library APIs for packs. The public API is the CLI.
+// This may change in the future! Please file an issue if you have a use case for a library API.
+pub mod cli;
 
-use std::path::PathBuf;
+// Module declarations
 pub(crate) mod caching;
 pub(crate) mod checker;
-pub mod cli;
+pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
-pub(crate) mod file_utils;
-pub mod logger;
-mod pack_set;
-pub mod package_todo;
-pub mod parsing;
+pub(crate) mod pack;
+pub(crate) mod parsing;
+pub(crate) mod raw_configuration;
 pub(crate) mod walk_directory;
 
-// Re-exports: Eventually, these may be part of the public API for packs
-pub(crate) use crate::packs::checker::Violation;
-pub(crate) use crate::packs::pack_set::PackSet;
-use crate::packs::parsing::process_files_with_cache;
-use crate::packs::parsing::ruby::experimental::get_experimental_constant_resolver;
-use crate::packs::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
+mod file_utils;
+mod logger;
+mod pack_set;
+mod package_todo;
+mod raw_pack;
+mod reference_extractor;
+
+// Internal imports
+pub(crate) use self::checker::Violation;
+pub(crate) use self::pack_set::PackSet;
+pub(crate) use self::parsing::process_files_with_cache;
+pub(crate) use self::parsing::ruby::experimental::get_experimental_constant_resolver;
+pub(crate) use self::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
+pub(crate) use self::parsing::ParsedDefinition;
+pub(crate) use self::parsing::UnresolvedReference;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
 
-use self::parsing::ParsedDefinition;
-use self::parsing::UnresolvedReference;
+// External imports
+use serde::Deserialize;
+use serde::Serialize;
+use std::path::PathBuf;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
