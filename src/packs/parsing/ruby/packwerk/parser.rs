@@ -1,3 +1,4 @@
+use crate::packs::file_utils::file_read_contents;
 use crate::packs::{
     parsing::{
         ruby::{
@@ -17,7 +18,7 @@ use lib_ruby_parser::{
 };
 use line_col::LineColLookup;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SuperclassReference {
@@ -201,10 +202,7 @@ pub(crate) fn process_from_path(
     path: &Path,
     configuration: &Configuration,
 ) -> ProcessedFile {
-    let contents = fs::read_to_string(path).unwrap_or_else(|_| {
-        panic!("Failed to read contents of {}", path.to_string_lossy())
-    });
-
+    let contents = file_read_contents(path, configuration);
     process_from_contents(contents, path, configuration)
 }
 
