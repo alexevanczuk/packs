@@ -134,17 +134,25 @@ impl Pack {
             .unwrap()
             .join("package_todo.yml");
 
-        let package_todo: PackageTodo =
-            if absolute_path_to_package_todo.exists() {
-                let mut package_todo_contents = String::new();
-                let mut file = File::open(&absolute_path_to_package_todo)
-                    .expect("Failed to open the package_todo.yml file");
-                file.read_to_string(&mut package_todo_contents)
-                    .expect("Could not read the package_todo.yml file");
-                serde_yaml::from_str(&package_todo_contents).unwrap()
-            } else {
-                PackageTodo::default()
-            };
+        let package_todo: PackageTodo = if absolute_path_to_package_todo
+            .exists()
+        {
+            let mut package_todo_contents = String::new();
+            let mut file = File::open(&absolute_path_to_package_todo)
+                .expect("Failed to open the package_todo.yml file");
+            file.read_to_string(&mut package_todo_contents)
+                .expect("Could not read the package_todo.yml file");
+            serde_yaml::from_str(&package_todo_contents).unwrap_or_else(|e| {
+
+                panic!(
+                    "Failed to deserialize the package_todo.yml file at {} with error {}",
+                    absolute_path_to_package_todo.display(),
+                    e
+                )
+            })
+        } else {
+            PackageTodo::default()
+        };
 
         let dependencies = raw_pack.dependencies;
         let visible_to = raw_pack.visible_to;
