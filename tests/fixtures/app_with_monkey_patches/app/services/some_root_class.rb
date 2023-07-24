@@ -1,4 +1,6 @@
-class SomeRootClass; end
+class SomeRootClass
+  def foo; end
+end
 
 String
 

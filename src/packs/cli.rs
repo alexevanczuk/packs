@@ -62,6 +62,11 @@ enum Command {
     CheckUnnecessaryDependencies,
 
     #[clap(
+        about = "Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself"
+    )]
+    ExposeMonkeyPatches(ExposeMonkeyPatchesArgs),
+
+    #[clap(
         about = "`rm -rf` on your cache directory, default `tmp/cache/packwerk`"
     )]
     DeleteCache,
@@ -87,6 +92,19 @@ struct ListDefinitionsArgs {
     /// Show constants with multiple definitions only
     #[arg(short, long)]
     ambiguous: bool,
+}
+
+#[derive(Debug, Args)]
+struct ExposeMonkeyPatchesArgs {
+    /// An absolute path to the directory containing Ruby source code (for extracting definitions from Ruby stdlib)
+    /// Example: /Users/alex.evanczuk/.rbenv/versions/3.2.2/lib/ruby/3.2.0/
+    #[arg(short, long)]
+    rubydir: PathBuf,
+
+    /// An absolute path to the directory containing your gems (for extracting definitions from gem source code)
+    /// Example: /Users/alex.evanczuk/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0/gems/
+    #[arg(short, long)]
+    gemdir: PathBuf,
 }
 
 impl Args {
@@ -156,6 +174,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::ListDefinitions(args) => {
             let ambiguous = args.ambiguous;
             packs::list_definitions(&configuration, ambiguous);
+            Ok(())
+        }
+        Command::ExposeMonkeyPatches(args) => {
+            packs::expose_monkey_patches(
+                &configuration,
+                &args.rubydir,
+                &args.gemdir,
+            );
             Ok(())
         }
     }

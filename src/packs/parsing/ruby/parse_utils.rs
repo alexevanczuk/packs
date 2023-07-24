@@ -68,12 +68,7 @@ pub fn fetch_const_name(node: &nodes::Node) -> Result<String, ParseError> {
         Node::Lvar(_) => Err(ParseError::Metaprogramming),
         Node::Ivar(_) => Err(ParseError::Metaprogramming),
         Node::Self_(_) => Err(ParseError::Metaprogramming),
-        node => {
-            panic!(
-                "Cannot handle other node in get_constant_node_name: {:?}",
-                node
-            )
-        }
+        _node => Err(ParseError::Metaprogramming),
     }
 }
 
