@@ -109,8 +109,7 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_module(&mut self, node: &nodes::Module) {
-        let namespace = fetch_const_name(&node.name)
-            .expect("We expect no parse errors in class/module definitions");
+        let namespace = fetch_const_name(&node.name).unwrap_or("".to_owned());
         let definition_loc = fetch_node_location(&node.name).unwrap();
         let location = loc_to_range(definition_loc, &self.line_col_lookup);
 

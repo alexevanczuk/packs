@@ -7,6 +7,7 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
+pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
@@ -111,6 +112,21 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
             println!("{:?} is defined at {:?}", name, relative_path);
         }
     }
+}
+
+fn expose_monkey_patches(
+    configuration: &Configuration,
+    rubydir: &PathBuf,
+    gemdir: &PathBuf,
+) {
+    println!(
+        "{}",
+        monkey_patch_detection::expose_monkey_patches(
+            configuration,
+            rubydir,
+            gemdir,
+        )
+    )
 }
 
 #[cfg(test)]

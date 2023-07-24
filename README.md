@@ -38,6 +38,7 @@ Commands:
   update                          Update package_todo.yml files with the current violations
   validate                        Look for validation errors in the codebase
   check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
+  expose-monkey-patches           Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself
   delete-cache                    `rm -rf` on your cache directory, default `tmp/cache/packwerk`
   list-packs                      List packs based on configuration in packwerk.yml (for debugging purposes)
   list-included-files             List analyzed files based on configuration in packwerk.yml (for debugging purposes)
