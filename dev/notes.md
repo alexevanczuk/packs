@@ -6,9 +6,6 @@
 
 ## Performance
 Although `packs` is intended to be fast, there are ways it can be made a lot faster!
-
-- Explore alternate caching mechanisms:
-  - Consider using SQLite cache (for less file IO)
 - Conditional cache usage. For example, implemented as an LSP, packs could always use cache and only bust specific caches (asychronously) when certain events (e.g. file changes) are received.
 - By using modified time, we can avoid opening the entire file and parsing it and calculating the md5 hash. It's possible this would not be a meaningful performance improvement.
 
@@ -56,6 +53,7 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 - In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
 - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, and the flamegraph shows that most of the time is spent opening files, not resolving constants. Furthermore, the experimental constant resolver resolves constant much more quickly.
 - In https://github.com/alexevanczuk/packs/pull/98, I looked into having a single file as the cache rather than one cache file per code file. This turned out to be a *lot* slower, and I think the reason is that serialization and deserialization happens does not happen in parallel with one large file, where it does happen with lots of tiny files.
+- In https://github.com/alexevanczuk/packs/pull/99, I began (very initial stages) of integrating with SQLite to hopefully provide a faster cache. It's not clear to me if this would actually provide much of a performance improvement. It might still be worth exploring, but for now abandoning it since it introduces a lot of complexity.
 
 # Modular Architecture
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
