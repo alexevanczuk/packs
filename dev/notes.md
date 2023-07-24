@@ -55,7 +55,7 @@ time cargo run --profile=release -- --debug --project-root=../your_app check
 # Abandoned Performance Improvement Attempts
 - In https://github.com/alexevanczuk/packs/pull/37, I looked into getting the constants *as* we are walking the directory. However, I found that this was hardly much more performant than the current implementation, and it was much more complex. I abandoned this approach in favor of caching the resolver and other performance improvements.
 - We could consider caching the RESOLVED references in a file, which would allow us to potentially skip generating the constant resolver and resolving all of the unresolved constants. This makes cache invalidation more complex though, and the flamegraph shows that most of the time is spent opening files, not resolving constants. Furthermore, the experimental constant resolver resolves constant much more quickly.
-
+- In https://github.com/alexevanczuk/packs/pull/98, I looked into having a single file as the cache rather than one cache file per code file. This turned out to be a *lot* slower, and I think the reason is that serialization and deserialization happens does not happen in parallel with one large file, where it does happen with lots of tiny files.
 
 # Modular Architecture
 Today, `packwerk` has a modular architecture allowing folks to add new checkers, validators, etc.
