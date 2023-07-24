@@ -146,7 +146,11 @@ pub fn file_read_contents(
         })
     } else {
         fs::read_to_string(path).unwrap_or_else(|_| {
-            panic!("Failed to read contents of {}", path.to_string_lossy())
+            println!(
+                "Failed to read contents of {} – skipping this file",
+                path.to_string_lossy()
+            );
+            "".to_string()
         })
     }
 }
