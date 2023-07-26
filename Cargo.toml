@@ -7,6 +7,7 @@ edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
 default-run = "pks"
+repository = "https://github.com/alexevanczuk/packs"
 
 # This runs all of the optimizations, but doesn't strip debug symbols,
 # such as the name of the methods
