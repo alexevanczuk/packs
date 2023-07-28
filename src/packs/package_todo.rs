@@ -156,7 +156,11 @@ pub fn write_violations_to_disk(
     all_packs.par_iter().for_each(|p| {
         let package_todo = package_todos_by_pack_name.get(&p.name);
         match package_todo {
-            Some(package_todo) => write_package_todo_to_disk(p, package_todo),
+            Some(package_todo) => write_package_todo_to_disk(
+                p,
+                package_todo,
+                configuration.packs_first_mode,
+            ),
             None => delete_package_todo_from_disk(p),
         }
     });
@@ -167,19 +171,21 @@ pub fn write_violations_to_disk(
 fn serialize_package_todo(
     responsible_pack_name: &String,
     package_todo: &PackageTodo,
+    packs_first_mode: bool,
 ) -> String {
     let package_todo_yml = serde_yaml::to_string(&package_todo).unwrap();
 
     // HACK: This is the other part of the hack above (search `HACK:` for more)
     let package_todo_yml = package_todo_yml.replace("'#", "\"");
     let package_todo_yml = package_todo_yml.replace("#'", "\"");
-    let header = header(responsible_pack_name);
+    let header = header(responsible_pack_name, packs_first_mode);
     header + &package_todo_yml
 }
 
 fn write_package_todo_to_disk(
     responsible_pack: &Pack,
     package_todo: &PackageTodo,
+    packs_first_mode: bool,
 ) {
     let package_todo_yml_absolute_filepath = responsible_pack
         .yml
@@ -191,8 +197,11 @@ fn write_package_todo_to_disk(
         std::fs::File::create(&package_todo_yml_absolute_filepath).unwrap();
     }
 
-    let package_todo_yml =
-        serialize_package_todo(&responsible_pack.name, package_todo);
+    let package_todo_yml = serialize_package_todo(
+        &responsible_pack.name,
+        package_todo,
+        packs_first_mode,
+    );
 
     std::fs::write(package_todo_yml_absolute_filepath, package_todo_yml)
         .unwrap();
@@ -211,7 +220,13 @@ fn delete_package_todo_from_disk(responsible_pack: &Pack) {
     }
 }
 
-fn header(responsible_pack_name: &String) -> String {
+fn header(responsible_pack_name: &String, packs_first_mode: bool) -> String {
+    let command = if packs_first_mode {
+        "pks update"
+    } else {
+        "bin/packwerk update-todo"
+    };
+
     format!("\
 # This file contains a list of dependencies that are not part of the long term plan for the
 # '{}' package.
@@ -219,9 +234,9 @@ fn header(responsible_pack_name: &String) -> String {
 #
 # You can regenerate this file using the following command:
 #
-# bin/packwerk update-todo
+# {}
 ---
-", responsible_pack_name)
+", responsible_pack_name, command)
 }
 
 #[cfg(test)]
@@ -374,6 +389,7 @@ packs/bar:
         let actual = serialize_package_todo(
             &String::from("packs/foo"),
             &actual_package_todo,
+            false,
         );
 
         assert_eq!(expected, actual);
@@ -415,6 +431,50 @@ packs/bar:
         let actual = serialize_package_todo(
             &String::from("packs/foo"),
             &actual_package_todo,
+            false,
+        );
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_serialize_trivial_case_in_packs_first_mode() {
+        let expected: String = String::from(
+            "\
+# This file contains a list of dependencies that are not part of the long term plan for the
+# 'packs/foo' package.
+# We should generally work to reduce this list over time.
+#
+# You can regenerate this file using the following command:
+#
+# pks update
+---
+packs/bar:
+  \"::Bar\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::BarBlah\":
+    violations:
+    - dependency
+    files:
+    - packs/foo/app/services/foo.rb
+  \"::Baz\":
+    violations:
+    - dependency
+    - privacy
+    files:
+    - packs/foo/app/services/foo.rb
+",
+);
+
+        let actual_package_todo =
+            example_package_todo(String::from("packs/bar"));
+        let actual = serialize_package_todo(
+            &String::from("packs/foo"),
+            &actual_package_todo,
+            true,
         );
 
         assert_eq!(expected, actual);

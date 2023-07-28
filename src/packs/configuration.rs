@@ -35,6 +35,7 @@ pub struct Configuration {
     // and configure logging in one place. As the complexity of how/why we want to see different logs
     // grows, we can refactor this.
     pub print_files: bool,
+    pub packs_first_mode: bool,
 }
 
 impl Configuration {
@@ -106,6 +107,7 @@ pub(crate) fn from_raw(
     };
 
     let ignored_definitions = raw_config.ignored_definitions;
+    let packs_first_mode = raw_config.packs_first_mode;
 
     let custom_associations = raw_config
         .custom_associations
@@ -131,6 +133,7 @@ pub(crate) fn from_raw(
         custom_associations,
         stdin_file_path,
         print_files,
+        packs_first_mode,
     }
 }
 
