@@ -11,6 +11,7 @@ use serde::{
 };
 
 const CONFIG_FILE_NAME: &str = "packwerk.yml";
+const PACKS_FIRST_CONFIG_FILE_NAME: &str = "packs.yml";
 
 // See: Setting up the configuration file
 // https://github.com/Shopify/packwerk/blob/main/USAGE.md#setting-up-the-configuration-file
@@ -58,42 +59,58 @@ pub(crate) struct RawConfiguration {
     // Ignored monkey patches
     #[serde(default)]
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
+
+    // Use packs copy
+    #[serde(default)]
+    pub packs_first_mode: bool,
 }
 
 pub(crate) fn get(absolute_root: &Path) -> RawConfiguration {
     let absolute_path_to_packwerk_yml = absolute_root.join(CONFIG_FILE_NAME);
+    let absolute_path_to_packs_yml =
+        absolute_root.join(PACKS_FIRST_CONFIG_FILE_NAME);
 
     if absolute_path_to_packwerk_yml.exists() {
-        let mut file = File::open(absolute_path_to_packwerk_yml.clone())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "Could not open packwerk.yml at: {} due to error: {:?}",
-                    absolute_path_to_packwerk_yml.display(),
-                    e
-                )
-            });
-
-        let mut contents = String::new();
-        std::io::Read::read_to_string(&mut file, &mut contents).unwrap_or_else(
-            |e| {
-                panic!(
-                    "Could not read packwerk.yml at: {} due to error: {:?}",
-                    absolute_path_to_packwerk_yml.display(),
-                    e
-                )
-            },
-        );
-
-        serde_yaml::from_str(&contents).unwrap_or_else(|e| {
-            panic!(
-                "Could not parse packwerk.yml at: {} due to error: {:?}",
-                absolute_path_to_packwerk_yml.display(),
-                e
-            )
-        })
+        get_from_file_that_exists(absolute_path_to_packwerk_yml)
+    } else if absolute_path_to_packs_yml.exists() {
+        let mut config = get_from_file_that_exists(absolute_path_to_packs_yml);
+        config.packs_first_mode = true;
+        config
     } else {
         RawConfiguration::default()
     }
+}
+
+fn get_from_file_that_exists(
+    absolute_path_to_packwerk_yml: PathBuf,
+) -> RawConfiguration {
+    let mut file = File::open(absolute_path_to_packwerk_yml.clone())
+        .unwrap_or_else(|e| {
+            panic!(
+                "Could not open packwerk.yml at: {} due to error: {:?}",
+                absolute_path_to_packwerk_yml.display(),
+                e
+            )
+        });
+
+    let mut contents = String::new();
+    std::io::Read::read_to_string(&mut file, &mut contents).unwrap_or_else(
+        |e| {
+            panic!(
+                "Could not read packwerk.yml at: {} due to error: {:?}",
+                absolute_path_to_packwerk_yml.display(),
+                e
+            )
+        },
+    );
+
+    serde_yaml::from_str(&contents).unwrap_or_else(|e| {
+        panic!(
+            "Could not parse packwerk.yml at: {} due to error: {:?}",
+            absolute_path_to_packwerk_yml.display(),
+            e
+        )
+    })
 }
 
 // Normally if a key is not set, serde will use the default value for that type.
