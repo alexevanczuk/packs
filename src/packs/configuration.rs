@@ -36,6 +36,7 @@ pub struct Configuration {
     // grows, we can refactor this.
     pub print_files: bool,
     pub packs_first_mode: bool,
+    pub ignore_recorded_violations: bool,
 }
 
 impl Configuration {
@@ -120,6 +121,7 @@ pub(crate) fn from_raw(
 
     let stdin_file_path: Option<PathBuf> = None;
     let print_files = false;
+    let ignore_recorded_violations = false;
 
     Configuration {
         included_files,
@@ -134,6 +136,7 @@ pub(crate) fn from_raw(
         stdin_file_path,
         print_files,
         packs_first_mode,
+        ignore_recorded_violations,
     }
 }
 
