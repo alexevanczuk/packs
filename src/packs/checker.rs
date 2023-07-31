@@ -113,7 +113,7 @@ pub(crate) fn check_all(
 
     debug!("Filtering out recorded violations");
 
-    let unrecorded_violations: Vec<&Violation> =
+    let reportable_violations: Vec<&Violation> =
         if configuration.ignore_recorded_violations {
             debug!("Filtering recorded violations is disabled in config");
             found_violations.iter().collect()
@@ -176,12 +176,12 @@ pub(crate) fn check_all(
 
     let mut errors_present = false;
 
-    if !unrecorded_violations.is_empty() {
-        for violation in unrecorded_violations.iter() {
+    if !reportable_violations.is_empty() {
+        for violation in reportable_violations.iter() {
             println!("{}\n", violation.message);
         }
 
-        println!("{} violation(s) detected:", unrecorded_violations.len());
+        println!("{} violation(s) detected:", reportable_violations.len());
 
         errors_present = true;
     }
