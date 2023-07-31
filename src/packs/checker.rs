@@ -112,10 +112,17 @@ pub(crate) fn check_all(
     let recorded_violations = &configuration.pack_set.all_violations;
 
     debug!("Filtering out recorded violations");
-    let unrecorded_violations = found_violations
-        .iter()
-        .filter(|v| !recorded_violations.contains(&v.identifier))
-        .collect::<Vec<&Violation>>();
+
+    let unrecorded_violations: Vec<&Violation> =
+        if configuration.ignore_recorded_violations {
+            debug!("Filtering recorded violations is disabled in config");
+            found_violations.iter().collect()
+        } else {
+            found_violations
+                .iter()
+                .filter(|v| !recorded_violations.contains(&v.identifier))
+                .collect()
+        };
 
     debug!("Finished filtering out recorded violations");
 

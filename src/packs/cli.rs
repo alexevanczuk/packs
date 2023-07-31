@@ -43,10 +43,22 @@ enum Command {
     Greet,
 
     #[clap(about = "Look for violations in the codebase")]
-    Check { files: Vec<String> },
+    Check {
+        /// Ignore recorded violations when reporting violations
+        #[arg(long)]
+        ignore_recorded_violations: bool,
+
+        files: Vec<String>,
+    },
 
     #[clap(about = "Check file contents piped to stdin")]
-    CheckContents { file: String },
+    CheckContents {
+        /// Ignore recorded violations when reporting violations
+        #[arg(long)]
+        ignore_recorded_violations: bool,
+
+        file: String,
+    },
 
     #[clap(
         about = "Update package_todo.yml files with the current violations"
@@ -134,7 +146,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.no_cache {
         debug!("Cache is disabled");
-        configuration.cache_enabled = false
+        configuration.cache_enabled = false;
     }
 
     match args.command {
@@ -153,8 +165,21 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .for_each(|f| println!("{}", f.display()));
             Ok(())
         }
-        Command::Check { files } => checker::check_all(configuration, files),
-        Command::CheckContents { file } => {
+        Command::Check {
+            ignore_recorded_violations,
+            files,
+        } => {
+            configuration.ignore_recorded_violations =
+                ignore_recorded_violations;
+            checker::check_all(configuration, files)
+        }
+        Command::CheckContents {
+            ignore_recorded_violations,
+            file,
+        } => {
+            configuration.ignore_recorded_violations =
+                ignore_recorded_violations;
+
             let absolute_path = get_absolute_path(file.clone(), &configuration);
             configuration.stdin_file_path = Some(absolute_path);
             checker::check_all(configuration, vec![file])
