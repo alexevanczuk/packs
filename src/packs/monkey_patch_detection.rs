@@ -200,19 +200,32 @@ The following is a list of constants that are redefined by your app.
 
 # Ruby Standard Library
 These monkey patches redefine behavior in the Ruby standard library (as determined by parsing the contents of `tests/fixtures/app_with_monkey_patches/rubydir_stub`):
-::Date is redefined at config/initializers/string_and_date_extensions.rb
-::String is redefined at config/initializers/string_and_date_extensions.rb
+
+<details>
+<summary>Click here</summary>
+
+- `::Date` is redefined at [config/initializers/string_and_date_extensions.rb](config/initializers/string_and_date_extensions.rb)
+- `::String` is redefined at [config/initializers/string_and_date_extensions.rb](config/initializers/string_and_date_extensions.rb)
+</details>
 
 # Gems
 These monkey patches redefine behavior in gems your app depends on (as determined by parsing the contents of `tests/fixtures/app_with_monkey_patches/gemdir_stub`):
-::Rails (from gem `rails`) is redefined at config/initializers/rails_monkeypatch.rb
+<details>
+<summary>Click here</summary>
+
+- `::Rails` (from gem `rails`) is redefined at [config/initializers/rails_monkeypatch.rb](config/initializers/rails_monkeypatch.rb)
+</details>
 
 # Application
 These monkey patches redefine behavior in a pack within your app (as determined by parsing your app's packs):
-::Foo is redefined at packs/foo/app/models/foo.rb
-::Foo is redefined at packs/foo/app/services/foo.rb
-::SomeRootClass is redefined at app/models/some_root_class.rb
-::SomeRootClass is redefined at app/services/some_root_class.rb"
+<details>
+<summary>Click here</summary>
+
+- `::Foo` is redefined at [packs/foo/app/models/foo.rb](packs/foo/app/models/foo.rb)
+- `::Foo` is redefined at [packs/foo/app/services/foo.rb](packs/foo/app/services/foo.rb)
+- `::SomeRootClass` is redefined at [app/models/some_root_class.rb](app/models/some_root_class.rb)
+- `::SomeRootClass` is redefined at [app/services/some_root_class.rb](app/services/some_root_class.rb)
+</details>"
       );
 
         let mut configuration = configuration::get(&PathBuf::from(
