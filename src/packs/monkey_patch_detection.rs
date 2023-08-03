@@ -124,6 +124,11 @@ pub fn expose_monkey_patches(
     lines_to_print.push("The following is a list of constants that are redefined by your app.\n".to_owned());
     lines_to_print.push("# Ruby Standard Library".to_owned());
     lines_to_print.push(format!("These monkey patches redefine behavior in the Ruby standard library (as determined by parsing the contents of `{}`):", rubydir.display()));
+    lines_to_print.push("".to_owned());
+
+    lines_to_print.push("<details>".to_owned());
+    lines_to_print.push("<summary>Click here</summary>".to_owned());
+    lines_to_print.push("".to_owned());
 
     ruby_monkey_patches.sort_by(constant_definition_sorting_function);
     gem_monkey_patches.sort_by(constant_definition_sorting_function);
@@ -136,8 +141,15 @@ pub fn expose_monkey_patches(
         ));
     }
 
+    lines_to_print.push("</details>".to_owned());
+
     lines_to_print.push("\n# Gems".to_owned());
     lines_to_print.push(format!("These monkey patches redefine behavior in gems your app depends on (as determined by parsing the contents of `{}`):", gemdir.display()));
+
+    lines_to_print.push("<details>".to_owned());
+    lines_to_print.push("<summary>Click here</summary>".to_owned());
+    lines_to_print.push("".to_owned());
+
     for definition in gem_monkey_patches {
         let relative_path = definition
             .absolute_path_of_definition
@@ -149,21 +161,31 @@ pub fn expose_monkey_patches(
             .unwrap();
 
         lines_to_print.push(format!(
-            "{} (from gem `{}`) is redefined at {}",
+            "- `{}` (from gem `{}`) is redefined at [{}]({})",
             definition.fully_qualified_name,
             gem_name,
+            relative_path.display(),
             relative_path.display()
         ))
     }
 
+    lines_to_print.push("</details>".to_owned());
+
     lines_to_print.push("\n# Application".to_owned());
     lines_to_print.push("These monkey patches redefine behavior in a pack within your app (as determined by parsing your app's packs):".to_owned());
+
+    lines_to_print.push("<details>".to_owned());
+    lines_to_print.push("<summary>Click here</summary>".to_owned());
+    lines_to_print.push("".to_owned());
+
     for definition in app_monkey_patches {
         lines_to_print.push(get_redefinition_line_to_print(
             &configuration.absolute_root,
             definition,
         ));
     }
+
+    lines_to_print.push("</details>".to_owned());
 
     lines_to_print.join("\n")
 }
@@ -177,8 +199,9 @@ fn get_redefinition_line_to_print(
         .strip_prefix(absolute_root)
         .unwrap();
     format!(
-        "{} is redefined at {}",
+        "- `{}` is redefined at [{}]({})",
         definition.fully_qualified_name,
+        relative_path.display(),
         relative_path.display(),
     )
 }
