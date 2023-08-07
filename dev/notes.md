@@ -12,11 +12,6 @@ Although `packs` is intended to be fast, there are ways it can be made a lot fas
 ### Improved use of references (less cloning)
 As I'm new to Rust, I don't take advantage of a lot of features in Rust that would improve the performance, such as making sure I minimize the use of deep clones and use references.
 
-# Distribution Considerations
-- Sign the binary
-- Distribute with brew: https://federicoterzi.com/blog/how-to-publish-your-rust-project-on-homebrew/
-- Add directions to download via some other tool, or ship as a native ruby gem extension.
-
 # Milestones
 - [x] Generate `packwerk` compatible cache with `packs generate_cache`
 - [x] Parse ERB files
