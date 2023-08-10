@@ -1,5 +1,4 @@
 use crate::packs;
-use crate::packs::checker;
 
 use crate::packs::file_utils::get_absolute_path;
 use clap::{Parser, Subcommand};
@@ -158,20 +157,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             packs::list(configuration);
             Ok(())
         }
-        Command::ListIncludedFiles => {
-            configuration
-                .included_files
-                .iter()
-                .for_each(|f| println!("{}", f.display()));
-            Ok(())
-        }
+        Command::ListIncludedFiles => packs::list_included_files(configuration),
         Command::Check {
             ignore_recorded_violations,
             files,
         } => {
             configuration.ignore_recorded_violations =
                 ignore_recorded_violations;
-            checker::check_all(configuration, files)
+            packs::check(configuration, files)
         }
         Command::CheckContents {
             ignore_recorded_violations,
@@ -182,15 +175,15 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             let absolute_path = get_absolute_path(file.clone(), &configuration);
             configuration.stdin_file_path = Some(absolute_path);
-            checker::check_all(configuration, vec![file])
+            packs::check(configuration, vec![file])
         }
-        Command::Update => checker::update(configuration),
+        Command::Update => packs::update(configuration),
         Command::Validate => {
-            checker::validate_all(&configuration)
+            packs::validate(&configuration)
             // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
         }
         Command::CheckUnnecessaryDependencies => {
-            packs::checker::check_unnecessary_dependencies(&configuration)
+            packs::check_unnecessary_dependencies(&configuration)
         }
         Command::DeleteCache => {
             packs::delete_cache(configuration);

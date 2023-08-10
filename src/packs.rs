@@ -40,6 +40,41 @@ pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
+pub fn check(
+    configuration: Configuration,
+    files: Vec<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    checker::check_all(configuration, files)
+}
+
+pub fn update(
+    configuration: Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    checker::update(configuration)
+}
+
+pub fn list_included_files(
+    configuration: Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    configuration
+        .included_files
+        .iter()
+        .for_each(|f| println!("{}", f.display()));
+    Ok(())
+}
+
+pub fn validate(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    checker::validate_all(configuration)
+}
+
+pub fn check_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    checker::check_unnecessary_dependencies(configuration)
+}
+
 pub fn list(configuration: Configuration) {
     for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())
