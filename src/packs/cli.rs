@@ -164,7 +164,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         } => {
             configuration.ignore_recorded_violations =
                 ignore_recorded_violations;
-            packs::check(configuration, files)
+            packs::check(&configuration, files)
         }
         Command::CheckContents {
             ignore_recorded_violations,
@@ -175,9 +175,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             let absolute_path = get_absolute_path(file.clone(), &configuration);
             configuration.stdin_file_path = Some(absolute_path);
-            packs::check(configuration, vec![file])
+            packs::check(&configuration, vec![file])
         }
-        Command::Update => packs::update(configuration),
+        Command::Update => packs::update(&configuration),
         Command::Validate => {
             packs::validate(&configuration)
             // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())

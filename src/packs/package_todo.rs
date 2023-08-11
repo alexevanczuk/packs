@@ -131,7 +131,7 @@ pub fn package_todos_for_pack_name(
     ret
 }
 pub fn write_violations_to_disk(
-    configuration: Configuration,
+    configuration: &Configuration,
     violations: HashSet<Violation>,
 ) {
     debug!("Starting writing violations to disk");

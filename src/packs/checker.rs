@@ -98,16 +98,16 @@ pub(crate) trait ValidatorInterface {
 
 // TODO: Break this function up into smaller functions
 pub(crate) fn check_all(
-    configuration: Configuration,
+    configuration: &Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let checkers = get_checkers(&configuration);
+    let checkers = get_checkers(configuration);
 
     debug!("Intersecting input files with configuration included files");
     let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
 
     let found_violations: HashSet<Violation> =
-        get_all_violations(&configuration, &absolute_paths, &checkers);
+        get_all_violations(configuration, &absolute_paths, &checkers);
 
     let recorded_violations = &configuration.pack_set.all_violations;
 
@@ -168,7 +168,7 @@ pub(crate) fn check_all(
             indexed_checkers
                 .get(&v.violation_type)
                 .unwrap()
-                .is_strict_mode_violation(v, &configuration)
+                .is_strict_mode_violation(v, configuration)
         })
         .collect();
 
@@ -247,12 +247,12 @@ pub(crate) fn validate_all(
 }
 
 pub(crate) fn update(
-    configuration: Configuration,
+    configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let checkers = get_checkers(&configuration);
+    let checkers = get_checkers(configuration);
 
     let violations = get_all_violations(
-        &configuration,
+        configuration,
         &configuration.included_files,
         &checkers,
     );

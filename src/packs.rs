@@ -41,14 +41,14 @@ pub fn greet() {
 }
 
 pub fn check(
-    configuration: Configuration,
+    configuration: &Configuration,
     files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     checker::check_all(configuration, files)
 }
 
 pub fn update(
-    configuration: Configuration,
+    configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     checker::update(configuration)
 }
@@ -67,6 +67,11 @@ pub fn validate(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     checker::validate_all(configuration)
+}
+
+pub fn configuration() -> Configuration {
+    let absolute_root = PathBuf::from(".").canonicalize().unwrap();
+    configuration::get(&absolute_root)
 }
 
 pub fn check_unnecessary_dependencies(
