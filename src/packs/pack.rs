@@ -7,11 +7,15 @@ use std::{
 };
 
 use core::hash::Hash;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use super::{checker::ViolationIdentifier, raw_pack::RawPack, PackageTodo};
+use super::{
+    checker::ViolationIdentifier,
+    raw_pack::{self},
+    PackageTodo,
+};
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
 pub struct Pack {
     #[serde(skip_deserializing)]
     pub yml: PathBuf,
@@ -48,8 +52,7 @@ impl Pack {
     }
 }
 
-// Make an enum for the configuration of a checker, which can be either false, true, or strict:
-#[derive(Debug, Default, PartialEq, Eq, Deserialize, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
 pub enum CheckerSetting {
     #[default]
     False,
@@ -67,12 +70,21 @@ impl CheckerSetting {
     }
 }
 
-fn convert_raw_checker_setting(raw_checker_setting: &str) -> CheckerSetting {
-    match raw_checker_setting {
-        "false" => CheckerSetting::False,
-        "true" => CheckerSetting::True,
-        "strict" => CheckerSetting::Strict,
-        _ => panic!("Invalid checker setting: {}", raw_checker_setting),
+fn convert_raw_checker_setting(
+    raw_checker_setting: &Option<String>,
+) -> CheckerSetting {
+    if let Some(raw_checker_setting) = raw_checker_setting {
+        if raw_checker_setting == "strict" {
+            CheckerSetting::Strict
+        } else if raw_checker_setting == "true" {
+            CheckerSetting::True
+        } else if raw_checker_setting == "false" {
+            CheckerSetting::False
+        } else {
+            panic!("Invalid checker setting: {}", raw_checker_setting);
+        }
+    } else {
+        CheckerSetting::False
     }
 }
 
@@ -121,13 +133,7 @@ impl Pack {
             relative_path = PathBuf::from(".");
         };
 
-        let mut yaml_contents = String::new();
-        let mut file = File::open(yml).expect("Failed to open the YAML file");
-        file.read_to_string(&mut yaml_contents)
-            .expect("Failed to read the YAML file");
-
-        let raw_pack: RawPack = serde_yaml::from_str(&yaml_contents)
-            .expect("Failed to deserialize the YAML");
+        let raw_pack = raw_pack::from_path(yml);
 
         let absolute_path_to_package_todo = package_yml_absolute_path
             .parent()
@@ -155,7 +161,7 @@ impl Pack {
         };
 
         let dependencies = raw_pack.dependencies;
-        let visible_to = raw_pack.visible_to;
+        let visible_to = raw_pack.visible_to.unwrap_or_default();
         let public_folder = relative_path.join(raw_pack.public_folder);
         let ignored_dependencies = raw_pack.ignored_dependencies;
         let ignored_private_constants = raw_pack.ignored_private_constants;

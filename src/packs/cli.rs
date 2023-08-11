@@ -72,6 +72,9 @@ enum Command {
     )]
     CheckUnnecessaryDependencies,
 
+    #[clap(about = "Lint package.yml files")]
+    LintPackageYmlFiles,
+
     #[clap(
         about = "Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself"
     )]
@@ -200,6 +203,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &args.rubydir,
                 &args.gemdir,
             );
+            Ok(())
+        }
+        Command::LintPackageYmlFiles => {
+            packs::lint_package_yml_files(&configuration);
             Ok(())
         }
     }

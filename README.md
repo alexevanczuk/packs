@@ -29,7 +29,7 @@ Once installed and added to your `$PATH`, just call `packs` to see the CLI help 
 ```
 Welcome! Please see https://github.com/alexevanczuk/packs for more information!
 
-Usage: packs [OPTIONS] <COMMAND>
+Usage: pks [OPTIONS] <COMMAND>
 
 Commands:
   greet                           Just saying hi
@@ -38,6 +38,7 @@ Commands:
   update                          Update package_todo.yml files with the current violations
   validate                        Look for validation errors in the codebase
   check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
+  lint-package-yml-files          Lint package.yml files
   expose-monkey-patches           Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself
   delete-cache                    `rm -rf` on your cache directory, default `tmp/cache/packwerk`
   list-packs                      List packs based on configuration in packwerk.yml (for debugging purposes)
