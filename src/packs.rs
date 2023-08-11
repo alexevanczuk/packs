@@ -7,6 +7,7 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
+pub(crate) mod linting;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
@@ -84,6 +85,10 @@ pub fn list(configuration: Configuration) {
     for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())
     }
+}
+
+pub fn lint_package_yml_files(configuration: &Configuration) {
+    linting::lint_package_yml_files(configuration)
 }
 
 pub fn delete_cache(configuration: Configuration) {
