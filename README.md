@@ -23,8 +23,7 @@ A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a
 - See [EXPERIMENTAL_PARSER_USAGE.md](https://github.com/alexevanczuk/packs/blob/main/EXPERIMENTAL_PARSER_USAGE.md) for more info
 
 # Usage and Documentation
-Once installed and added to your `$PATH`, just call `packs` to see the CLI help message and documentation.
-(Note: if you're using [`use_packs`]([url](https://github.com/rubyatscale/use_packs)) AND [`chruby`]([url](https://github.com/capistrano/chruby)), you'll need to instead call `pks` everywhere you'd normally call `packs`.)
+Once installed and added to your `$PATH`, just call `pks` to see the CLI help message and documentation.
 
 ```
 Welcome! Please see https://github.com/alexevanczuk/packs for more information!
