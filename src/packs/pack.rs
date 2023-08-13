@@ -46,40 +46,6 @@ impl Hash for Pack {
     }
 }
 
-impl Pack {
-    pub fn relative_yml(&self) -> PathBuf {
-        self.relative_path.join("package.yml")
-    }
-
-    pub(crate) fn enforce_architecture(&self) -> &CheckerSetting {
-        match &self.enforce_architecture {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
-    pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
-        match &self.enforce_dependencies {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
-    pub(crate) fn enforce_privacy(&self) -> &CheckerSetting {
-        match &self.enforce_privacy {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
-    pub(crate) fn enforce_visibility(&self) -> &CheckerSetting {
-        match &self.enforce_visibility {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-}
-
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
 pub enum CheckerSetting {
     #[default]
@@ -227,5 +193,37 @@ impl Pack {
         };
 
         pack
+    }
+
+    pub fn relative_yml(&self) -> PathBuf {
+        self.relative_path.join("package.yml")
+    }
+
+    pub(crate) fn enforce_architecture(&self) -> &CheckerSetting {
+        match &self.enforce_architecture {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
+        match &self.enforce_dependencies {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_privacy(&self) -> &CheckerSetting {
+        match &self.enforce_privacy {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_visibility(&self) -> &CheckerSetting {
+        match &self.enforce_visibility {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
     }
 }
