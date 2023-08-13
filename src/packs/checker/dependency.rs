@@ -5,7 +5,7 @@ use super::{
     ViolationIdentifier,
 };
 use crate::packs::checker::Reference;
-use crate::packs::pack::{CheckerSetting, Pack};
+use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
@@ -93,7 +93,7 @@ impl CheckerInterface for Checker {
         let referencing_pack =
             reference.referencing_pack(&configuration.pack_set);
 
-        if referencing_pack.enforce_dependencies.is_false() {
+        if referencing_pack.enforce_dependencies().is_false() {
             return None;
         }
 
@@ -167,7 +167,7 @@ impl CheckerInterface for Checker {
         let referencing_pack =
             get_referencing_pack(violation, &configuration.pack_set);
 
-        referencing_pack.enforce_dependencies == CheckerSetting::Strict
+        referencing_pack.enforce_dependencies().is_strict()
     }
 
     fn violation_type(&self) -> String {

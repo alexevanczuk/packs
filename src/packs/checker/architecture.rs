@@ -1,6 +1,5 @@
 use super::{get_referencing_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 #[derive(Default, Clone)]
@@ -58,7 +57,7 @@ impl CheckerInterface for Checker {
         }
         let defining_pack = defining_pack.unwrap();
 
-        if referencing_pack.enforce_architecture.is_false() {
+        if referencing_pack.enforce_architecture().is_false() {
             return None;
         }
 
@@ -118,7 +117,7 @@ impl CheckerInterface for Checker {
         let referencing_pack =
             get_referencing_pack(violation, &configuration.pack_set);
 
-        referencing_pack.enforce_architecture == CheckerSetting::Strict
+        referencing_pack.enforce_architecture().is_strict()
     }
 
     fn violation_type(&self) -> String {
@@ -146,7 +145,7 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            enforce_visibility: CheckerSetting::True,
+            enforce_visibility: Some(CheckerSetting::True),
             ..Pack::default()
         };
         let referencing_pack = Pack {
@@ -204,7 +203,7 @@ mod tests {
         let referencing_pack = Pack {
             name: String::from("packs/bar"),
             layer: Some(String::from("utilities")),
-            enforce_architecture: CheckerSetting::True,
+            enforce_architecture: Some(CheckerSetting::True),
             ..Pack::default()
         };
 
@@ -272,7 +271,7 @@ mod tests {
         let referencing_pack = Pack {
             name: String::from("packs/bar"),
             layer: Some(String::from("product")),
-            enforce_architecture: CheckerSetting::True,
+            enforce_architecture: Some(CheckerSetting::True),
             ..Pack::default()
         };
 

@@ -1,6 +1,5 @@
 use super::{get_defining_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -22,7 +21,7 @@ impl CheckerInterface for Checker {
         }
         let defining_pack = defining_pack.unwrap();
 
-        if defining_pack.enforce_privacy.is_false() {
+        if defining_pack.enforce_privacy().is_false() {
             return None;
         }
 
@@ -121,7 +120,7 @@ impl CheckerInterface for Checker {
         let defining_pack =
             get_defining_pack(violation, &configuration.pack_set);
 
-        defining_pack.enforce_privacy == CheckerSetting::Strict
+        defining_pack.enforce_privacy().is_strict()
     }
 
     fn violation_type(&self) -> String {
@@ -145,7 +144,7 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             ..Pack::default()
         };
 
@@ -191,7 +190,7 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
@@ -253,7 +252,7 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             ignored_private_constants: HashSet::from([String::from("::Foo")]),
             ..Pack::default()
         };
@@ -301,7 +300,7 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
@@ -364,7 +363,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             public_folder: PathBuf::from("packs/bar/app/api"),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             ..Pack::default()
         };
 
@@ -414,7 +413,7 @@ mod tests {
             private_constants: vec![String::from("::Bar")]
                 .into_iter()
                 .collect(),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
@@ -479,7 +478,7 @@ mod tests {
             private_constants: vec![String::from("::Bar")]
                 .into_iter()
                 .collect(),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             public_folder: PathBuf::from("packs/bar/app/public"),
             ..Pack::default()
         };
@@ -544,7 +543,7 @@ mod tests {
             private_constants: vec![String::from("::DifferentConstant")]
                 .into_iter()
                 .collect(),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             ..Pack::default()
         };
 
@@ -593,7 +592,7 @@ mod tests {
             private_constants: vec![String::from("::Bar")]
                 .into_iter()
                 .collect(),
-            enforce_privacy: CheckerSetting::True,
+            enforce_privacy: Some(CheckerSetting::True),
             ..Pack::default()
         };
 

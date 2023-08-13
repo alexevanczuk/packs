@@ -34,10 +34,10 @@ pub struct Pack {
     pub visible_to: HashSet<String>,
     pub public_folder: PathBuf,
     pub layer: Option<String>,
-    pub enforce_dependencies: CheckerSetting,
-    pub enforce_privacy: CheckerSetting,
-    pub enforce_visibility: CheckerSetting,
-    pub enforce_architecture: CheckerSetting,
+    pub enforce_dependencies: Option<CheckerSetting>,
+    pub enforce_privacy: Option<CheckerSetting>,
+    pub enforce_visibility: Option<CheckerSetting>,
+    pub enforce_architecture: Option<CheckerSetting>,
 }
 
 impl Hash for Pack {
@@ -50,6 +50,34 @@ impl Pack {
     pub fn relative_yml(&self) -> PathBuf {
         self.relative_path.join("package.yml")
     }
+
+    pub(crate) fn enforce_architecture(&self) -> &CheckerSetting {
+        match &self.enforce_architecture {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
+        match &self.enforce_dependencies {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_privacy(&self) -> &CheckerSetting {
+        match &self.enforce_privacy {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_visibility(&self) -> &CheckerSetting {
+        match &self.enforce_visibility {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
@@ -61,30 +89,32 @@ pub enum CheckerSetting {
 }
 
 impl CheckerSetting {
-    /// Returns `true` if the checker setting is [`False`].
-    ///
-    /// [`False`]: CheckerSetting::False
-    #[must_use]
     pub fn is_false(&self) -> bool {
         matches!(self, Self::False)
+    }
+
+    pub fn is_strict(&self) -> bool {
+        matches!(self, Self::Strict)
     }
 }
 
 fn convert_raw_checker_setting(
     raw_checker_setting: &Option<String>,
-) -> CheckerSetting {
+) -> Option<CheckerSetting> {
     if let Some(raw_checker_setting) = raw_checker_setting {
         if raw_checker_setting == "strict" {
-            CheckerSetting::Strict
+            Some(CheckerSetting::Strict)
         } else if raw_checker_setting == "true" {
-            CheckerSetting::True
+            Some(CheckerSetting::True)
         } else if raw_checker_setting == "false" {
-            CheckerSetting::False
+            Some(CheckerSetting::False)
         } else {
             panic!("Invalid checker setting: {}", raw_checker_setting);
         }
     } else {
-        CheckerSetting::False
+        // TODO: Add serialization test for this!
+        // CheckerSetting::False
+        None
     }
 }
 
