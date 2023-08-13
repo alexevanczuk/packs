@@ -227,3 +227,134 @@ impl Pack {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    fn reserialize_pack(pack_yml: &str) -> String {
+        let deserialized_pack = serde_yaml::from_str::<Pack>(pack_yml).unwrap();
+
+        serde_yaml::to_string(&deserialized_pack).unwrap()
+    }
+
+    #[test]
+    fn test_serde_sorted_dependencies() {
+        let pack_yml = r#"
+# some comment
+dependencies:
+  - packs/c
+  - packs/a
+  - packs/b
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+dependencies:
+  - packs/a
+  - packs/b
+  - packs/c
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_enforcements() {
+        let pack_yml = r#"
+# some comment
+enforce_privacy: true
+enforce_dependencies: strict
+dependencies:
+  - packs/c
+  - packs/a
+  - packs/b
+foobar: true
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+enforce_dependencies: strict
+enforce_privacy: true
+dependencies:
+  - packs/a
+  - packs/b
+  - packs/c
+foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_arbitrary_client_keys() {
+        let pack_yml = r#"
+# some comment
+dependencies:
+  - packs/c
+  - packs/a
+  - packs/b
+foobar: true
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+dependencies:
+  - packs/a
+  - packs/b
+  - packs/c
+foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_explicitly_empty_visible() {
+        let pack_yml = r#"
+visible_to:
+  - packs/c
+  - packs/a
+  - packs/b
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+visible_to:
+  - packs/a
+  - packs/b
+  - packs/c
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_metadata() {
+        let pack_yml = r#"
+enforce_dependencies: false
+metadata:
+  foobar: true
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+enforce_dependencies: false
+metadata:
+  foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+}
