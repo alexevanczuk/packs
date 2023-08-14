@@ -162,7 +162,7 @@ pub(crate) fn walk_directory(
             // We can remove this once we fix the bug.
             && (package_paths_set.is_match(relative_path.parent().unwrap()) || absolute_path.parent().unwrap() == absolute_root)
         {
-            let pack = Pack::from_path(&absolute_path, &relative_path);
+            let pack = Pack::from_path(&absolute_path, &absolute_root);
             included_packs.insert(pack);
         }
 

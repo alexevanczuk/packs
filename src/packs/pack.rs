@@ -164,8 +164,11 @@ impl Pack {
 
     pub fn from_path(
         package_yml_absolute_path: &Path,
-        package_yml_relative_path: &Path,
+        absolute_root: &Path,
     ) -> Pack {
+        let package_yml_relative_path = package_yml_absolute_path
+            .strip_prefix(absolute_root)
+            .unwrap();
         let mut relative_path = package_yml_relative_path
             .parent()
             .expect("Expected package to be in a parent directory")
