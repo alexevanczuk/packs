@@ -10,11 +10,7 @@ use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Value;
 
-use super::{
-    checker::ViolationIdentifier,
-    raw_pack::{self},
-    PackageTodo,
-};
+use super::{checker::ViolationIdentifier, PackageTodo};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub struct Pack {
@@ -118,26 +114,6 @@ impl CheckerSetting {
     }
 }
 
-fn convert_raw_checker_setting(
-    raw_checker_setting: &Option<String>,
-) -> Option<CheckerSetting> {
-    if let Some(raw_checker_setting) = raw_checker_setting {
-        if raw_checker_setting == "strict" {
-            Some(CheckerSetting::Strict)
-        } else if raw_checker_setting == "true" {
-            Some(CheckerSetting::True)
-        } else if raw_checker_setting == "false" {
-            Some(CheckerSetting::False)
-        } else {
-            panic!("Invalid checker setting: {}", raw_checker_setting);
-        }
-    } else {
-        // TODO: Add serialization test for this!
-        // CheckerSetting::False
-        None
-    }
-}
-
 impl Pack {
     pub fn all_violations(&self) -> Vec<ViolationIdentifier> {
         let mut violations = Vec::new();
@@ -186,7 +162,14 @@ impl Pack {
             relative_path = PathBuf::from(".");
         };
 
-        let raw_pack = raw_pack::from_path(yml);
+        let mut yaml_contents = String::new();
+        let mut file = File::open(package_yml_absolute_path)
+            .expect("Failed to open the YAML file");
+        file.read_to_string(&mut yaml_contents)
+            .expect("Failed to read the YAML file");
+
+        let pack: Pack = serde_yaml::from_str(&yaml_contents)
+            .expect("Failed to deserialize the YAML");
 
         let absolute_path_to_package_todo = package_yml_absolute_path
             .parent()
@@ -213,42 +196,12 @@ impl Pack {
             PackageTodo::default()
         };
 
-        let dependencies = raw_pack.dependencies;
-        let visible_to = raw_pack.visible_to;
-        let public_folder = Some(relative_path.join(raw_pack.public_folder));
-        let ignored_dependencies = raw_pack.ignored_dependencies;
-        let ignored_private_constants = raw_pack.ignored_private_constants;
-        let private_constants = raw_pack.private_constants;
-
-        let enforce_dependencies =
-            convert_raw_checker_setting(&raw_pack.enforce_dependencies);
-        let enforce_privacy =
-            convert_raw_checker_setting(&raw_pack.enforce_privacy);
-        let enforce_visibility =
-            convert_raw_checker_setting(&raw_pack.enforce_visibility);
-        let enforce_architecture =
-            convert_raw_checker_setting(&raw_pack.enforce_architecture);
-
-        let layer = raw_pack.layer;
-        let client_keys = raw_pack.client_keys;
-
         let pack: Pack = Pack {
             yml: yml.to_path_buf(),
             name,
             relative_path,
-            dependencies,
             package_todo,
-            ignored_dependencies,
-            ignored_private_constants,
-            private_constants,
-            visible_to,
-            enforce_dependencies,
-            enforce_privacy,
-            enforce_visibility,
-            enforce_architecture,
-            public_folder,
-            layer,
-            client_keys,
+            ..pack
         };
 
         pack
@@ -491,6 +444,24 @@ metadata:
 enforce_dependencies: false
 metadata:
   foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_owner() {
+        let pack_yml = r#"
+owner: Foobar
+enforce_dependencies: true
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+enforce_dependencies: true
+owner: Foobar
 "#
         .trim_start();
 
