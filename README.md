@@ -37,6 +37,7 @@ Commands:
   check-contents                  Check file contents piped to stdin
   update                          Update package_todo.yml files with the current violations
   validate                        Look for validation errors in the codebase
+  add-dependency                  Add a dependency from one pack to another
   check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
   lint-package-yml-files          Lint package.yml files
   expose-monkey-patches           Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself
