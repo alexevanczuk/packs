@@ -7,7 +7,6 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
-pub(crate) mod linting;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
@@ -20,7 +19,7 @@ mod pack_set;
 mod package_todo;
 mod reference_extractor;
 
-use crate::packs::pack::serialize_pack;
+use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
 
 // Internal imports
@@ -59,9 +58,7 @@ fn create(configuration: &Configuration, name: String) {
         PackageTodo::default(),
     );
 
-    let new_pack_contents = serialize_pack(&new_pack);
-    std::fs::create_dir_all(new_pack_path.parent().unwrap()).unwrap();
-    std::fs::write(new_pack_path, new_pack_contents).unwrap();
+    write_pack_to_disk(&new_pack);
 
     let readme = format!(
 "Welcome to `{}`!
@@ -135,7 +132,9 @@ pub fn list(configuration: Configuration) {
 }
 
 pub fn lint_package_yml_files(configuration: &Configuration) {
-    linting::lint_package_yml_files(configuration)
+    for pack in &configuration.pack_set.packs {
+        write_pack_to_disk(pack)
+    }
 }
 
 pub fn delete_cache(configuration: Configuration) {

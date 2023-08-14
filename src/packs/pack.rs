@@ -320,6 +320,24 @@ pub fn serialize_pack(pack: &Pack) -> String {
     }
 }
 
+pub fn write_pack_to_disk(pack: &Pack) {
+    let serialized_pack = serialize_pack(pack);
+    let pack_dir = pack.yml.parent().unwrap();
+
+    std::fs::create_dir_all(pack_dir).unwrap_or_else(|e| {
+        panic!(
+            "Failed to create directory for pack {:?} with error {:?}",
+            &pack_dir, e
+        )
+    });
+    std::fs::write(&pack.yml, serialized_pack).unwrap_or_else(|e| {
+        panic!(
+            "Failed to write pack to disk {:?} with error {:?}",
+            &pack.yml, e
+        )
+    });
+}
+
 fn serialize_checker_setting<S>(
     value: &Option<CheckerSetting>,
     serializer: S,
