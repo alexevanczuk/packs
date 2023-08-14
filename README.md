@@ -62,6 +62,7 @@ See [INSTALLATION.md](https://github.com/alexevanczuk/packs/blob/main/INSTALLATI
 
 # Using with VSCode/RubyMine Extension
 `packwerk` has a VSCode Extension: https://github.com/rubyatscale/packwerk-vscode/tree/main
+
 It also has a RubyMine Extension: https://github.com/vinted/packwerk-intellij
 
 Using the extension with `packs` is straightforward and results in a much more responsive experience.
