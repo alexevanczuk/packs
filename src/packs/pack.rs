@@ -55,6 +55,9 @@ pub struct Pack {
     )]
     pub enforce_architecture: Option<CheckerSetting>,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+
     #[serde(
         default,
         skip_serializing_if = "HashSet::is_empty",
