@@ -19,6 +19,7 @@ mod pack_set;
 mod package_todo;
 mod reference_extractor;
 
+use crate::packs;
 use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
 
@@ -127,7 +128,20 @@ fn add_dependency(
 
     write_pack_to_disk(&new_from_pack);
 
-    println!("Successfully added `{}` as a dependency to `{}`!", to, from);
+    // Note: Ideally we wouldn't have to refetch the configuration and could instead
+    // either update the existing one OR modify the existing one and return a new one
+    // (which takes ownership over the previous one).
+    // For now, we simply refetch the entire configuration for simplicity,
+    // since we don't mind the slowdown for this CLI command.
+    let new_configuration = configuration::get(&configuration.absolute_root);
+    let validation_result = packs::validate(&new_configuration);
+    if validation_result.is_err() {
+        println!("Added `{}` as a dependency to `{}`!", to, from);
+        println!("Warning: This creates a cycle!");
+    } else {
+        println!("Successfully added `{}` as a dependency to `{}`!", to, from);
+    }
+
     Ok(())
 }
 
