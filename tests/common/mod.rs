@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 //
 // For more information about this file's naming convention, see
@@ -22,7 +22,16 @@ pub fn teardown() {
                     err
                 );
             }
-        })
+        });
+
+    // Delete tests/fixtures/simple_app/packs/foobar
+    let directory = PathBuf::from("tests/fixtures/simple_app/packs/foobar");
+    if let Err(err) = fs::remove_dir_all(directory) {
+        eprintln!(
+            "Failed to remove tests/fixtures/simple_app/packs/foobar during test teardown: {}",
+            err
+        );
+    }
 
     // // Remove the directory and its contents
     // if let Err(err) = fs::remove_dir_all(directory) {
