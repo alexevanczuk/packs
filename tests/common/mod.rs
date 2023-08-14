@@ -20,6 +20,7 @@ pub fn teardown() {
         });
 }
 
+#[allow(dead_code)]
 pub fn delete_foobar() {
     let directory = PathBuf::from("tests/fixtures/simple_app/packs/foobar");
     if let Err(err) = fs::remove_dir_all(directory) {
