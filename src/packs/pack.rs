@@ -158,34 +158,11 @@ impl Pack {
         package_yml_absolute_path: &Path,
         absolute_root: &Path,
     ) -> Pack {
-        let package_yml_relative_path = package_yml_absolute_path
-            .strip_prefix(absolute_root)
-            .unwrap();
-        let mut relative_path = package_yml_relative_path
-            .parent()
-            .expect("Expected package to be in a parent directory")
-            .to_owned();
-
-        let mut name = relative_path
-            .to_str()
-            .expect("Non-unicode characters?")
-            .to_owned();
-        let yml = package_yml_absolute_path;
-
-        // Handle the root pack
-        if name == *"" {
-            name = String::from(".");
-            relative_path = PathBuf::from(".");
-        };
-
         let mut yaml_contents = String::new();
         let mut file = File::open(package_yml_absolute_path)
             .expect("Failed to open the YAML file");
         file.read_to_string(&mut yaml_contents)
             .expect("Failed to read the YAML file");
-
-        let pack: Pack = serde_yaml::from_str(&yaml_contents)
-            .expect("Failed to deserialize the YAML");
 
         let absolute_path_to_package_todo = package_yml_absolute_path
             .parent()
@@ -210,6 +187,43 @@ impl Pack {
             })
         } else {
             PackageTodo::default()
+        };
+
+        Pack::from_contents(
+            package_yml_absolute_path,
+            absolute_root,
+            &yaml_contents,
+            package_todo,
+        )
+    }
+
+    pub fn from_contents(
+        package_yml_absolute_path: &Path,
+        absolute_root: &Path,
+        package_yml_contents: &str,
+        package_todo: PackageTodo,
+    ) -> Pack {
+        let pack: Pack = serde_yaml::from_str(package_yml_contents)
+            .expect("Failed to deserialize the YAML");
+
+        let package_yml_relative_path = package_yml_absolute_path
+            .strip_prefix(absolute_root)
+            .unwrap();
+        let mut relative_path = package_yml_relative_path
+            .parent()
+            .expect("Expected package to be in a parent directory")
+            .to_owned();
+
+        let mut name = relative_path
+            .to_str()
+            .expect("Non-unicode characters?")
+            .to_owned();
+        let yml = package_yml_absolute_path;
+
+        // Handle the root pack
+        if name == *"" {
+            name = String::from(".");
+            relative_path = PathBuf::from(".");
         };
 
         let pack: Pack = Pack {
@@ -297,10 +311,13 @@ fn is_default_public_folder(value: &Option<PathBuf>) -> bool {
 }
 
 pub fn serialize_pack(pack: &Pack) -> String {
-    serde_yaml::to_string(&pack)
-        .unwrap()
-        // Indent dependencies by 2 spaces
-        .replace("\n-", "\n  -")
+    let serialized_pack = serde_yaml::to_string(&pack).unwrap();
+    // Indent dependencies by 2 spaces
+    if serialized_pack == "{}\n" {
+        "".to_owned()
+    } else {
+        serialized_pack.replace("\n-", "\n  -")
+    }
 }
 
 fn serialize_checker_setting<S>(
@@ -480,6 +497,17 @@ enforce_dependencies: true
 owner: Foobar
 "#
         .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_empty_pack() {
+        let pack_yml = r#""#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#""#.trim_start();
 
         assert_eq!(expected, actual)
     }

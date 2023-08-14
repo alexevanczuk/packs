@@ -41,6 +41,9 @@ enum Command {
     #[clap(about = "Just saying hi")]
     Greet,
 
+    #[clap(about = "Create a new pack")]
+    Create { name: String },
+
     #[clap(about = "Look for violations in the codebase")]
     Check {
         /// Ignore recorded violations when reporting violations
@@ -207,6 +210,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::LintPackageYmlFiles => {
             packs::lint_package_yml_files(&configuration);
+            Ok(())
+        }
+        Command::Create { name } => {
+            packs::create(&configuration, name);
             Ok(())
         }
     }

@@ -20,6 +20,9 @@ mod pack_set;
 mod package_todo;
 mod reference_extractor;
 
+use crate::packs::pack::serialize_pack;
+use crate::packs::pack::Pack;
+
 // Internal imports
 pub(crate) use self::checker::Violation;
 pub(crate) use self::pack_set::PackSet;
@@ -38,6 +41,51 @@ use std::path::PathBuf;
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
+}
+
+fn create(configuration: &Configuration, name: String) {
+    let existing_pack = configuration.pack_set.for_pack(&name);
+    if existing_pack.is_ok() {
+        println!("`{}` already exists!", &name);
+        return;
+    }
+    let new_pack_path =
+        configuration.absolute_root.join(&name).join("package.yml");
+
+    let new_pack = Pack::from_contents(
+        &new_pack_path,
+        &configuration.absolute_root,
+        "enforce_dependencies: true",
+        PackageTodo::default(),
+    );
+
+    let new_pack_contents = serialize_pack(&new_pack);
+    std::fs::create_dir_all(new_pack_path.parent().unwrap()).unwrap();
+    std::fs::write(new_pack_path, new_pack_contents).unwrap();
+
+    let readme = format!(
+"Welcome to `{}`!
+
+If you're the author, please consider replacing this file with a README.md, which may contain:
+- What your pack is and does
+- How you expect people to use your pack
+- Example usage of your pack's public API and where to find it
+- Limitations, risks, and important considerations of usage
+- How to get in touch with eng and other stakeholders for questions or issues pertaining to this pack
+- What SLAs/SLOs (service level agreements/objectives), if any, your package provides
+- When in doubt, keep it simple
+- Anything else you may want to include!
+
+README.md should change as your public API changes.
+
+See https://github.com/rubyatscale/packs#readme for more info!",
+    new_pack.name
+);
+
+    let readme_path = configuration.absolute_root.join(&name).join("README.md");
+    std::fs::write(readme_path, readme).unwrap();
+
+    println!("Successfully created `{}`!", name);
 }
 
 pub fn check(
