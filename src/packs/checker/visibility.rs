@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::{get_defining_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
@@ -28,7 +30,12 @@ impl CheckerInterface for Checker {
             return None;
         }
 
-        if defining_pack.visible_to.contains(referencing_pack_name) {
+        if defining_pack
+            .visible_to
+            .as_ref()
+            .unwrap_or(&HashSet::new())
+            .contains(referencing_pack_name)
+        {
             return None;
         }
 
@@ -210,7 +217,7 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            visible_to,
+            visible_to: Some(visible_to),
             enforce_visibility: Some(CheckerSetting::True),
             ..Pack::default()
         };

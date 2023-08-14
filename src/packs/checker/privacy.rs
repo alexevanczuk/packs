@@ -45,7 +45,7 @@ impl CheckerInterface for Checker {
         // This is a hack for now – we need to read package.yml file public_paths at some point,
         // and probably find a better way to check if the constant is public
 
-        let public_folder = &defining_pack.public_folder;
+        let public_folder = &defining_pack.public_folder();
 
         let is_public = relative_defining_file
             .as_ref()
@@ -191,7 +191,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: Some(CheckerSetting::True),
-            public_folder: PathBuf::from("packs/bar/app/public"),
+            public_folder: Some(PathBuf::from("packs/bar/app/public")),
             ..Pack::default()
         };
 
@@ -301,7 +301,7 @@ mod tests {
         let defining_pack = Pack {
             name: String::from("packs/bar"),
             enforce_privacy: Some(CheckerSetting::True),
-            public_folder: PathBuf::from("packs/bar/app/public"),
+            public_folder: Some(PathBuf::from("packs/bar/app/public")),
             ..Pack::default()
         };
 
@@ -362,7 +362,7 @@ mod tests {
         let checker = Checker {};
         let defining_pack = Pack {
             name: String::from("packs/bar"),
-            public_folder: PathBuf::from("packs/bar/app/api"),
+            public_folder: Some(PathBuf::from("packs/bar/app/api")),
             enforce_privacy: Some(CheckerSetting::True),
             ..Pack::default()
         };
@@ -414,7 +414,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: Some(CheckerSetting::True),
-            public_folder: PathBuf::from("packs/bar/app/public"),
+            public_folder: Some(PathBuf::from("packs/bar/app/public")),
             ..Pack::default()
         };
 
@@ -479,7 +479,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             enforce_privacy: Some(CheckerSetting::True),
-            public_folder: PathBuf::from("packs/bar/app/public"),
+            public_folder: Some(PathBuf::from("packs/bar/app/public")),
             ..Pack::default()
         };
 
