@@ -23,7 +23,39 @@ pub struct Pack {
     pub name: String,
     #[serde(skip)]
     pub relative_path: PathBuf,
-    #[serde(default)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_dependencies: Option<CheckerSetting>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_privacy: Option<CheckerSetting>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_visibility: Option<CheckerSetting>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_architecture: Option<CheckerSetting>,
+    #[serde(
+        default,
+        skip_serializing_if = "HashSet::is_empty",
+        serialize_with = "serialize_sorted_hashset_of_strings"
+    )]
     // I want to see if checkers and such can add their own deserialization
     // behavior to Pack via a trait or something? That would make extension simpler!
     pub dependencies: HashSet<String>,
@@ -57,34 +89,6 @@ pub struct Pack {
     pub public_folder: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layer: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_checker_setting",
-        deserialize_with = "deserialize_checker_setting"
-    )]
-    pub enforce_dependencies: Option<CheckerSetting>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_checker_setting",
-        deserialize_with = "deserialize_checker_setting"
-    )]
-    pub enforce_privacy: Option<CheckerSetting>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_checker_setting",
-        deserialize_with = "deserialize_checker_setting"
-    )]
-    pub enforce_visibility: Option<CheckerSetting>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_checker_setting",
-        deserialize_with = "deserialize_checker_setting"
-    )]
-    pub enforce_architecture: Option<CheckerSetting>,
 }
 
 impl Hash for Pack {
