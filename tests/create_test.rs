@@ -21,7 +21,7 @@ fn test_create() -> Result<(), Box<dyn Error>> {
     let expected = "enforce_dependencies: true\n";
     let actual = fs::read_to_string(
         "tests/fixtures/simple_app/packs/foobar/package.yml",
-    )?;
+    ).unwrap_or_else(|_| panic!("Could not read file tests/fixtures/simple_app/packs/foobar/package.yml"));
     assert_eq!(expected, actual);
 
     let expected_readme = String::from("\
@@ -42,11 +42,15 @@ README.md should change as your public API changes.
 See https://github.com/rubyatscale/packs#readme for more info!");
 
     let actual_readme =
-        fs::read_to_string("tests/fixtures/simple_app/packs/foobar/README.md")?;
+        fs::read_to_string("tests/fixtures/simple_app/packs/foobar/README.md").unwrap_or_else(|e| {
+            panic!("Could not read file tests/fixtures/simple_app/packs/foobar/README.md: {}", e)
+        });
 
     assert_eq!(expected_readme, actual_readme);
 
     common::teardown();
+    common::delete_foobar();
+
     Ok(())
 }
 

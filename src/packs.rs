@@ -36,6 +36,7 @@ pub(crate) use package_todo::PackageTodo;
 // External imports
 use serde::Deserialize;
 use serde::Serialize;
+use std::error::Error;
 use std::path::PathBuf;
 
 pub fn greet() {
@@ -98,6 +99,38 @@ pub fn update(
     checker::update(configuration)
 }
 
+fn add_dependency(
+    configuration: &Configuration,
+    from: String,
+    to: String,
+) -> Result<(), Box<dyn Error>> {
+    let pack_set = &configuration.pack_set;
+
+    let from_pack = pack_set
+        .for_pack(&from)
+        .unwrap_or_else(|_| panic!("`{}` not found", from));
+
+    let to_pack = pack_set
+        .for_pack(&to)
+        .unwrap_or_else(|_| panic!("`{}` not found", to));
+
+    // Print a warning if the dependency already exists
+    if from_pack.dependencies.contains(&to_pack.name) {
+        println!(
+            "`{}` already depends on `{}`!",
+            from_pack.name, to_pack.name
+        );
+        return Ok(());
+    }
+
+    let new_from_pack = from_pack.add_dependency(to_pack);
+
+    write_pack_to_disk(&new_from_pack);
+
+    println!("Successfully added `{}` as a dependency to `{}`!", to, from);
+    Ok(())
+}
+
 pub fn list_included_files(
     configuration: Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -114,8 +147,8 @@ pub fn validate(
     checker::validate_all(configuration)
 }
 
-pub fn configuration() -> Configuration {
-    let absolute_root = PathBuf::from(".").canonicalize().unwrap();
+pub fn configuration(project_root: PathBuf) -> Configuration {
+    let absolute_root = project_root.canonicalize().unwrap();
     configuration::get(&absolute_root)
 }
 

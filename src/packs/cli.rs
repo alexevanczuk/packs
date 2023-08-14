@@ -70,6 +70,15 @@ enum Command {
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
 
+    #[clap(about = "Add a dependency from one pack to another")]
+    AddDependency {
+        /// The pack that depends on another pack
+        from: String,
+
+        /// The pack that is depended on
+        to: String,
+    },
+
     #[clap(
         about = "Check for dependencies that when removed produce no violations."
     )]
@@ -162,6 +171,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::ListPacks => {
             packs::list(configuration);
             Ok(())
+        }
+        Command::AddDependency { from, to } => {
+            packs::add_dependency(&configuration, from, to)
         }
         Command::ListIncludedFiles => packs::list_included_files(configuration),
         Command::Check {

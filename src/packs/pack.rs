@@ -159,10 +159,20 @@ impl Pack {
         absolute_root: &Path,
     ) -> Pack {
         let mut yaml_contents = String::new();
-        let mut file = File::open(package_yml_absolute_path)
-            .expect("Failed to open the YAML file");
-        file.read_to_string(&mut yaml_contents)
-            .expect("Failed to read the YAML file");
+        let mut file =
+            File::open(package_yml_absolute_path).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to open the YAML file at {:?} with error: {:?}",
+                    package_yml_absolute_path, e
+                )
+            });
+
+        file.read_to_string(&mut yaml_contents).unwrap_or_else(|e| {
+            panic!(
+                "Failed to read the YAML file at {:?} with error: {:?}",
+                package_yml_absolute_path, e
+            )
+        });
 
         let absolute_path_to_package_todo = package_yml_absolute_path
             .parent()
@@ -275,6 +285,12 @@ impl Pack {
             None => self.relative_path.join("app/public"),
         }
     }
+
+    pub(crate) fn add_dependency(&self, to_pack: &Pack) -> Pack {
+        let mut new_pack = self.clone();
+        new_pack.dependencies.insert(to_pack.name.clone());
+        new_pack
+    }
 }
 
 fn serialize_sorted_hashset_of_strings<S>(
@@ -322,7 +338,9 @@ pub fn serialize_pack(pack: &Pack) -> String {
 
 pub fn write_pack_to_disk(pack: &Pack) {
     let serialized_pack = serialize_pack(pack);
-    let pack_dir = pack.yml.parent().unwrap();
+    let pack_dir = pack.yml.parent().unwrap_or_else(|| {
+        panic!("Failed to get parent directory of pack {:?}", &pack.yml)
+    });
 
     std::fs::create_dir_all(pack_dir).unwrap_or_else(|e| {
         panic!(
