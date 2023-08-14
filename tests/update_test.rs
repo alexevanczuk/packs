@@ -1,10 +1,13 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use serial_test::serial;
 use std::{error::Error, path::Path, process::Command};
 mod common;
 use pretty_assertions::assert_eq;
 
 #[test]
+// This and the next test are run in serial because they both use the same fixtures.
+#[serial]
 fn test_update() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
@@ -48,6 +51,7 @@ packs/bar:
 }
 
 #[test]
+#[serial]
 fn test_update_with_experimental_parser() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")
         .unwrap()
