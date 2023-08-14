@@ -294,6 +294,80 @@ impl Pack {
     }
 }
 
+fn serialize_sorted_hashset_of_strings<S>(
+    value: &HashSet<String>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // Serialize in sorted order
+    let mut value: Vec<&String> = value.iter().collect();
+    value.sort();
+    value.serialize(serializer)
+}
+
+fn serialize_sorted_option_hashset_of_strings<S>(
+    value: &Option<HashSet<String>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match value {
+        Some(value) => serialize_sorted_hashset_of_strings(value, serializer),
+        None => serializer.serialize_none(),
+    }
+}
+
+fn is_default_public_folder(value: &Option<PathBuf>) -> bool {
+    match value {
+        Some(value) => value == &PathBuf::from("app/public"),
+        None => true,
+    }
+}
+
+pub fn serialize_pack(pack: &Pack) -> String {
+    serde_yaml::to_string(&pack)
+        .unwrap()
+        // Indent dependencies by 2 spaces
+        .replace("\n-", "\n  -")
+}
+
+fn serialize_checker_setting<S>(
+    value: &Option<CheckerSetting>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match value {
+        Some(CheckerSetting::False) => serializer.serialize_bool(false),
+        Some(CheckerSetting::True) => serializer.serialize_bool(true),
+        Some(CheckerSetting::Strict) => serializer.serialize_str("strict"),
+        None => serializer.serialize_none(),
+    }
+}
+
+fn deserialize_checker_setting<'de, D>(
+    deserializer: D,
+) -> Result<Option<CheckerSetting>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    // Deserialize an optional String
+    let s = String::deserialize(deserializer);
+
+    match s.unwrap().as_str() {
+        "false" => Ok(Some(CheckerSetting::False)),
+        "true" => Ok(Some(CheckerSetting::True)),
+        "strict" => Ok(Some(CheckerSetting::Strict)),
+        _ => Err(serde::de::Error::custom(
+            "expected one of: false, true, strict",
+        )),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -421,79 +495,5 @@ metadata:
         .trim_start();
 
         assert_eq!(expected, actual)
-    }
-}
-
-fn serialize_sorted_hashset_of_strings<S>(
-    value: &HashSet<String>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    // Serialize in sorted order
-    let mut value: Vec<&String> = value.iter().collect();
-    value.sort();
-    value.serialize(serializer)
-}
-
-fn serialize_sorted_option_hashset_of_strings<S>(
-    value: &Option<HashSet<String>>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match value {
-        Some(value) => serialize_sorted_hashset_of_strings(value, serializer),
-        None => serializer.serialize_none(),
-    }
-}
-
-fn is_default_public_folder(value: &Option<PathBuf>) -> bool {
-    match value {
-        Some(value) => value == &PathBuf::from("app/public"),
-        None => true,
-    }
-}
-
-pub fn serialize_pack(pack: &Pack) -> String {
-    serde_yaml::to_string(&pack)
-        .unwrap()
-        // Indent dependencies by 2 spaces
-        .replace("\n-", "\n  -")
-}
-
-fn serialize_checker_setting<S>(
-    value: &Option<CheckerSetting>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match value {
-        Some(CheckerSetting::False) => serializer.serialize_bool(false),
-        Some(CheckerSetting::True) => serializer.serialize_bool(true),
-        Some(CheckerSetting::Strict) => serializer.serialize_str("strict"),
-        None => serializer.serialize_none(),
-    }
-}
-
-fn deserialize_checker_setting<'de, D>(
-    deserializer: D,
-) -> Result<Option<CheckerSetting>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    // Deserialize an optional String
-    let s = String::deserialize(deserializer);
-
-    match s.unwrap().as_str() {
-        "false" => Ok(Some(CheckerSetting::False)),
-        "true" => Ok(Some(CheckerSetting::True)),
-        "strict" => Ok(Some(CheckerSetting::Strict)),
-        _ => Err(serde::de::Error::custom(
-            "expected one of: false, true, strict",
-        )),
     }
 }
