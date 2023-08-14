@@ -464,8 +464,8 @@ where
     S: Serializer,
 {
     match value {
-        Some(CheckerSetting::False) => serializer.serialize_str("false"),
-        Some(CheckerSetting::True) => serializer.serialize_str("true"),
+        Some(CheckerSetting::False) => serializer.serialize_bool(false),
+        Some(CheckerSetting::True) => serializer.serialize_bool(true),
         Some(CheckerSetting::Strict) => serializer.serialize_str("strict"),
         None => serializer.serialize_none(),
     }
