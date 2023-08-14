@@ -100,7 +100,7 @@ pub fn update(
     checker::update(configuration)
 }
 
-fn add_dependency(
+pub fn add_dependency(
     configuration: &Configuration,
     from: String,
     to: String,
