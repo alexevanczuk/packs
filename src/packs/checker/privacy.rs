@@ -46,7 +46,7 @@ impl CheckerInterface for Checker {
         // and probably find a better way to check if the constant is public
 
         let public_folder = &defining_pack.public_folder();
-        dbg!(&public_folder);
+
         let is_public = relative_defining_file
             .as_ref()
             .unwrap()
