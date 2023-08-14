@@ -1,6 +1,7 @@
+use std::collections::HashSet;
+
 use super::{get_defining_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::CheckerSetting;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -25,11 +26,16 @@ impl CheckerInterface for Checker {
         }
         let defining_pack = defining_pack.unwrap();
 
-        if defining_pack.enforce_visibility.is_false() {
+        if defining_pack.enforce_visibility().is_false() {
             return None;
         }
 
-        if defining_pack.visible_to.contains(referencing_pack_name) {
+        if defining_pack
+            .visible_to
+            .as_ref()
+            .unwrap_or(&HashSet::new())
+            .contains(referencing_pack_name)
+        {
             return None;
         }
 
@@ -77,7 +83,7 @@ impl CheckerInterface for Checker {
         let defining_pack =
             get_defining_pack(violation, &configuration.pack_set);
 
-        defining_pack.enforce_visibility == CheckerSetting::Strict
+        defining_pack.enforce_visibility().is_strict()
     }
 
     fn violation_type(&self) -> String {
@@ -101,7 +107,7 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            enforce_visibility: CheckerSetting::True,
+            enforce_visibility: Some(CheckerSetting::True),
             ..Pack::default()
         };
         let referencing_pack = Pack {
@@ -148,7 +154,7 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            enforce_visibility: CheckerSetting::True,
+            enforce_visibility: Some(CheckerSetting::True),
             ..Pack::default()
         };
         let referencing_pack = Pack {
@@ -211,8 +217,8 @@ mod tests {
 
         let defining_pack = Pack {
             name: String::from("packs/foo"),
-            visible_to,
-            enforce_visibility: CheckerSetting::True,
+            visible_to: Some(visible_to),
+            enforce_visibility: Some(CheckerSetting::True),
             ..Pack::default()
         };
         let referencing_pack = Pack {

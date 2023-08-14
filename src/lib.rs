@@ -58,6 +58,8 @@ mod test_util {
                 enforce_privacy: Default::default(),
                 enforce_visibility: Default::default(),
                 enforce_architecture: Default::default(),
+                client_keys: Default::default(),
+                owner: Default::default(),
             }
         }
     }

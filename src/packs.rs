@@ -18,7 +18,6 @@ mod file_utils;
 mod logger;
 mod pack_set;
 mod package_todo;
-mod raw_pack;
 mod reference_extractor;
 
 // Internal imports
