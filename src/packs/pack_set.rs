@@ -84,6 +84,10 @@ impl PackSet {
     }
 
     pub fn for_pack(&self, pack_name: &str) -> Result<&Pack, &'static str> {
+        // Trim trailing slash on pack_name.
+        // Since often the input arg here comes from the command line,
+        // a command line auto-completer may add a trailing slash.
+        let pack_name = pack_name.trim_end_matches('/');
         if let Some(pack) = self.indexed_packs.get(pack_name) {
             Ok(pack)
         } else {
@@ -97,5 +101,43 @@ impl PackSet {
                 "No root pack found. This error should have been caught when buiding the pack set"
             )
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{HashMap, HashSet};
+
+    use crate::packs::pack::Pack;
+
+    use super::PackSet;
+
+    fn example_pack_set() -> PackSet {
+        let foo_pack = Pack {
+            name: "packs/foo".to_string(),
+            ..Pack::default()
+        };
+        let root_pack = Pack {
+            name: ".".to_string(),
+            ..Pack::default()
+        };
+        let mut packs = HashSet::new();
+        packs.insert(foo_pack);
+        packs.insert(root_pack);
+        PackSet::build(packs, HashMap::new())
+    }
+
+    #[test]
+    fn from_pack() {
+        let pack_set = example_pack_set();
+        let actual_pack = pack_set.for_pack("packs/foo");
+        assert!(actual_pack.is_ok());
+    }
+
+    #[test]
+    fn from_pack_with_slash() {
+        let pack_set = example_pack_set();
+        let actual_pack = pack_set.for_pack("packs/foo/");
+        assert!(actual_pack.is_ok());
     }
 }
