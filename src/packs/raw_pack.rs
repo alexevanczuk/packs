@@ -72,7 +72,7 @@ pub(crate) struct RawPack {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layer: Option<String>,
     #[serde(flatten)]
-    pub dynamic_data: HashMap<String, Value>,
+    pub client_keys: HashMap<String, Value>,
 }
 
 fn serialize_checker_setting<S>(

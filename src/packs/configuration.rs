@@ -188,6 +188,7 @@ mod tests {
                 private_constants: HashSet::new(),
                 public_folder: Some(PathBuf::from("packs/bar/app/public")),
                 layer: None,
+                client_keys: HashMap::new(),
             },
             Pack {
                 enforce_dependencies: None,
@@ -205,6 +206,7 @@ mod tests {
                 private_constants: HashSet::new(),
                 public_folder: Some(PathBuf::from("packs/baz/app/public")),
                 layer: None,
+                client_keys: HashMap::new(),
             },
             Pack {
                 enforce_dependencies: Some(CheckerSetting::True),
@@ -224,6 +226,7 @@ mod tests {
                 private_constants: HashSet::new(),
                 public_folder: Some(PathBuf::from("packs/foo/app/public")),
                 layer: None,
+                client_keys: HashMap::new(),
             },
             Pack {
                 enforce_dependencies: None,
@@ -241,6 +244,7 @@ mod tests {
                 private_constants: HashSet::new(),
                 public_folder: Some(PathBuf::from("./app/public")),
                 layer: None,
+                client_keys: HashMap::new(),
             },
         ];
 

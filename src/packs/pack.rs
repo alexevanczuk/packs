@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     hash::Hasher,
     io::Read,
@@ -8,6 +8,7 @@ use std::{
 
 use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_yaml::Value;
 
 use super::{
     checker::ViolationIdentifier,
@@ -89,6 +90,8 @@ pub struct Pack {
     pub public_folder: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layer: Option<String>,
+    #[serde(flatten)]
+    pub client_keys: HashMap<String, Value>,
 }
 
 impl Hash for Pack {
@@ -224,6 +227,7 @@ impl Pack {
             convert_raw_checker_setting(&raw_pack.enforce_architecture);
 
         let layer = raw_pack.layer;
+        let client_keys = raw_pack.client_keys;
 
         let pack: Pack = Pack {
             yml: yml.to_path_buf(),
@@ -241,6 +245,7 @@ impl Pack {
             enforce_architecture,
             public_folder,
             layer,
+            client_keys,
         };
 
         pack
