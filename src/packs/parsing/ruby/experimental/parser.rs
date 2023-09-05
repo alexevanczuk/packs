@@ -54,6 +54,10 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // more efficient?
         self.current_namespaces.push(namespace);
 
+        // Each time we open up a new class/module, we reset the behavioral change flag
+        let previous_behavioral_change = self.behavioral_change_in_namespace;
+        self.behavioral_change_in_namespace = false;
+
         if let Some(inner) = &node.body {
             self.visit(inner);
         }
@@ -62,7 +66,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             self.definitions.push(definition);
         }
 
-        self.behavioral_change_in_namespace = false;
+        // When we're done visiting the class/module, we restore the previous behavioral change flag
+        // to account for nested class/module definitions
+        self.behavioral_change_in_namespace = previous_behavioral_change;
 
         self.current_namespaces.pop();
     }
@@ -124,6 +130,10 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         // more efficient?
         self.current_namespaces.push(namespace);
 
+        // Each time we open up a new class/module, we reset the behavioral change flag
+        let previous_behavioral_change = self.behavioral_change_in_namespace;
+        self.behavioral_change_in_namespace = false;
+
         if let Some(inner) = &node.body {
             self.visit(inner);
         }
@@ -132,7 +142,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             self.definitions.push(definition);
         }
 
-        self.behavioral_change_in_namespace = false;
+        // When we're done visiting the class/module, we restore the previous behavioral change flag
+        // to account for nested class/module definitions
+        self.behavioral_change_in_namespace = previous_behavioral_change;
 
         self.current_namespaces.pop();
     }
