@@ -138,7 +138,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_const(&mut self, node: &nodes::Const) {
-        let Ok(name) = fetch_const_const_name(node) else { return };
+        let Ok(name) = fetch_const_const_name(node) else {
+            return;
+        };
 
         let namespace_path = self
             .current_namespaces
