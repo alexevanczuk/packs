@@ -16,7 +16,7 @@ pub enum SupportedFileType {
 }
 
 pub fn get_file_type(path: &Path) -> Option<SupportedFileType> {
-    let ruby_special_files = vec!["Gemfile", "Rakefile"];
+    let ruby_special_files = ["Gemfile", "Rakefile"];
     let ruby_extensions = vec!["rb", "rake", "builder", "gemspec", "ru"];
 
     let extension = path.extension();
@@ -108,7 +108,7 @@ pub fn user_inputted_paths_to_absolute_filepaths(
 pub(crate) fn convert_erb_to_ruby_without_sourcemaps(
     contents: String,
 ) -> String {
-    let regex_pattern = r#"(?s)<%=?-?\s*(.*?)\s*-?%>"#;
+    let regex_pattern = r"(?s)<%=?-?\s*(.*?)\s*-?%>";
     let regex = Regex::new(regex_pattern).unwrap();
 
     let extracted_contents: Vec<&str> = regex

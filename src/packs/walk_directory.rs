@@ -46,8 +46,7 @@ pub(crate) fn walk_directory(
         HashMap::new();
 
     // Create this vector outside of the closure to avoid reallocating it
-    let default_excluded_dirs = vec![
-        "node_modules/**/*",
+    let default_excluded_dirs = ["node_modules/**/*",
         "vendor/**/*",
         "tmp/**/*",
         ".git/**/*",
@@ -55,8 +54,7 @@ pub(crate) fn walk_directory(
         "bin/**/*",
         "log/**/*",
         "frontend/**/**",
-        "sorbet/**/*",
-    ];
+        "sorbet/**/*"];
     let mut all_excluded_dirs: Vec<String> = Vec::new();
     all_excluded_dirs
         .extend(default_excluded_dirs.iter().map(|s| s.to_string()));
