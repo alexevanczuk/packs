@@ -343,4 +343,86 @@ end
         };
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn nested_class_definition_before_function_def() {
+        let contents: String = String::from(
+            "\
+class Bar
+  class Baz
+  end
+
+  def hello
+    1
+  end
+end
+            ",
+        );
+
+        let configuration = Configuration::default();
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![];
+
+        let definitions = vec![ParsedDefinition {
+            fully_qualified_name: String::from("::Bar"),
+            location: Range {
+                start_row: 1,
+                start_col: 6,
+                end_row: 1,
+                end_col: 10,
+            },
+        }];
+
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn nested_class_definition_after_function_def() {
+        let contents: String = String::from(
+            "\
+class Bar
+  def hello
+    1
+  end
+
+  class Baz
+  end
+end
+            ",
+        );
+
+        let configuration = Configuration::default();
+
+        let absolute_path = PathBuf::from("path/to/file.rb");
+        let unresolved_references = vec![];
+
+        let definitions = vec![ParsedDefinition {
+            fully_qualified_name: String::from("::Bar"),
+            location: Range {
+                start_row: 1,
+                start_col: 6,
+                end_row: 1,
+                end_col: 10,
+            },
+        }];
+
+        let actual =
+            process_from_contents(contents, &absolute_path, &configuration);
+        let expected = ProcessedFile {
+            absolute_path,
+            unresolved_references,
+            definitions,
+        };
+
+        assert_eq!(expected, actual);
+    }
 }
