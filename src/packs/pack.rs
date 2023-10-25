@@ -213,8 +213,16 @@ impl Pack {
         package_yml_contents: &str,
         package_todo: PackageTodo,
     ) -> Pack {
-        let pack: Pack = serde_yaml::from_str(package_yml_contents)
-            .expect("Failed to deserialize the YAML");
+        let pack_result = serde_yaml::from_str(package_yml_contents);
+        let pack: Pack = match pack_result {
+            Ok(pack) => pack,
+            Err(e) => {
+                panic!(
+                    "Failed to deserialize the YAML at {:?} with error: {:?}",
+                    package_yml_absolute_path, e
+                )
+            }
+        };
 
         let package_yml_relative_path = package_yml_absolute_path
             .strip_prefix(absolute_root)
