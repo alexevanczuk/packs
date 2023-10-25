@@ -278,4 +278,20 @@ packs/foo, packs/bar",
         let error = checker.validate(&configuration);
         assert_eq!(error, None);
     }
+
+    #[test]
+    #[should_panic(
+        expected = "tests/fixtures/contains_duplicates_in_package/packs/bar/package.yml"
+    )]
+    fn test_invalid_package_yml() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/contains_duplicates_in_package")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        checker.validate(&configuration);
+    }
 }
