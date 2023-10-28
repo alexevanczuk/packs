@@ -17,6 +17,7 @@ use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use reference::Reference;
 use std::collections::HashMap;
+use std::fs;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
@@ -262,9 +263,37 @@ pub(crate) fn update(
     Ok(())
 }
 
+pub(crate) fn remove_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    for (package_name, dependency_name) in unnecessary_dependencies.iter() {
+        remove_reference_to_dependency(package_name, dependency_name);
+    }
+    Ok(())
+}
+
 pub(crate) fn check_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    if unnecessary_dependencies.is_empty() {
+        Ok(())
+    } else {
+        for (package_name, dependency_name) in unnecessary_dependencies.iter() {
+            println!(
+                "{} depends on {} but does not use it",
+                package_name, dependency_name
+            )
+        }
+        Err("List unnecessary dependencies failed".into())
+    }
+}
+
+// TODO : bug - This is returning dependencies that actually have references as confirmed by validate
+fn get_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Vec<(String, String)> {
     let references =
         get_all_references(configuration, &configuration.included_files);
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
@@ -281,26 +310,19 @@ pub(crate) fn check_unnecessary_dependencies(
         }
     }
 
-    let mut error = false;
+    let mut unnecessary_dependencies = vec![];
     for pack in &configuration.pack_set.packs {
         for dependency_name in &pack.dependencies {
             let edge_key = (pack.name.clone(), dependency_name.clone());
             let edge_count = edge_counts.get(&edge_key).unwrap_or(&0);
             if edge_count == &0 {
-                error = true;
-                println!(
-                    "{} depends on {} but does not use it",
-                    pack.name, dependency_name
-                )
+                unnecessary_dependencies
+                    .push((pack.name.clone(), dependency_name.clone()));
             }
         }
     }
 
-    if error {
-        Err("List unnecessary dependencies failed".into())
-    } else {
-        Ok(())
-    }
+    unnecessary_dependencies
 }
 
 fn get_all_violations(
@@ -338,4 +360,50 @@ fn get_checkers(
             layers: configuration.layers.clone(),
         }),
     ]
+}
+
+fn remove_reference_to_dependency(package_name: &str, dependency_name: &str) {
+    let file_name = format!("{}/package.yml", package_name);
+    let content = fs::read_to_string(&file_name).unwrap();
+
+    let new_content = remove_line_with_dependency(&content, dependency_name);
+
+    fs::write(&file_name, new_content)
+        .expect("Should have been able to write the file");
+}
+
+fn remove_line_with_dependency(content: &str, dependency_name: &str) -> String {
+    let file_contents = content
+        .lines()
+        .filter(|&line| !line.contains(dependency_name))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    file_contents
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_remove_line_with_dependency() {
+        let content = r#"
+        dependencies:
+          - packs/foo
+          - packs/bar
+          - packs/baz
+        "#;
+
+        let new_content = remove_line_with_dependency(content, "packs/bar");
+
+        assert_eq!(
+            new_content,
+            r#"
+        dependencies:
+          - packs/foo
+          - packs/baz
+        "#
+        );
+    }
 }

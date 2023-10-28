@@ -84,6 +84,9 @@ enum Command {
     )]
     CheckUnnecessaryDependencies,
 
+    #[clap(about = "Remove unnecessary dependencies.")]
+    RemoveUnnecessaryDependencies,
+
     #[clap(about = "Lint package.yml files")]
     LintPackageYmlFiles,
 
@@ -202,6 +205,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::CheckUnnecessaryDependencies => {
             packs::check_unnecessary_dependencies(&configuration)
+        }
+        Command::RemoveUnnecessaryDependencies => {
+            packs::remove_unnecessary_dependencies(&configuration)
         }
         Command::DeleteCache => {
             packs::delete_cache(configuration);

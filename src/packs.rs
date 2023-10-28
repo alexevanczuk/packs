@@ -172,6 +172,12 @@ pub fn check_unnecessary_dependencies(
     checker::check_unnecessary_dependencies(configuration)
 }
 
+pub fn remove_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    checker::remove_unnecessary_dependencies(configuration)
+}
+
 pub fn list(configuration: Configuration) {
     for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())
