@@ -380,6 +380,15 @@ fn remove_lines_with_dependency(
 
     let mut dependencies: Vec<String> = Vec::new();
     let mut new_content: Vec<String> = Vec::new();
+    let close_dependency =
+        |dependency_header: &String,
+         mut dependencies: &mut Vec<String>,
+         new_content: &mut Vec<String>| {
+            new_content.push(dependency_header.clone());
+            dependencies.sort();
+            dependencies.dedup();
+            new_content.append(&mut dependencies);
+        };
 
     for line in content.lines() {
         if line.contains(dependency_name) || line.trim().is_empty() {
@@ -394,9 +403,9 @@ fn remove_lines_with_dependency(
                     &mut new_content,
                 );
                 dependency_header = String::from("");
+                dependencies = Vec::new();
             }
             if trimmed_line.contains("dependencies") {
-                dependencies = Vec::new();
                 dependency_header = trimmed_line;
                 continue;
             }
@@ -418,16 +427,6 @@ fn remove_lines_with_dependency(
     }
 
     new_content.join("\n")
-}
-
-fn close_dependency(
-    dependency_header: &String,
-    mut dependencies: &mut Vec<String>,
-    new_content: &mut Vec<String>,
-) {
-    new_content.push(dependency_header.clone());
-    dependencies.sort();
-    new_content.append(&mut dependencies);
 }
 
 #[cfg(test)]
@@ -511,6 +510,25 @@ mod tests {
         let content =
             vec!["ignored_dependencies:", "  - packs/taco", "  - packs/bar"]
                 .join("\n");
+
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
+
+        let expected =
+            vec!["ignored_dependencies:", "  - packs/taco"].join("\n");
+
+        assert_eq!(new_content, expected);
+    }
+
+    #[test]
+    fn test_remove_duplicate_dependencies() {
+        let content = vec![
+            "ignored_dependencies:",
+            "  - packs/taco",
+            "  - packs/taco",
+            "  - packs/bar",
+        ]
+        .join("\n");
 
         let new_content =
             remove_lines_with_dependency(content.as_str(), "packs/bar");
