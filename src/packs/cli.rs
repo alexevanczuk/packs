@@ -82,10 +82,10 @@ enum Command {
     #[clap(
         about = "Check for dependencies that when removed produce no violations."
     )]
-    CheckUnnecessaryDependencies,
-
-    #[clap(about = "Remove unnecessary dependencies.")]
-    RemoveUnnecessaryDependencies,
+    CheckUnnecessaryDependencies {
+        #[arg(long)]
+        auto_correct: bool,
+    },
 
     #[clap(about = "Lint package.yml files")]
     LintPackageYmlFiles,
@@ -203,11 +203,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             packs::validate(&configuration)
             // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
         }
-        Command::CheckUnnecessaryDependencies => {
-            packs::check_unnecessary_dependencies(&configuration)
-        }
-        Command::RemoveUnnecessaryDependencies => {
-            packs::remove_unnecessary_dependencies(&configuration)
+        Command::CheckUnnecessaryDependencies { auto_correct } => {
+            packs::check_unnecessary_dependencies(&configuration, auto_correct)
         }
         Command::DeleteCache => {
             packs::delete_cache(configuration);
