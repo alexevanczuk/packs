@@ -366,20 +366,68 @@ fn remove_reference_to_dependency(package_name: &str, dependency_name: &str) {
     let file_name = format!("{}/package.yml", package_name);
     let content = fs::read_to_string(&file_name).unwrap();
 
-    let new_content = remove_line_with_dependency(&content, dependency_name);
+    let new_content = remove_lines_with_dependency(&content, dependency_name);
 
     fs::write(&file_name, new_content)
         .expect("Should have been able to write the file");
 }
 
-fn remove_line_with_dependency(content: &str, dependency_name: &str) -> String {
-    let file_contents = content
-        .lines()
-        .filter(|&line| !line.contains(dependency_name))
-        .collect::<Vec<_>>()
-        .join("\n");
+fn remove_lines_with_dependency(
+    content: &str,
+    dependency_name: &str,
+) -> String {
+    let mut dependency_header = String::from("");
 
-    file_contents
+    let mut dependencies: Vec<String> = Vec::new();
+    let mut new_content: Vec<String> = Vec::new();
+
+    for line in content.lines() {
+        if line.contains(dependency_name) || line.trim().is_empty() {
+            continue;
+        }
+        let trimmed_line = line.trim_end().to_string();
+        if trimmed_line.contains(":") {
+            if !dependencies.is_empty() {
+                close_dependency(
+                    &mut dependency_header,
+                    &mut dependencies,
+                    &mut new_content,
+                );
+                dependency_header = String::from("");
+            }
+            if trimmed_line.contains("dependencies") {
+                dependencies = Vec::new();
+                dependency_header = trimmed_line;
+                continue;
+            }
+        }
+        if dependency_header.contains("dependencies")
+            && !trimmed_line.is_empty()
+        {
+            dependencies.push(trimmed_line.to_string());
+        } else {
+            new_content.push(trimmed_line.to_string());
+        }
+    }
+    if !dependencies.is_empty() {
+        close_dependency(
+            &mut dependency_header,
+            &mut dependencies,
+            &mut new_content,
+        );
+    }
+
+    new_content.join("\n")
+}
+
+fn close_dependency(
+    dependency_header: &String,
+    mut dependencies: &mut Vec<String>,
+    new_content: &mut Vec<String>,
+) {
+    new_content.push(dependency_header.clone());
+    dependencies.sort();
+    new_content.append(&mut dependencies);
 }
 
 #[cfg(test)]
@@ -387,23 +435,89 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_remove_line_with_dependency() {
-        let content = r#"
-        dependencies:
-          - packs/foo
-          - packs/bar
-          - packs/baz
-        "#;
+    fn test_remove_lines_with_dependency() {
+        let content = vec![
+            "dependencies:",
+            "  - packs/foo",
+            "  - packs/bar",
+            "  - packs/baz",
+        ]
+        .join("\n");
 
-        let new_content = remove_line_with_dependency(content, "packs/bar");
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
 
-        assert_eq!(
-            new_content,
-            r#"
-        dependencies:
-          - packs/foo
-          - packs/baz
-        "#
-        );
+        let expected =
+            vec!["dependencies:", "  - packs/baz", "  - packs/foo"].join("\n");
+
+        assert_eq!(new_content, expected);
+    }
+
+    #[test]
+    fn test_remove_lines_with_dependency_and_arch() {
+        let content = vec![
+            "enforce_architecture: true",
+            "dependencies:",
+            "  - packs/foo",
+            "  - packs/bar",
+            "  - packs/baz",
+            "ignored_dependencies:",
+            "  - packs/woo",
+        ]
+        .join("\n")
+        .to_string();
+
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
+
+        let expected = vec![
+            "enforce_architecture: true",
+            "dependencies:",
+            "  - packs/baz",
+            "  - packs/foo",
+            "ignored_dependencies:",
+            "  - packs/woo",
+        ]
+        .join("\n")
+        .to_string();
+
+        assert_eq!(new_content, expected);
+    }
+
+    #[test]
+    fn test_remove_last_dependency() {
+        let content = vec!["dependencies:", "  - packs/bar"].join("\n");
+
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
+
+        let expected = "";
+        assert_eq!(new_content, expected);
+    }
+
+    #[test]
+    fn test_remove_last_ignored_dependency() {
+        let content = vec!["ignored_dependencies:", "  - packs/bar"].join("\n");
+
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
+
+        let expected = "";
+        assert_eq!(new_content, expected);
+    }
+
+    #[test]
+    fn test_remove_ignored_dependency() {
+        let content =
+            vec!["ignored_dependencies:", "  - packs/taco", "  - packs/bar"]
+                .join("\n");
+
+        let new_content =
+            remove_lines_with_dependency(content.as_str(), "packs/bar");
+
+        let expected =
+            vec!["ignored_dependencies:", "  - packs/taco"].join("\n");
+
+        assert_eq!(new_content, expected);
     }
 }
