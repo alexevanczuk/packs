@@ -356,6 +356,7 @@ pub fn write_pack_to_disk(pack: &Pack) {
             &pack_dir, e
         )
     });
+
     std::fs::write(&pack.yml, serialized_pack).unwrap_or_else(|e| {
         panic!(
             "Failed to write pack to disk {:?} with error {:?}",
@@ -479,6 +480,29 @@ dependencies:
   - packs/b
   - packs/c
 foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_duplicate_dependencies() {
+        let pack_yml = r#"
+dependencies:
+  - packs/a
+  - packs/b
+  - packs/a
+  - packs/a
+  - packs/a
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+dependencies:
+  - packs/a
+  - packs/b
 "#
         .trim_start();
 
