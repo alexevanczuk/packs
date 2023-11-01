@@ -6,6 +6,7 @@ pub(crate) mod reference;
 mod visibility;
 
 // Internal imports
+use crate::packs::pack::serialize_pack;
 use crate::packs::pack::Pack;
 use crate::packs::package_todo;
 use crate::packs::Configuration;
@@ -267,11 +268,11 @@ pub(crate) fn remove_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
-    for (package_name, dependency_name) in unnecessary_dependencies.iter() {
+    for (package_name, dependency_names) in unnecessary_dependencies.iter() {
         remove_reference_to_dependency(
             configuration,
             package_name,
-            dependency_name,
+            dependency_names,
         );
     }
     Ok(())
@@ -284,11 +285,14 @@ pub(crate) fn check_unnecessary_dependencies(
     if unnecessary_dependencies.is_empty() {
         Ok(())
     } else {
-        for (package_name, dependency_name) in unnecessary_dependencies.iter() {
-            println!(
-                "{} depends on {} but does not use it",
-                package_name, dependency_name
-            )
+        for (package_name, dependency_names) in unnecessary_dependencies.iter()
+        {
+            for dependency_name in dependency_names {
+                println!(
+                    "{} depends on {} but does not use it",
+                    package_name, dependency_name
+                )
+            }
         }
         Err("List unnecessary dependencies failed".into())
     }
@@ -296,7 +300,7 @@ pub(crate) fn check_unnecessary_dependencies(
 
 fn get_unnecessary_dependencies(
     configuration: &Configuration,
-) -> Vec<(String, String)> {
+) -> HashMap<String, Vec<String>> {
     let references =
         get_all_references(configuration, &configuration.included_files);
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
@@ -313,14 +317,17 @@ fn get_unnecessary_dependencies(
         }
     }
 
-    let mut unnecessary_dependencies = vec![];
+    let mut unnecessary_dependencies: HashMap<String, Vec<String>> =
+        HashMap::new();
     for pack in &configuration.pack_set.packs {
         for dependency_name in &pack.dependencies {
             let edge_key = (pack.name.clone(), dependency_name.clone());
             let edge_count = edge_counts.get(&edge_key).unwrap_or(&0);
             if edge_count == &0 {
                 unnecessary_dependencies
-                    .push((pack.name.clone(), dependency_name.clone()));
+                    .entry(pack.name.clone())
+                    .or_default()
+                    .push(dependency_name.clone());
             }
         }
     }
@@ -368,20 +375,17 @@ fn get_checkers(
 fn remove_reference_to_dependency(
     configuration: &Configuration,
     package_name: &str,
-    dependency_name: &str,
+    dependency_names: &[String],
 ) {
     let existing_pack: &Pack =
         configuration.pack_set.for_pack(package_name).unwrap();
-    let file_name = format!(
-        "{}/{}/package.yml",
-        configuration.absolute_root.display(),
-        existing_pack.relative_path.display()
-    );
+    let file_name = existing_pack.yml.clone();
     let content = fs::read_to_string(&file_name).unwrap();
 
-    let new_content_list =
-        remove_lines_with_dependency_formatted(&content, dependency_name);
-    let new_content = format!("{}\n", new_content_list.join("\n"));
+    let new_content = remove_lines_with_dependency_formatted(
+        content.as_str(),
+        dependency_names,
+    );
 
     fs::write(&file_name, new_content)
         .expect("Should have been able to write the file");
@@ -389,168 +393,16 @@ fn remove_reference_to_dependency(
 
 fn remove_lines_with_dependency_formatted(
     content: &str,
-    dependency_name: &str,
-) -> Vec<String> {
-    let mut dependency_header = String::from("");
-
-    let mut dependencies: Vec<String> = Vec::new();
-    let mut new_content: Vec<String> = Vec::new();
-    let close_dependency =
-        |dependency_header: &String,
-         dependencies: &mut Vec<String>,
-         new_content: &mut Vec<String>| {
-            new_content.push(dependency_header.clone());
-            dependencies.sort();
-            dependencies.dedup();
-            new_content.append(dependencies);
-        };
-    let is_dependency_header = |line: &str| line.contains("dependencies");
-
-    for line in content.lines() {
-        if line.contains(dependency_name) || line.trim().is_empty() {
-            continue;
-        }
-        let trimmed_line = line.trim_end().to_string();
-        if trimmed_line.contains(':') {
-            if !dependencies.is_empty() {
-                close_dependency(
-                    &mut dependency_header,
-                    &mut dependencies,
-                    &mut new_content,
-                );
-                dependency_header = String::from("");
-                dependencies = Vec::new();
-            }
-            if is_dependency_header(&trimmed_line) {
-                dependency_header = trimmed_line;
-                continue;
-            }
-        }
-        if is_dependency_header(&dependency_header) && !trimmed_line.is_empty()
-        {
-            dependencies.push(trimmed_line.to_string());
-        } else {
-            new_content.push(trimmed_line.to_string());
-        }
-    }
-    if !dependencies.is_empty() {
-        close_dependency(
-            &mut dependency_header,
-            &mut dependencies,
-            &mut new_content,
-        );
-    }
-    new_content
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_remove_lines_with_dependency_formatted_formatted() {
-        let content = ["dependencies:",
-            "  - packs/foo",
-            "  - packs/bar",
-            "  - packs/baz"]
-        .join("\n");
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected = vec!["dependencies:", "  - packs/baz", "  - packs/foo"];
-
-        assert_eq!(new_content, expected);
-    }
-
-    #[test]
-    fn test_remove_lines_with_dependency_and_arch() {
-        let content = ["enforce_architecture: true",
-            "dependencies:",
-            "  - packs/foo",
-            "  - packs/bar",
-            "  - packs/baz",
-            "ignored_dependencies:",
-            "  - packs/woo"]
-        .join("\n")
-        .to_string();
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected = vec![
-            "enforce_architecture: true",
-            "dependencies:",
-            "  - packs/baz",
-            "  - packs/foo",
-            "ignored_dependencies:",
-            "  - packs/woo",
-        ];
-
-        assert_eq!(new_content, expected);
-    }
-
-    #[test]
-    fn test_remove_last_dependency() {
-        let content = ["dependencies:", "  - packs/bar"].join("\n");
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected: Vec<String> = vec![];
-        assert_eq!(new_content, expected);
-    }
-
-    #[test]
-    fn test_remove_last_ignored_dependency() {
-        let content = ["ignored_dependencies:", "  - packs/bar"].join("\n");
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected: Vec<String> = vec![];
-        assert_eq!(new_content, expected);
-    }
-
-    #[test]
-    fn test_remove_ignored_dependency() {
-        let content =
-            ["ignored_dependencies:", "  - packs/taco", "  - packs/bar"]
-                .join("\n");
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected = vec!["ignored_dependencies:", "  - packs/taco"];
-
-        assert_eq!(new_content, expected);
-    }
-
-    #[test]
-    fn test_remove_duplicate_dependencies() {
-        let content = ["ignored_dependencies:",
-            "  - packs/taco",
-            "  - packs/taco",
-            "  - packs/bar"]
-        .join("\n");
-
-        let new_content = remove_lines_with_dependency_formatted(
-            content.as_str(),
-            "packs/bar",
-        );
-
-        let expected = vec!["ignored_dependencies:", "  - packs/taco"];
-
-        assert_eq!(new_content, expected);
-    }
+    dependency_names: &[String],
+) -> String {
+    let deserialized_pack = serde_yaml::from_str::<Pack>(content).unwrap();
+    let without_dependency = deserialized_pack
+        .dependencies
+        .iter()
+        .filter(|dependency| !dependency_names.contains(dependency));
+    let pack = Pack {
+        dependencies: without_dependency.cloned().collect(),
+        ..deserialized_pack
+    };
+    serialize_pack(&pack)
 }
