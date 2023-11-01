@@ -267,12 +267,8 @@ pub(crate) fn remove_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
-    for (package_name, dependency_names) in unnecessary_dependencies.iter() {
-        remove_reference_to_dependency(
-            configuration,
-            package_name,
-            dependency_names,
-        );
+    for (pack, dependency_names) in unnecessary_dependencies.iter() {
+        remove_reference_to_dependency(pack, dependency_names);
     }
     Ok(())
 }
@@ -284,12 +280,11 @@ pub(crate) fn check_unnecessary_dependencies(
     if unnecessary_dependencies.is_empty() {
         Ok(())
     } else {
-        for (package_name, dependency_names) in unnecessary_dependencies.iter()
-        {
+        for (pack, dependency_names) in unnecessary_dependencies.iter() {
             for dependency_name in dependency_names {
                 println!(
                     "{} depends on {} but does not use it",
-                    package_name, dependency_name
+                    pack.name, dependency_name
                 )
             }
         }
@@ -299,7 +294,7 @@ pub(crate) fn check_unnecessary_dependencies(
 
 fn get_unnecessary_dependencies(
     configuration: &Configuration,
-) -> HashMap<String, Vec<String>> {
+) -> HashMap<Pack, Vec<String>> {
     let references =
         get_all_references(configuration, &configuration.included_files);
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
@@ -316,7 +311,7 @@ fn get_unnecessary_dependencies(
         }
     }
 
-    let mut unnecessary_dependencies: HashMap<String, Vec<String>> =
+    let mut unnecessary_dependencies: HashMap<Pack, Vec<String>> =
         HashMap::new();
     for pack in &configuration.pack_set.packs {
         for dependency_name in &pack.dependencies {
@@ -324,7 +319,7 @@ fn get_unnecessary_dependencies(
             let edge_count = edge_counts.get(&edge_key).unwrap_or(&0);
             if edge_count == &0 {
                 unnecessary_dependencies
-                    .entry(pack.name.clone())
+                    .entry(pack.clone())
                     .or_default()
                     .push(dependency_name.clone());
             }
@@ -371,12 +366,7 @@ fn get_checkers(
     ]
 }
 
-fn remove_reference_to_dependency(
-    configuration: &Configuration,
-    package_name: &str,
-    dependency_names: &[String],
-) {
-    let pack: &Pack = configuration.pack_set.for_pack(package_name).unwrap();
+fn remove_reference_to_dependency(pack: &Pack, dependency_names: &[String]) {
     let without_dependency = pack
         .dependencies
         .iter()
