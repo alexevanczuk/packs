@@ -58,6 +58,9 @@ pub struct Pack {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layer: Option<String>,
+
     #[serde(
         default,
         skip_serializing_if = "HashSet::is_empty",
@@ -98,9 +101,6 @@ pub struct Pack {
 
     #[serde(skip_serializing_if = "is_default_public_folder")]
     pub public_folder: Option<PathBuf>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub layer: Option<String>,
 
     #[serde(flatten)]
     pub client_keys: HashMap<String, Value>,

@@ -6,7 +6,7 @@ pub(crate) mod reference;
 mod visibility;
 
 // Internal imports
-use crate::packs::pack::serialize_pack;
+use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
 use crate::packs::package_todo;
 use crate::packs::Configuration;
@@ -18,7 +18,6 @@ use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use reference::Reference;
 use std::collections::HashMap;
-use std::fs;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
@@ -377,32 +376,14 @@ fn remove_reference_to_dependency(
     package_name: &str,
     dependency_names: &[String],
 ) {
-    let existing_pack: &Pack =
-        configuration.pack_set.for_pack(package_name).unwrap();
-    let file_name = existing_pack.yml.clone();
-    let content = fs::read_to_string(&file_name).unwrap();
-
-    let new_content = remove_lines_with_dependency_formatted(
-        content.as_str(),
-        dependency_names,
-    );
-
-    fs::write(&file_name, new_content)
-        .expect("Should have been able to write the file");
-}
-
-fn remove_lines_with_dependency_formatted(
-    content: &str,
-    dependency_names: &[String],
-) -> String {
-    let deserialized_pack = serde_yaml::from_str::<Pack>(content).unwrap();
-    let without_dependency = deserialized_pack
+    let pack: &Pack = configuration.pack_set.for_pack(package_name).unwrap();
+    let without_dependency = pack
         .dependencies
         .iter()
         .filter(|dependency| !dependency_names.contains(dependency));
-    let pack = Pack {
+    let updated_pack = Pack {
         dependencies: without_dependency.cloned().collect(),
-        ..deserialized_pack
+        ..pack.clone()
     };
-    serialize_pack(&pack)
+    write_pack_to_disk(&updated_pack);
 }

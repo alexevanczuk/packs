@@ -27,6 +27,7 @@ fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
     let starting_foo_package_yml = [
         "enforce_dependencies: true",
         "enforce_privacy: true",
+        "layer: technical_services",
         "dependencies:",
         "  - packs/bar",
         "  - packs/baz",
@@ -44,6 +45,7 @@ fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
     let expected_autocorrect = [
         "enforce_dependencies: true",
         "enforce_privacy: true",
+        "layer: technical_services",
         "dependencies:",
         "  - packs/bar\n",
     ]
