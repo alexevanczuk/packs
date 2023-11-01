@@ -2,4 +2,5 @@ enforce_dependencies: true
 enforce_privacy: true
 layer: technical_services
 dependencies:
-  - packs/bar
+- packs/bar
+- packs/baz

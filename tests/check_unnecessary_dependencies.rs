@@ -23,16 +23,6 @@ fn test_check_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
-    let foo_package_path = "tests/fixtures/app_with_unnecessary_dependencies/packs/foo/package.yml";
-    let starting_foo_package_yml = [
-        "enforce_dependencies: true",
-        "enforce_privacy: true",
-        "layer: technical_services",
-        "dependencies:",
-        "  - packs/bar",
-        "  - packs/baz",
-    ];
-    fs::write(foo_package_path, starting_foo_package_yml.join("\n")).unwrap();
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_unnecessary_dependencies")
@@ -50,7 +40,7 @@ fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
         "  - packs/bar\n",
     ]
     .join("\n");
-    let after_autocorrect = fs::read_to_string(foo_package_path).unwrap();
+    let after_autocorrect = fs::read_to_string("tests/fixtures/app_with_unnecessary_dependencies/packs/foo/package.yml").unwrap();
     assert_eq!(after_autocorrect, expected_autocorrect);
 
     Ok(())
