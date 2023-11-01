@@ -213,8 +213,16 @@ impl Pack {
         package_yml_contents: &str,
         package_todo: PackageTodo,
     ) -> Pack {
-        let pack: Pack = serde_yaml::from_str(package_yml_contents)
-            .expect("Failed to deserialize the YAML");
+        let pack_result = serde_yaml::from_str(package_yml_contents);
+        let pack: Pack = match pack_result {
+            Ok(pack) => pack,
+            Err(e) => {
+                panic!(
+                    "Failed to deserialize the YAML at {:?} with error: {:?}",
+                    package_yml_absolute_path, e
+                )
+            }
+        };
 
         let package_yml_relative_path = package_yml_absolute_path
             .strip_prefix(absolute_root)
@@ -348,6 +356,7 @@ pub fn write_pack_to_disk(pack: &Pack) {
             &pack_dir, e
         )
     });
+
     std::fs::write(&pack.yml, serialized_pack).unwrap_or_else(|e| {
         panic!(
             "Failed to write pack to disk {:?} with error {:?}",
@@ -471,6 +480,29 @@ dependencies:
   - packs/b
   - packs/c
 foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_duplicate_dependencies() {
+        let pack_yml = r#"
+dependencies:
+  - packs/a
+  - packs/b
+  - packs/a
+  - packs/a
+  - packs/a
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+dependencies:
+  - packs/a
+  - packs/b
 "#
         .trim_start();
 

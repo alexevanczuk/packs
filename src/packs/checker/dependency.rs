@@ -82,8 +82,7 @@ The following groups of packages form a cycle:
     }
 }
 
-// TODO: Add test for ignored_dependencies
-// Add test for does not enforce dependencies
+// TODO: Add test for does not enforce dependencies
 impl CheckerInterface for Checker {
     fn check(
         &self,
@@ -215,18 +214,7 @@ mod tests {
                 .expect("Could not canonicalize path")
                 .as_path(),
         );
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(String::from("packs/bar")),
-            referencing_pack_name: String::from("packs/foo"),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
+        let reference = build_foo_reference_bar_reference();
 
         let expected_violation = Violation {
             message: String::from("packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."),
@@ -242,6 +230,36 @@ mod tests {
             expected_violation,
             checker.check(&reference, &configuration).unwrap()
         )
+    }
+
+    #[test]
+    fn test_ignored_dependency() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_ignored_dependency")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+        let reference = build_foo_reference_bar_reference();
+
+        assert_eq!(checker.check(&reference, &configuration), None)
+    }
+
+    fn build_foo_reference_bar_reference() -> Reference {
+        let reference = Reference {
+            constant_name: String::from("::Bar"),
+            defining_pack_name: Some(String::from("packs/bar")),
+            referencing_pack_name: String::from("packs/foo"),
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/services/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+        reference
     }
 
     #[test]
@@ -277,5 +295,21 @@ packs/foo, packs/bar",
 
         let error = checker.validate(&configuration);
         assert_eq!(error, None);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "tests/fixtures/contains_duplicates_in_package/packs/bar/package.yml"
+    )]
+    fn test_invalid_package_yml() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/contains_duplicates_in_package")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        );
+
+        checker.validate(&configuration);
     }
 }
