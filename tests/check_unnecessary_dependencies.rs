@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
-use std::{error::Error, process::Command};
+use std::{error::Error, fs, process::Command};
 mod common;
 
 #[test]
@@ -18,6 +18,31 @@ fn test_check_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
         .stdout(predicate::str::contains(
             "packs/foo depends on packs/bar but does not use it",
         ));
+    Ok(())
+}
+
+#[test]
+fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/app_with_unnecessary_dependencies")
+        .arg("--debug")
+        .arg("check-unnecessary-dependencies")
+        .arg("--auto-correct")
+        .assert()
+        .success();
+
+    let expected_autocorrect = [
+        "enforce_dependencies: true",
+        "enforce_privacy: true",
+        "layer: technical_services",
+        "dependencies:",
+        "  - packs/bar\n",
+    ]
+    .join("\n");
+    let after_autocorrect = fs::read_to_string("tests/fixtures/app_with_unnecessary_dependencies/packs/foo/package.yml").unwrap();
+    assert_eq!(after_autocorrect, expected_autocorrect);
+
     Ok(())
 }
 
