@@ -4,6 +4,7 @@ use std::{
     path::PathBuf,
     sync::Arc,
 };
+
 use tracing::debug;
 
 use super::{
@@ -67,6 +68,7 @@ pub(crate) fn walk_directory(
     let all_excluded_dirs_set = build_glob_set(&all_excluded_dirs);
     let excluded_dirs_ref = Arc::new(all_excluded_dirs_set);
 
+    debug!("Excluding {:?}", all_excluded_dirs);
     let absolute_root_ref = Arc::new(absolute_root.clone());
 
     let includes_set = build_glob_set(&raw.include);
@@ -87,11 +89,13 @@ pub(crate) fn walk_directory(
     let current_package_yml = PathBuf::from("package.yml");
 
     let walk_dir = WalkDirGeneric::<ProcessReadDirState>::new(&absolute_root)
+        .follow_links(true)
         .root_read_dir_state(ProcessReadDirState {
             current_package_yml,
         })
         .process_read_dir(
             move |_depth, absolute_dirname, read_dir_state, children| {
+                // debug!("Walking path {:?}", absolute_dirname.to_str());
                 // We need to let the compiler know that we are using a reference and not the value itself.
                 // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
                 // (with an increase to the reference count).
