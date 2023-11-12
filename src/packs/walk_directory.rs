@@ -93,7 +93,6 @@ pub(crate) fn walk_directory(
         })
         .process_read_dir(
             move |_depth, absolute_dirname, read_dir_state, children| {
-                // debug!("Walking path {:?}", absolute_dirname.to_str());
                 // We need to let the compiler know that we are using a reference and not the value itself.
                 // We need to then clone the Arc to get a new reference, which is a new pointer to the value/data
                 // (with an increase to the reference count).
