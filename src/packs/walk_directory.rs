@@ -87,6 +87,7 @@ pub(crate) fn walk_directory(
     let current_package_yml = PathBuf::from("package.yml");
 
     let walk_dir = WalkDirGeneric::<ProcessReadDirState>::new(&absolute_root)
+        .follow_links(true)
         .root_read_dir_state(ProcessReadDirState {
             current_package_yml,
         })
