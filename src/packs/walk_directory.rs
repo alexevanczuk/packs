@@ -68,7 +68,6 @@ pub(crate) fn walk_directory(
     let all_excluded_dirs_set = build_glob_set(&all_excluded_dirs);
     let excluded_dirs_ref = Arc::new(all_excluded_dirs_set);
 
-    debug!("Excluding {:?}", all_excluded_dirs);
     let absolute_root_ref = Arc::new(absolute_root.clone());
 
     let includes_set = build_glob_set(&raw.include);
