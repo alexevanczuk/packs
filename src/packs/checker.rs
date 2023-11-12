@@ -6,6 +6,7 @@ pub(crate) mod reference;
 mod visibility;
 
 // Internal imports
+use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
 use crate::packs::package_todo;
 use crate::packs::Configuration;
@@ -262,9 +263,38 @@ pub(crate) fn update(
     Ok(())
 }
 
+pub(crate) fn remove_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    for (pack, dependency_names) in unnecessary_dependencies.iter() {
+        remove_reference_to_dependency(pack, dependency_names);
+    }
+    Ok(())
+}
+
 pub(crate) fn check_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    if unnecessary_dependencies.is_empty() {
+        Ok(())
+    } else {
+        for (pack, dependency_names) in unnecessary_dependencies.iter() {
+            for dependency_name in dependency_names {
+                println!(
+                    "{} depends on {} but does not use it",
+                    pack.name, dependency_name
+                )
+            }
+        }
+        Err("List unnecessary dependencies failed".into())
+    }
+}
+
+fn get_unnecessary_dependencies(
+    configuration: &Configuration,
+) -> HashMap<Pack, Vec<String>> {
     let references =
         get_all_references(configuration, &configuration.included_files);
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
@@ -281,26 +311,22 @@ pub(crate) fn check_unnecessary_dependencies(
         }
     }
 
-    let mut error = false;
+    let mut unnecessary_dependencies: HashMap<Pack, Vec<String>> =
+        HashMap::new();
     for pack in &configuration.pack_set.packs {
         for dependency_name in &pack.dependencies {
             let edge_key = (pack.name.clone(), dependency_name.clone());
             let edge_count = edge_counts.get(&edge_key).unwrap_or(&0);
             if edge_count == &0 {
-                error = true;
-                println!(
-                    "{} depends on {} but does not use it",
-                    pack.name, dependency_name
-                )
+                unnecessary_dependencies
+                    .entry(pack.clone())
+                    .or_default()
+                    .push(dependency_name.clone());
             }
         }
     }
 
-    if error {
-        Err("List unnecessary dependencies failed".into())
-    } else {
-        Ok(())
-    }
+    unnecessary_dependencies
 }
 
 fn get_all_violations(
@@ -338,4 +364,16 @@ fn get_checkers(
             layers: configuration.layers.clone(),
         }),
     ]
+}
+
+fn remove_reference_to_dependency(pack: &Pack, dependency_names: &[String]) {
+    let without_dependency = pack
+        .dependencies
+        .iter()
+        .filter(|dependency| !dependency_names.contains(dependency));
+    let updated_pack = Pack {
+        dependencies: without_dependency.cloned().collect(),
+        ..pack.clone()
+    };
+    write_pack_to_disk(&updated_pack);
 }

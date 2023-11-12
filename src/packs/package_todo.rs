@@ -107,11 +107,11 @@ pub fn package_todos_for_pack_name(
             let existing_violations_by_constant_group =
                 violations_by_defining_pack
                     .entry(defining_pack_name)
-                    .or_insert(BTreeMap::new());
+                    .or_default();
 
             let violation_group = existing_violations_by_constant_group
                 .entry(violation.identifier.constant_name.to_owned())
-                .or_insert(ViolationGroup::default());
+                .or_default();
 
             violation_group
                 .files
@@ -145,7 +145,7 @@ pub fn write_violations_to_disk(
             violation.identifier.referencing_pack_name.to_owned();
         violations_by_responsible_pack
             .entry(referencing_pack_name)
-            .or_insert(Vec::new())
+            .or_default()
             .push(violation);
     }
 

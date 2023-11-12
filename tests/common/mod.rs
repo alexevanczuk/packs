@@ -119,4 +119,20 @@ enforce_dependencies: true
     );
 
     fs::write(pack_yml, pack_yml_contents).unwrap();
+
+    let pack_yml = PathBuf::from(
+        "tests/fixtures/app_with_unnecessary_dependencies/packs/foo/package.yml",
+    );
+    let pack_yml_contents = String::from(
+        "\
+enforce_dependencies: true
+enforce_privacy: true
+layer: technical_services
+dependencies:
+- packs/bar
+- packs/baz
+",
+    );
+
+    fs::write(pack_yml, pack_yml_contents).unwrap();
 }

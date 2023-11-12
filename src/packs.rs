@@ -168,8 +168,13 @@ pub fn configuration(project_root: PathBuf) -> Configuration {
 
 pub fn check_unnecessary_dependencies(
     configuration: &Configuration,
+    auto_correct: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    checker::check_unnecessary_dependencies(configuration)
+    if auto_correct {
+        checker::remove_unnecessary_dependencies(configuration)
+    } else {
+        checker::check_unnecessary_dependencies(configuration)
+    }
 }
 
 pub fn list(configuration: Configuration) {
