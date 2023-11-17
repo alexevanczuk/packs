@@ -97,7 +97,122 @@ pub(crate) trait ValidatorInterface {
     fn validate(&self, configuration: &Configuration) -> Option<String>;
 }
 
-// TODO: Break this function up into smaller functions
+#[derive(Debug, PartialEq)]
+struct CheckAll<'a> {
+    reportable_violations: HashSet<&'a Violation>,
+    stale_violations: Vec<&'a ViolationIdentifier>,
+    strict_mode_violations: Vec<&'a ViolationIdentifier>,
+}
+struct CheckAllBuilder<'a> {
+    configuration: &'a Configuration,
+    found_violations: &'a FoundViolations,
+}
+
+struct FoundViolations {
+    checkers: Vec<Box<dyn CheckerInterface + Send + Sync>>,
+    absolute_paths: HashSet<PathBuf>,
+    violations: HashSet<Violation>,
+}
+
+impl<'a> CheckAllBuilder<'a> {
+    fn new(
+        configuration: &'a Configuration,
+        found_violations: &'a FoundViolations,
+    ) -> Self {
+        Self {
+            configuration,
+            found_violations,
+        }
+    }
+
+    pub fn build(mut self) -> CheckAll<'a> {
+        let recorded_violations = &self.configuration.pack_set.all_violations;
+
+        CheckAll {
+            reportable_violations: self
+                .build_reportable_violations(recorded_violations),
+            stale_violations: self.build_stale_violations(recorded_violations),
+            strict_mode_violations: self
+                .build_strict_mode_violations(recorded_violations),
+        }
+    }
+
+    fn build_reportable_violations(
+        &mut self,
+        recorded_violations: &HashSet<ViolationIdentifier>,
+    ) -> HashSet<&'a Violation> {
+        let reportable_violations =
+            if self.configuration.ignore_recorded_violations {
+                debug!("Filtering recorded violations is disabled in config");
+                self.found_violations.violations.iter().collect()
+            } else {
+                self.found_violations
+                    .violations
+                    .iter()
+                    .filter(|v| !recorded_violations.contains(&v.identifier))
+                    .collect()
+            };
+        reportable_violations
+    }
+
+    fn build_stale_violations(
+        &mut self,
+        recorded_violations: &'a HashSet<ViolationIdentifier>,
+    ) -> Vec<&'a ViolationIdentifier> {
+        let found_violation_identifiers: HashSet<&ViolationIdentifier> = self
+            .found_violations
+            .violations
+            .par_iter()
+            .map(|v| &v.identifier)
+            .collect();
+
+        let relative_files = self
+            .found_violations
+            .absolute_paths
+            .iter()
+            .map(|p| {
+                p.strip_prefix(&self.configuration.absolute_root)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+            })
+            .collect::<HashSet<&str>>();
+
+        let stale_violations = recorded_violations
+            .par_iter()
+            .filter(|v_identifier| {
+                relative_files.contains(&v_identifier.file.as_str())
+                    && !found_violation_identifiers.contains(v_identifier)
+            })
+            .collect::<Vec<&ViolationIdentifier>>();
+        stale_violations
+    }
+
+    fn build_strict_mode_violations(
+        &mut self,
+        recorded_violations: &'a HashSet<ViolationIdentifier>,
+    ) -> Vec<&'a ViolationIdentifier> {
+        let mut indexed_checkers: HashMap<
+            String,
+            &Box<dyn CheckerInterface + Send + Sync>,
+        > = HashMap::new();
+        for checker in &self.found_violations.checkers {
+            indexed_checkers.insert(checker.violation_type(), checker);
+        }
+
+        let strict_mode_violations: Vec<&'a ViolationIdentifier> =
+            recorded_violations
+                .iter()
+                .filter(|v| {
+                    indexed_checkers
+                        .get(&v.violation_type)
+                        .unwrap()
+                        .is_strict_mode_violation(v, self.configuration)
+                })
+                .collect();
+        strict_mode_violations
+    }
+}
 pub(crate) fn check_all(
     configuration: &Configuration,
     files: Vec<String>,
@@ -105,102 +220,47 @@ pub(crate) fn check_all(
     let checkers = get_checkers(configuration);
 
     debug!("Intersecting input files with configuration included files");
-    let absolute_paths: HashSet<PathBuf> = configuration.intersect_files(files);
+    let absolute_paths: HashSet<PathBuf> =
+        configuration.intersect_files(files.clone());
 
-    let found_violations: HashSet<Violation> =
+    let violations: HashSet<Violation> =
         get_all_violations(configuration, &absolute_paths, &checkers);
-
-    let recorded_violations = &configuration.pack_set.all_violations;
-
-    debug!("Filtering out recorded violations");
-
-    let reportable_violations: Vec<&Violation> =
-        if configuration.ignore_recorded_violations {
-            debug!("Filtering recorded violations is disabled in config");
-            found_violations.iter().collect()
-        } else {
-            found_violations
-                .iter()
-                .filter(|v| !recorded_violations.contains(&v.identifier))
-                .collect()
-        };
-
-    debug!("Finished filtering out recorded violations");
-
-    debug!("Finding stale violations");
-    let found_violation_identifiers: HashSet<&ViolationIdentifier> =
-        found_violations.par_iter().map(|v| &v.identifier).collect();
-
-    let relative_files = absolute_paths
-        .iter()
-        .map(|p| {
-            p.strip_prefix(&configuration.absolute_root)
-                .unwrap()
-                .to_str()
-                .unwrap()
-        })
-        .collect::<HashSet<&str>>();
-
-    let stale_violations = recorded_violations
-        .par_iter()
-        .filter(|v_identifier| {
-            relative_files.contains(&v_identifier.file.as_str())
-                && !found_violation_identifiers.contains(v_identifier)
-        })
-        .collect::<Vec<&ViolationIdentifier>>();
-
-    debug!("Finished finding stale violations");
-
-    // Right now, strict mode detection only looks at package_todo.yml files to be compatible with packwerk
-    // In the future, we should perhaps make `update` error if you attempt to record a violation that goes
-    // against strict mode
-    debug!("Finding strict mode violations");
-    let mut indexed_checkers: HashMap<
-        String,
-        &Box<dyn CheckerInterface + Send + Sync>,
-    > = HashMap::new();
-    for checker in &checkers {
-        indexed_checkers.insert(checker.violation_type(), checker);
-    }
-
-    let strict_mode_violations: Vec<&ViolationIdentifier> = recorded_violations
-        .iter()
-        .filter(|v| {
-            indexed_checkers
-                .get(&v.violation_type)
-                .unwrap()
-                .is_strict_mode_violation(v, configuration)
-        })
-        .collect();
-
-    debug!("Finished finding strict mode violations");
-
+    let found_violations = FoundViolations {
+        checkers,
+        absolute_paths,
+        violations,
+    };
+    let check_all =
+        CheckAllBuilder::new(configuration, &found_violations).build();
     let mut errors_present = false;
 
-    if !reportable_violations.is_empty() {
-        for violation in reportable_violations.iter() {
+    if !check_all.reportable_violations.is_empty() {
+        for violation in check_all.reportable_violations.iter() {
             println!("{}\n", violation.message);
         }
 
-        println!("{} violation(s) detected:", reportable_violations.len());
+        println!(
+            "{} violation(s) detected:",
+            check_all.reportable_violations.len()
+        );
 
         errors_present = true;
     }
 
-    if !stale_violations.is_empty() {
+    if !check_all.stale_violations.is_empty() {
         println!(
             "There were stale violations found, please run `packs update`"
         );
         errors_present = true;
     }
 
-    if !strict_mode_violations.is_empty() {
-        for v in strict_mode_violations {
+    if !check_all.strict_mode_violations.is_empty() {
+        for v in check_all.strict_mode_violations {
             let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
-                v.referencing_pack_name,
-                v.violation_type,
-                v.defining_pack_name,
-                v.violation_type
+                                        v.referencing_pack_name,
+                                        v.violation_type,
+                                        v.defining_pack_name,
+                                        v.violation_type
             );
             println!("{}", error_message);
         }
