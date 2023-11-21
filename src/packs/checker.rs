@@ -94,7 +94,7 @@ pub(crate) trait CheckerInterface {
 }
 
 pub(crate) trait ValidatorInterface {
-    fn validate(&self, configuration: &Configuration) -> Option<String>;
+    fn validate(&self, configuration: &Configuration) -> Option<Vec<String>>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -281,9 +281,10 @@ fn validate(configuration: &Configuration) -> Vec<String> {
     let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> =
         vec![Box::new(dependency::Checker {})];
 
-    let validation_errors = validators
+    let validation_errors: Vec<String> = validators
         .iter()
         .filter_map(|v| v.validate(configuration))
+        .flatten()
         .collect();
     debug!("Finished validators against packages");
 

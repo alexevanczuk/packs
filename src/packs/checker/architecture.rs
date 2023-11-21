@@ -1,5 +1,6 @@
 use super::{get_referencing_pack, CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
+use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
 
 #[derive(Default, Clone)]
@@ -34,6 +35,32 @@ impl Layers {
         }
     }
 }
+
+pub fn is_architecture_dependency(
+    configuration: &Configuration,
+    from_pack: &Pack,
+    to_pack: &Pack,
+) -> bool {
+    if from_pack.enforce_architecture().is_false() {
+        return false;
+    }
+
+    let (from_pack_layer, to_pack_layer) = (&from_pack.layer, &to_pack.layer);
+
+    if from_pack_layer.is_none() || to_pack_layer.is_none() {
+        return false;
+    }
+
+    let (from_pack_layer, to_pack_layer) = (
+        from_pack_layer.as_ref().unwrap(),
+        to_pack_layer.as_ref().unwrap(),
+    );
+
+    !configuration
+        .layers
+        .can_depend_on(from_pack_layer, to_pack_layer)
+}
+
 pub struct Checker {
     pub layers: Layers,
 }
@@ -306,5 +333,120 @@ mod tests {
         };
 
         assert_eq!(None, checker.check(&reference, &configuration))
+    }
+
+    struct ArchitectureTestCase {
+        from_pack_name: String,
+        from_pack_layer: Option<String>,
+        from_pack_dependencies: HashSet<String>,
+        from_pack_enforce_architecture: Option<CheckerSetting>,
+        to_pack_name: String,
+        to_pack_layer: Option<String>,
+        layers: Vec<String>,
+        expected_result: bool,
+    }
+
+    impl Default for ArchitectureTestCase {
+        fn default() -> Self {
+            ArchitectureTestCase {
+                from_pack_name: String::from("packs/foo"),
+                from_pack_layer: Some(String::from("utilities")),
+                from_pack_enforce_architecture: Some(CheckerSetting::True),
+                from_pack_dependencies: HashSet::from_iter(vec![String::from(
+                    "packs/bar",
+                )]),
+                to_pack_name: String::from("packs/bar"),
+                to_pack_layer: Some(String::from("product")),
+                layers: vec![
+                    String::from("product"),
+                    String::from("utilities"),
+                ],
+                expected_result: true,
+            }
+        }
+    }
+    fn package_yml_architecture_test(test_case: ArchitectureTestCase) {
+        let root_pack = Pack {
+            name: String::from("."),
+            ..Pack::default()
+        };
+
+        let from_pack = Pack {
+            name: test_case.from_pack_name,
+            layer: test_case.from_pack_layer,
+            enforce_architecture: test_case.from_pack_enforce_architecture,
+            dependencies: test_case.from_pack_dependencies,
+            ..Pack::default()
+        };
+        let to_pack = Pack {
+            name: test_case.to_pack_name,
+            layer: test_case.to_pack_layer,
+            ..Pack::default()
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![
+                    root_pack,
+                    from_pack.clone(),
+                    to_pack.clone(),
+                ]),
+                HashMap::new(),
+            ),
+            layers: Layers {
+                layers: test_case.layers,
+            },
+            ..Configuration::default()
+        };
+
+        let result =
+            is_architecture_dependency(&configuration, &from_pack, &to_pack);
+        assert_eq!(result, test_case.expected_result);
+    }
+
+    #[test]
+    fn package_yml_has_architecture_violation() {
+        let test_case = ArchitectureTestCase::default();
+        package_yml_architecture_test(test_case);
+    }
+
+    #[test]
+    fn package_yml_no_architecture_violation_not_enforced() {
+        let test_case = ArchitectureTestCase {
+            from_pack_enforce_architecture: Some(CheckerSetting::False),
+            expected_result: false,
+            ..ArchitectureTestCase::default()
+        };
+        package_yml_architecture_test(test_case);
+    }
+
+    #[test]
+    fn package_yml_no_architecture_violation_no_from_layer() {
+        let test_case = ArchitectureTestCase {
+            from_pack_layer: None,
+            expected_result: false,
+            ..ArchitectureTestCase::default()
+        };
+        package_yml_architecture_test(test_case);
+    }
+
+    #[test]
+    fn package_yml_no_architecture_violation_no_to_layer() {
+        let test_case = ArchitectureTestCase {
+            to_pack_layer: None,
+            expected_result: false,
+            ..ArchitectureTestCase::default()
+        };
+        package_yml_architecture_test(test_case);
+    }
+
+    #[test]
+    fn package_yml_no_architecture_violation_valid_layer() {
+        let test_case = ArchitectureTestCase {
+            expected_result: false,
+            layers: vec![String::from("utilities"), String::from("product")],
+            ..ArchitectureTestCase::default()
+        };
+        package_yml_architecture_test(test_case);
     }
 }
