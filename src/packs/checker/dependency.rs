@@ -58,18 +58,15 @@ impl ValidatorInterface for Checker {
                 }
             };
 
-        for pack in &configuration.pack_set.packs {
-            for dependency_pack_name in &pack.dependencies {
-                let from_pack = pack;
-                let to_pack = configuration
-                    .pack_set
-                    .for_pack(dependency_pack_name)
-                    .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
-                        &pack.yml.to_string_lossy(),
-                        dependency_pack_name));
-                validate_architecture(from_pack, to_pack, dependency_pack_name);
-                add_edge(from_pack, to_pack);
-            }
+        for pack_dependency in
+            configuration.pack_set.all_pack_dependencies(configuration)
+        {
+            validate_architecture(
+                pack_dependency.from_pack,
+                pack_dependency.to_pack,
+                &pack_dependency.to_pack.name,
+            );
+            add_edge(pack_dependency.from_pack, pack_dependency.to_pack);
         }
 
         let mut sccs = vec![];

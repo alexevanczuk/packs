@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 
-use super::{checker::ViolationIdentifier, pack::Pack};
+use super::{checker::ViolationIdentifier, pack::Pack, Configuration};
 
 #[derive(Default, Debug)]
 pub struct PackSet {
@@ -19,6 +19,13 @@ pub struct PackSet {
     // We will also likely want to have an optimization that only rewrites the files
     // that have different violations.
     pub all_violations: HashSet<ViolationIdentifier>,
+}
+
+#[derive(Debug)]
+pub struct PackDependency<'a> {
+    // from_pack has a package.yml dependency on to_pack
+    pub from_pack: &'a Pack,
+    pub to_pack: &'a Pack,
 }
 
 impl PackSet {
@@ -101,6 +108,26 @@ impl PackSet {
                 "No root pack found. This error should have been caught when buiding the pack set"
             )
         })
+    }
+
+    // Returns all of the package dependencies in the pack set.
+    pub fn all_pack_dependencies<'a>(
+        &'a self,
+        configuration: &'a Configuration,
+    ) -> Vec<PackDependency> {
+        let mut pack_refs: Vec<PackDependency> = Vec::new();
+        for from_pack in &configuration.pack_set.packs {
+            for dependency_pack_name in &from_pack.dependencies {
+                let to_pack = configuration
+                    .pack_set
+                    .for_pack(dependency_pack_name)
+                    .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
+                                               from_pack.yml.to_string_lossy(),
+                                               dependency_pack_name));
+                pack_refs.push(PackDependency { from_pack, to_pack });
+            }
+        }
+        pack_refs
     }
 }
 
