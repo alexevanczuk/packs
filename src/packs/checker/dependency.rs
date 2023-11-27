@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::{
-    get_referencing_pack, CheckerInterface, ValidatorInterface,
+    architecture, get_referencing_pack, CheckerInterface, ValidatorInterface,
     ViolationIdentifier,
 };
 use crate::packs::checker::Reference;
@@ -12,7 +12,7 @@ use petgraph::prelude::DiGraph;
 
 pub struct Checker {}
 impl ValidatorInterface for Checker {
-    fn validate(&self, configuration: &Configuration) -> Option<String> {
+    fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
         // configuration.pack_set
         let mut graph = DiGraph::<(), ()>::new();
         let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
@@ -25,6 +25,39 @@ impl ValidatorInterface for Checker {
             node_to_pack.insert(node, pack);
         }
 
+        let mut add_edge = |from_pack: &Pack, to_pack: &Pack| {
+            let from_node = pack_to_node
+                .get(&from_pack)
+                .expect("Could not find from_pack")
+                .to_owned();
+            let to_node = pack_to_node
+                .get(&to_pack)
+                .expect("Could not find to_pack")
+                .to_owned();
+            graph.add_edge(from_node, to_node, ());
+        };
+        let mut error_messages: Vec<String> = vec![];
+        let mut validate_architecture =
+            |from_pack: &Pack,
+             to_pack: &Pack,
+             dependency_pack_name: &String| {
+                if architecture::is_architecture_dependency(
+                    configuration,
+                    from_pack,
+                    to_pack,
+                ) {
+                    let error_message = format!(
+                    "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
+                    from_pack.relative_path.display(),
+                    from_pack.relative_path.display(),
+                    from_pack.layer.clone().unwrap(),
+                    dependency_pack_name,
+                    to_pack.layer.clone().unwrap(),
+                );
+                    error_messages.push(error_message);
+                }
+            };
+
         for pack in &configuration.pack_set.packs {
             for dependency_pack_name in &pack.dependencies {
                 let from_pack = pack;
@@ -34,15 +67,8 @@ impl ValidatorInterface for Checker {
                     .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
                         &pack.yml.to_string_lossy(),
                         dependency_pack_name));
-                let from_node = pack_to_node
-                    .get(&from_pack)
-                    .expect("Could not find from_pack")
-                    .to_owned();
-                let to_node = pack_to_node
-                    .get(&to_pack)
-                    .expect("Could not find to_pack")
-                    .to_owned();
-                graph.add_edge(from_node, to_node, ());
+                validate_architecture(from_pack, to_pack, dependency_pack_name);
+                add_edge(from_pack, to_pack);
             }
         }
 
@@ -63,9 +89,7 @@ impl ValidatorInterface for Checker {
             }
         }
 
-        if sccs.is_empty() {
-            None
-        } else {
+        if !sccs.is_empty() {
             let sccs_display = sccs.join("\n\n");
 
             let error_message = format!(
@@ -77,7 +101,13 @@ The following groups of packages form a cycle:
                 sccs.len(),
                 sccs_display
             );
-            Some(error_message)
+            error_messages.push(error_message);
+        }
+
+        if error_messages.is_empty() {
+            None
+        } else {
+            Some(error_messages)
         }
     }
 }
@@ -273,13 +303,13 @@ mod tests {
         );
 
         let error = checker.validate(&configuration);
-        let expected_message = String::from(
+        let expected_message = vec![String::from(
             "
 Found 1 strongly connected components (i.e. dependency cycles)
 The following groups of packages form a cycle:
 
 packs/foo, packs/bar",
-        );
+        )];
         assert_eq!(error, Some(expected_message));
     }
 
@@ -311,5 +341,25 @@ packs/foo, packs/bar",
         );
 
         checker.validate(&configuration);
+    }
+
+    #[test]
+    fn test_validate_with_architecture_violations() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from(
+                "tests/fixtures/app_with_architecture_violations_in_yml",
+            )
+            .canonicalize()
+            .expect("Could not canonicalize path")
+            .as_path(),
+        );
+
+        let error = checker.validate(&configuration);
+        let expected_message = vec![
+            String::from("Invalid 'dependencies' in 'packs/baz/package.yml'. 'packs/baz/package.yml' has a layer type of 'technical_services,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml"),
+           String::from( "Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a layer type of 'product,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml")
+        ];
+        assert_eq!(error, Some(expected_message));
     }
 }
