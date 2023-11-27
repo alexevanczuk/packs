@@ -36,19 +36,19 @@ impl Layers {
     }
 }
 
-pub fn is_architecture_dependency(
+pub fn dependency_permitted(
     configuration: &Configuration,
     from_pack: &Pack,
     to_pack: &Pack,
 ) -> bool {
     if from_pack.enforce_architecture().is_false() {
-        return false;
+        return true;
     }
 
     let (from_pack_layer, to_pack_layer) = (&from_pack.layer, &to_pack.layer);
 
     if from_pack_layer.is_none() || to_pack_layer.is_none() {
-        return false;
+        return true;
     }
 
     let (from_pack_layer, to_pack_layer) = (
@@ -56,7 +56,7 @@ pub fn is_architecture_dependency(
         to_pack_layer.as_ref().unwrap(),
     );
 
-    !configuration
+    configuration
         .layers
         .can_depend_on(from_pack_layer, to_pack_layer)
 }
@@ -361,7 +361,7 @@ mod tests {
                     String::from("product"),
                     String::from("utilities"),
                 ],
-                expected_result: true,
+                expected_result: false,
             }
         }
     }
@@ -399,51 +399,50 @@ mod tests {
             ..Configuration::default()
         };
 
-        let result =
-            is_architecture_dependency(&configuration, &from_pack, &to_pack);
+        let result = dependency_permitted(&configuration, &from_pack, &to_pack);
         assert_eq!(result, test_case.expected_result);
     }
 
     #[test]
-    fn package_yml_has_architecture_violation() {
+    fn package_yml_dependency_not_permitted() {
         let test_case = ArchitectureTestCase::default();
         package_yml_architecture_test(test_case);
     }
 
     #[test]
-    fn package_yml_no_architecture_violation_not_enforced() {
+    fn package_yml_dependency_permitted_violation_not_enforced() {
         let test_case = ArchitectureTestCase {
             from_pack_enforce_architecture: Some(CheckerSetting::False),
-            expected_result: false,
+            expected_result: true,
             ..ArchitectureTestCase::default()
         };
         package_yml_architecture_test(test_case);
     }
 
     #[test]
-    fn package_yml_no_architecture_violation_no_from_layer() {
+    fn package_yml_dependency_permitted_violation_no_from_layer() {
         let test_case = ArchitectureTestCase {
             from_pack_layer: None,
-            expected_result: false,
+            expected_result: true,
             ..ArchitectureTestCase::default()
         };
         package_yml_architecture_test(test_case);
     }
 
     #[test]
-    fn package_yml_no_architecture_violation_no_to_layer() {
+    fn package_yml_dependency_permitted_violation_no_to_layer() {
         let test_case = ArchitectureTestCase {
             to_pack_layer: None,
-            expected_result: false,
+            expected_result: true,
             ..ArchitectureTestCase::default()
         };
         package_yml_architecture_test(test_case);
     }
 
     #[test]
-    fn package_yml_no_architecture_violation_valid_layer() {
+    fn package_yml_dependency_permitted_violation_valid_layer() {
         let test_case = ArchitectureTestCase {
-            expected_result: false,
+            expected_result: true,
             layers: vec![String::from("utilities"), String::from("product")],
             ..ArchitectureTestCase::default()
         };
