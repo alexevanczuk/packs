@@ -41,7 +41,7 @@ impl ValidatorInterface for Checker {
             |from_pack: &Pack,
              to_pack: &Pack,
              dependency_pack_name: &String| {
-                if architecture::is_architecture_dependency(
+                if !architecture::dependency_permitted(
                     configuration,
                     from_pack,
                     to_pack,
