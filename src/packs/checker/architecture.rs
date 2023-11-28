@@ -187,8 +187,10 @@ impl CheckerInterface for Checker {
 mod tests {
 
     use std::collections::{HashMap, HashSet};
+    use std::path::PathBuf;
 
     use crate::packs::{
+        configuration,
         pack::{CheckerSetting, Pack},
         PackSet, SourceLocation,
     };
@@ -478,5 +480,32 @@ mod tests {
             ..ArchitectureTestCase::default()
         };
         package_yml_architecture_test(test_case);
+    }
+
+    #[test]
+    fn test_validate_with_architecture_violations() {
+        let configuration = configuration::get(
+            PathBuf::from(
+                "tests/fixtures/app_with_architecture_violations_in_yml",
+            )
+            .canonicalize()
+            .expect("Could not canonicalize path")
+            .as_path(),
+        );
+        let checker = Checker {
+            layers: Layers {
+                layers: vec![
+                    String::from("product"),
+                    String::from("utilities"),
+                ],
+            },
+        };
+
+        let error = checker.validate(&configuration);
+        let expected_message = vec![
+            String::from("Invalid 'dependencies' in 'packs/baz/package.yml'. 'packs/baz/package.yml' has a layer type of 'technical_services,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml"),
+            String::from( "Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a layer type of 'product,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml")
+        ];
+        assert_eq!(error, Some(expected_message));
     }
 }
