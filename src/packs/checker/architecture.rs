@@ -1,4 +1,7 @@
-use super::{get_referencing_pack, CheckerInterface, ViolationIdentifier};
+use super::{
+    get_referencing_pack, CheckerInterface, ValidatorInterface,
+    ViolationIdentifier,
+};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
@@ -36,7 +39,35 @@ impl Layers {
     }
 }
 
-pub fn dependency_permitted(
+impl ValidatorInterface for Checker {
+    fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
+        let mut error_messages: Vec<String> = vec![];
+        for pack_dependency in
+            configuration.pack_set.all_pack_dependencies(configuration)
+        {
+            let (from_pack, to_pack) =
+                (pack_dependency.from_pack, pack_dependency.to_pack);
+            if !dependency_permitted(configuration, from_pack, to_pack) {
+                let error_message = format!(
+                    "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
+                    from_pack.relative_path.display(),
+                    from_pack.relative_path.display(),
+                    from_pack.layer.clone().unwrap(),
+                    to_pack.name,
+                    to_pack.layer.clone().unwrap(),
+                );
+                error_messages.push(error_message);
+            }
+        }
+        if error_messages.is_empty() {
+            None
+        } else {
+            Some(error_messages)
+        }
+    }
+}
+
+fn dependency_permitted(
     configuration: &Configuration,
     from_pack: &Pack,
     to_pack: &Pack,
