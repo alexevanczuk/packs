@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::{
-    architecture, get_referencing_pack, CheckerInterface, ValidatorInterface,
+    get_referencing_pack, CheckerInterface, ValidatorInterface,
     ViolationIdentifier,
 };
 use crate::packs::checker::Reference;
@@ -37,39 +37,11 @@ impl ValidatorInterface for Checker {
             graph.add_edge(from_node, to_node, ());
         };
         let mut error_messages: Vec<String> = vec![];
-        let mut validate_architecture =
-            |from_pack: &Pack,
-             to_pack: &Pack,
-             dependency_pack_name: &String| {
-                if !architecture::dependency_permitted(
-                    configuration,
-                    from_pack,
-                    to_pack,
-                ) {
-                    let error_message = format!(
-                    "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
-                    from_pack.relative_path.display(),
-                    from_pack.relative_path.display(),
-                    from_pack.layer.clone().unwrap(),
-                    dependency_pack_name,
-                    to_pack.layer.clone().unwrap(),
-                );
-                    error_messages.push(error_message);
-                }
-            };
 
-        for pack in &configuration.pack_set.packs {
-            for dependency_pack_name in &pack.dependencies {
-                let from_pack = pack;
-                let to_pack = configuration
-                    .pack_set
-                    .for_pack(dependency_pack_name)
-                    .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
-                        &pack.yml.to_string_lossy(),
-                        dependency_pack_name));
-                validate_architecture(from_pack, to_pack, dependency_pack_name);
-                add_edge(from_pack, to_pack);
-            }
+        for pack_dependency in
+            configuration.pack_set.all_pack_dependencies(configuration)
+        {
+            add_edge(pack_dependency.from_pack, pack_dependency.to_pack);
         }
 
         let mut sccs = vec![];
@@ -341,25 +313,5 @@ packs/foo, packs/bar",
         );
 
         checker.validate(&configuration);
-    }
-
-    #[test]
-    fn test_validate_with_architecture_violations() {
-        let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from(
-                "tests/fixtures/app_with_architecture_violations_in_yml",
-            )
-            .canonicalize()
-            .expect("Could not canonicalize path")
-            .as_path(),
-        );
-
-        let error = checker.validate(&configuration);
-        let expected_message = vec![
-            String::from("Invalid 'dependencies' in 'packs/baz/package.yml'. 'packs/baz/package.yml' has a layer type of 'technical_services,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml"),
-           String::from( "Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a layer type of 'product,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml")
-        ];
-        assert_eq!(error, Some(expected_message));
     }
 }

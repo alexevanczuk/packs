@@ -278,8 +278,12 @@ pub(crate) fn check_all(
 
 fn validate(configuration: &Configuration) -> Vec<String> {
     debug!("Running validators against packages");
-    let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> =
-        vec![Box::new(dependency::Checker {})];
+    let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> = vec![
+        Box::new(dependency::Checker {}),
+        Box::new(architecture::Checker {
+            layers: configuration.layers.clone(),
+        }),
+    ];
 
     let validation_errors: Vec<String> = validators
         .iter()
