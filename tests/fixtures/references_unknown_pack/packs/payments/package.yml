@@ -1,0 +1,3 @@
+enforce_architecture: true
+layer: does-not-exist
+

@@ -54,3 +54,33 @@ Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a
     common::teardown();
     Ok(())
 }
+
+#[test]
+fn test_validate_with_referencing_unknown_pack() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/references_unknown_pack")
+        .arg("--debug")
+        .arg("validate")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(" has \'madeup/pack\' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug"));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
+fn test_validate_with_unknown_layer_pack() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/references_unknown_layer_pack")
+        .arg("--debug")
+        .arg("validate")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(" has \'madeup/pack\' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug"));
+
+    common::teardown();
+    Ok(())
+}
