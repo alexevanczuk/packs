@@ -285,11 +285,12 @@ fn validate(configuration: &Configuration) -> Vec<String> {
         }),
     ];
 
-    let validation_errors: Vec<String> = validators
+    let mut validation_errors: Vec<String> = validators
         .iter()
         .filter_map(|v| v.validate(configuration))
         .flatten()
         .collect();
+    validation_errors.dedup();
     debug!("Finished validators against packages");
 
     validation_errors

@@ -5,6 +5,7 @@ use super::{
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
+use anyhow::{bail, Result};
 
 #[derive(Default, Clone)]
 pub struct Layers {
@@ -16,7 +17,7 @@ impl Layers {
         &self,
         referencing_layer: &String,
         defining_layer: &String,
-    ) -> bool {
+    ) -> Result<bool> {
         let referencing_layer_index = self
             .layers
             .iter()
@@ -27,13 +28,11 @@ impl Layers {
 
         match (referencing_layer_index, defining_layer_index) {
             (Some(referencing_layer_index), Some(defining_layer_index)) => {
-                referencing_layer_index <= defining_layer_index
+                Ok(referencing_layer_index <= defining_layer_index)
             }
             _ => {
-                panic!(
-                    "Could not find one of layer `{}` or layer `{}` in `packwerk.yml`",
-                    referencing_layer, defining_layer
-                )
+                bail!("Could not find one of layer `{}` or layer `{}` in `packwerk.yml`",
+                    referencing_layer, defining_layer)
             }
         }
     }
@@ -42,23 +41,40 @@ impl Layers {
 impl ValidatorInterface for Checker {
     fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
         let mut error_messages: Vec<String> = vec![];
-        for pack_dependency in
-            configuration.pack_set.all_pack_dependencies(configuration)
-        {
-            let (from_pack, to_pack) =
-                (pack_dependency.from_pack, pack_dependency.to_pack);
-            if !dependency_permitted(configuration, from_pack, to_pack) {
-                let error_message = format!(
-                    "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
-                    from_pack.relative_path.display(),
-                    from_pack.relative_path.display(),
-                    from_pack.layer.clone().unwrap(),
-                    to_pack.name,
-                    to_pack.layer.clone().unwrap(),
-                );
-                error_messages.push(error_message);
+        match configuration.pack_set.all_pack_dependencies(configuration) {
+            Ok(dependencies) => {
+                for pack_dependency in dependencies {
+                    let (from_pack, to_pack) =
+                        (pack_dependency.from_pack, pack_dependency.to_pack);
+                    match dependency_permitted(
+                        configuration,
+                        from_pack,
+                        to_pack,
+                    ) {
+                        Ok(true) => continue,
+                        Ok(false) => {
+                            let error_message = format!(
+                                "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
+                                from_pack.relative_path.display(),
+                                from_pack.relative_path.display(),
+                                from_pack.layer.clone().unwrap(),
+                                to_pack.name,
+                                to_pack.layer.clone().unwrap(),
+                            );
+                            error_messages.push(error_message);
+                        }
+                        Err(error) => {
+                            error_messages.push(error.to_string());
+                            return Some(error_messages);
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                error_messages.push(error.to_string());
             }
         }
+
         if error_messages.is_empty() {
             None
         } else {
@@ -71,15 +87,15 @@ fn dependency_permitted(
     configuration: &Configuration,
     from_pack: &Pack,
     to_pack: &Pack,
-) -> bool {
+) -> Result<bool> {
     if from_pack.enforce_architecture().is_false() {
-        return true;
+        return Ok(true);
     }
 
     let (from_pack_layer, to_pack_layer) = (&from_pack.layer, &to_pack.layer);
 
     if from_pack_layer.is_none() || to_pack_layer.is_none() {
-        return true;
+        return Ok(true);
     }
 
     let (from_pack_layer, to_pack_layer) = (
@@ -131,7 +147,10 @@ impl CheckerInterface for Checker {
 
         match (&referencing_pack.layer, &defining_pack.layer) {
             (Some(referencing_layer), Some(defining_layer)) => {
-                if self.layers.can_depend_on(referencing_layer, defining_layer)
+                if self
+                    .layers
+                    .can_depend_on(referencing_layer, defining_layer)
+                    .unwrap()
                 {
                     return None;
                 }
@@ -433,7 +452,7 @@ mod tests {
         };
 
         let result = dependency_permitted(&configuration, &from_pack, &to_pack);
-        assert_eq!(result, test_case.expected_result);
+        assert_eq!(result.unwrap(), test_case.expected_result);
     }
 
     #[test]
