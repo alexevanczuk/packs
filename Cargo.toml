@@ -28,6 +28,7 @@ name = "packs"
 path = "src/lib.rs"
 
 [dependencies]
+anyhow = { version = "1.0.75", features = [] } # for error handling
 clap = { version = "4.2.1", features = ["derive"] } # cli
 clap_derive = "4.2.0" # cli
 itertools = "0.10.5" # tools for iterating over iterable things

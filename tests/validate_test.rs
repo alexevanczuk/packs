@@ -54,3 +54,18 @@ Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a
     common::teardown();
     Ok(())
 }
+
+#[test]
+fn test_validate_with_referencing_unknown_pack() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/references_unknown_pack")
+        .arg("--debug")
+        .arg("validate")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("has \'packs/unknown-pack\' in its dependencies, but that pack cannot be found"));
+
+    common::teardown();
+    Ok(())
+}

@@ -38,10 +38,19 @@ impl ValidatorInterface for Checker {
         };
         let mut error_messages: Vec<String> = vec![];
 
-        for pack_dependency in
-            configuration.pack_set.all_pack_dependencies(configuration)
-        {
-            add_edge(pack_dependency.from_pack, pack_dependency.to_pack);
+        match configuration.pack_set.all_pack_dependencies(configuration) {
+            Ok(pack_dependencies) => {
+                for pack_dependency in pack_dependencies {
+                    add_edge(
+                        pack_dependency.from_pack,
+                        pack_dependency.to_pack,
+                    );
+                }
+            }
+            Err(msg) => {
+                error_messages.push(msg.to_string());
+                return Some(error_messages);
+            }
         }
 
         let mut sccs = vec![];

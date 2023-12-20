@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
@@ -90,7 +91,7 @@ impl PackSet {
         )
     }
 
-    pub fn for_pack(&self, pack_name: &str) -> Result<&Pack, &'static str> {
+    pub fn for_pack(&self, pack_name: &str) -> Result<&Pack> {
         // Trim trailing slash on pack_name.
         // Since often the input arg here comes from the command line,
         // a command line auto-completer may add a trailing slash.
@@ -98,7 +99,7 @@ impl PackSet {
         if let Some(pack) = self.indexed_packs.get(pack_name) {
             Ok(pack)
         } else {
-            Err("No pack found.")
+            bail!("No pack found '{}'", pack_name)
         }
     }
 
@@ -114,20 +115,23 @@ impl PackSet {
     pub fn all_pack_dependencies<'a>(
         &'a self,
         configuration: &'a Configuration,
-    ) -> Vec<PackDependency> {
+    ) -> Result<Vec<PackDependency>> {
         let mut pack_refs: Vec<PackDependency> = Vec::new();
         for from_pack in &configuration.pack_set.packs {
             for dependency_pack_name in &from_pack.dependencies {
-                let to_pack = configuration
-                    .pack_set
-                    .for_pack(dependency_pack_name)
-                    .unwrap_or_else(|_| panic!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
-                                               from_pack.yml.to_string_lossy(),
-                                               dependency_pack_name));
-                pack_refs.push(PackDependency { from_pack, to_pack });
+                match configuration.pack_set.for_pack(dependency_pack_name) {
+                    Ok(to_pack) => {
+                        pack_refs.push(PackDependency { from_pack, to_pack })
+                    }
+                    Err(_) => {
+                        bail!("{} has '{}' in its dependencies, but that pack cannot be found. Try `packs list-packs` to debug.",
+                               from_pack.yml.to_string_lossy(),
+                               dependency_pack_name);
+                    }
+                }
             }
         }
-        pack_refs
+        Ok(pack_refs)
     }
 }
 

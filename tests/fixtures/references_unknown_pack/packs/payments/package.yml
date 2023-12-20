@@ -1,0 +1,4 @@
+enforce_architecture: true
+dependencies:
+  - packs/unknown-pack
+
