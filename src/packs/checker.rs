@@ -1,6 +1,8 @@
 // Module declarations
 pub(crate) mod architecture;
 mod dependency;
+
+mod folder_visibility;
 mod privacy;
 pub(crate) mod reference;
 mod visibility;
@@ -429,6 +431,7 @@ fn get_checkers(
         Box::new(architecture::Checker {
             layers: configuration.layers.clone(),
         }),
+        Box::new(folder_visibility::Checker {}),
     ]
 }
 

@@ -99,6 +99,14 @@ pub struct Pack {
     )]
     pub visible_to: Option<HashSet<String>>,
 
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_folder_visibility: Option<CheckerSetting>,
+
     #[serde(skip_serializing_if = "is_default_public_folder")]
     pub public_folder: Option<PathBuf>,
 
@@ -268,6 +276,13 @@ impl Pack {
 
     pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
         match &self.enforce_dependencies {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    pub(crate) fn enforce_folder_visibility(&self) -> &CheckerSetting {
+        match &self.enforce_folder_visibility {
             Some(setting) => setting,
             None => &CheckerSetting::False,
         }
