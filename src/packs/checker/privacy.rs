@@ -69,7 +69,9 @@ impl CheckerInterface for Checker {
 
             let constant_is_in_private_namespace =
                 private_constants.iter().any(|private_constant| {
-                    reference.constant_name.starts_with(private_constant)
+                    let namespaced_constant =
+                        &format!("{}::", private_constant);
+                    reference.constant_name.starts_with(namespaced_constant)
                 });
 
             if !constant_is_private && !constant_is_in_private_namespace {
@@ -533,6 +535,57 @@ mod tests {
             expected_violation,
             checker.check(&reference, &configuration).unwrap()
         )
+    }
+
+    #[test]
+    fn test_private_constants_match_full_namespace() {
+        let checker = Checker {};
+        let defining_pack = Pack {
+            name: String::from("packs/bar"),
+            private_constants: vec![String::from("::Bar")]
+                .into_iter()
+                .collect(),
+            enforce_privacy: Some(CheckerSetting::True),
+            public_folder: Some(PathBuf::from("packs/bar/app/public")),
+            ..Pack::default()
+        };
+
+        let referencing_pack = Pack {
+            name: String::from("packs/foo"),
+            ..Pack::default()
+        };
+
+        let reference = Reference {
+            constant_name: String::from("::Barbie::BarChild"),
+            defining_pack_name: Some(defining_pack.name.to_owned()),
+            referencing_pack_name: referencing_pack.name.to_owned(),
+            relative_referencing_file: String::from(
+                "packs/foo/app/services/foo.rb",
+            ),
+            relative_defining_file: Some(String::from(
+                "packs/bar/app/api/bar.rb",
+            )),
+            source_location: SourceLocation { line: 3, column: 1 },
+        };
+
+        let root_pack = Pack {
+            name: String::from("."),
+            ..Pack::default()
+        };
+
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![
+                    root_pack,
+                    defining_pack,
+                    referencing_pack,
+                ]),
+                HashMap::new(),
+            ),
+            ..Configuration::default()
+        };
+
+        assert_eq!(None, checker.check(&reference, &configuration));
     }
 
     #[test]
