@@ -12,8 +12,6 @@ use tracing::debug;
 use crate::packs::{
     caching::create_cache_dir_idempotently,
     constant_resolver::{ConstantDefinition, ConstantResolver},
-    file_utils::process_glob_pattern,
-    pack::Pack,
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
 };
@@ -44,7 +42,12 @@ fn inferred_constants_from_pack_set(
     cache_dir: &Path,
     cache_disabled: bool,
 ) -> Vec<ConstantDefinition> {
-    let autoload_paths = get_autoload_paths(&pack_set.packs);
+    let autoload_paths = pack_set
+        .packs
+        .iter()
+        .flat_map(|pack| pack.default_autoload_roots())
+        .collect();
+
     inferred_constants_from_autoload_paths(
         autoload_paths,
         absolute_root,
@@ -203,35 +206,6 @@ fn cache_constant_definitions(
     create_cache_dir_idempotently(cache_dir);
     std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
         .unwrap();
-}
-
-fn get_autoload_paths(packs: &Vec<Pack>) -> Vec<PathBuf> {
-    let mut autoload_paths: Vec<PathBuf> = Vec::new();
-
-    debug!("Getting autoload paths");
-
-    for pack in packs {
-        // App paths
-        let app_paths = pack.yml.parent().unwrap().join("app").join("*");
-        let app_glob_pattern = app_paths.to_str().unwrap();
-        process_glob_pattern(app_glob_pattern, &mut autoload_paths);
-
-        // Concerns paths
-        let concerns_paths = pack
-            .yml
-            .parent()
-            .unwrap()
-            .join("app")
-            .join("*")
-            .join("concerns");
-        let concerns_glob_pattern = concerns_paths.to_str().unwrap();
-
-        process_glob_pattern(concerns_glob_pattern, &mut autoload_paths);
-    }
-
-    debug!("Finished getting autoload paths");
-
-    autoload_paths
 }
 
 #[cfg(test)]
