@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use regex::Regex;
 use ruby_inflector::case::{
@@ -77,10 +77,10 @@ pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
     //   string
     // end
 
-    let lowercase_acronyms = acronyms
+    let lowercase_acronyms_to_originals = acronyms
         .iter()
-        .map(|acronym| acronym.to_lowercase())
-        .collect::<HashSet<String>>();
+        .map(|acronym| (acronym.to_lowercase(), acronym))
+        .collect::<HashMap<String, &String>>();
 
     let mut new_string = s.to_string();
     // Replace the beginning of the word, matched with lowercase letters, with either a matching inflection or a capitalized version of the word
@@ -88,8 +88,8 @@ pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
     new_string = re
         .replace(&new_string, |caps: &regex::Captures| {
             let word = caps.get(0).unwrap().as_str();
-            if lowercase_acronyms.contains(word) {
-                word.to_uppercase()
+            if lowercase_acronyms_to_originals.contains_key(word) {
+                lowercase_acronyms_to_originals[word].to_string()
             } else {
                 capitalize(word)
             }
@@ -103,8 +103,8 @@ pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
         .replace_all(&new_string, |caps: &regex::Captures| {
             let matched_slash = caps.get(1);
             let word = caps.get(2).unwrap().as_str();
-            let capitalized_word = if lowercase_acronyms.contains(word) {
-                word.to_uppercase()
+            let capitalized_word = if lowercase_acronyms_to_originals.contains_key(word) {
+                lowercase_acronyms_to_originals[word].to_string()
             } else {
                 capitalize(word)
             };
@@ -147,6 +147,16 @@ mod tests {
         let actual =
             to_class_case("my_string_401k_thing", false, &HashSet::new());
         let expected = "MyString401kThing";
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn fn_test_camelizing_case_retained() {
+        let mut acronyms = HashSet::new();
+        acronyms.insert(String::from("FacTory"));
+
+        let actual = camelize("my_factory", &acronyms);
+        let expected = "MyFacTory";
         assert_eq!(expected, actual);
     }
 }
