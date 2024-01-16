@@ -54,7 +54,6 @@ pub(crate) fn walk_directory(
         "public/**/*",
         "bin/**/*",
         "log/**/*",
-        "frontend/**/**",
         "sorbet/**/*",
     ];
     let mut all_excluded_dirs: Vec<String> = Vec::new();
