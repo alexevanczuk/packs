@@ -615,7 +615,8 @@ owner: Foobar
             Pack::from_path(root.join("package.yml").as_path(), root.as_path());
 
         let actual = pack.default_autoload_roots();
-        let expected = vec![root.join("app/services")];
+        let expected =
+            vec![root.join("app/company_data"), root.join("app/services")];
         assert_eq!(expected, actual)
     }
 }

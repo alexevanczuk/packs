@@ -33,6 +33,7 @@ mod test_util {
             &absolute_root,
             &configuration.cache_directory,
             true,
+            &configuration.autoload_roots,
         )
     }
 

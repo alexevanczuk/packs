@@ -12,6 +12,7 @@ use tracing::debug;
 use crate::packs::{
     caching::create_cache_dir_idempotently,
     constant_resolver::{ConstantDefinition, ConstantResolver},
+    file_utils::expand_glob,
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
 };
@@ -25,12 +26,14 @@ pub fn get_zeitwerk_constant_resolver(
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
+    autoload_root_globs: &HashMap<PathBuf, String>,
 ) -> Box<dyn ConstantResolver + Send + Sync> {
     let constants = inferred_constants_from_pack_set(
         pack_set,
         absolute_root,
         cache_dir,
         cache_disabled,
+        autoload_root_globs,
     );
 
     ZeitwerkConstantResolver::create(constants)
@@ -41,15 +44,33 @@ fn inferred_constants_from_pack_set(
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
+    autoload_root_globs: &HashMap<PathBuf, String>,
 ) -> Vec<ConstantDefinition> {
-    let autoload_paths = pack_set
+    // build the full list of default autoload roots from the pack set, using the default namespace for each.
+    let mut autoload_roots: HashMap<PathBuf, String> = pack_set
         .packs
         .iter()
         .flat_map(|pack| pack.default_autoload_roots())
+        .map(|path| (path, String::from("")))
         .collect();
 
+    // override the default autoload roots with any that may have been explicitly specified.
+    autoload_root_globs.iter().for_each(|(rel_path, ns)| {
+        let abs_path = absolute_root.join(rel_path);
+        let ns = if ns == "::Object" {
+            String::from("")
+        } else {
+            ns.to_owned()
+        };
+        expand_glob(abs_path.to_str().unwrap())
+            .iter()
+            .for_each(|path| {
+                autoload_roots.insert(path.to_owned(), ns.clone());
+            });
+    });
+
     inferred_constants_from_autoload_paths(
-        autoload_paths,
+        autoload_roots,
         absolute_root,
         cache_dir,
         cache_disabled,
@@ -57,7 +78,7 @@ fn inferred_constants_from_pack_set(
 }
 
 fn inferred_constants_from_autoload_paths(
-    autoload_paths: Vec<PathBuf>,
+    autoload_roots: HashMap<PathBuf, String>,
     absolute_root: &Path,
     cache_dir: &Path,
     cache_disabled: bool,
@@ -67,8 +88,8 @@ fn inferred_constants_from_autoload_paths(
 
     debug!("Globbing out autoload paths");
     // First, we get a map of each autoload path to the files they map to.
-    let autoload_paths_to_their_globbed_files = autoload_paths
-        .into_iter()
+    let autoload_paths_to_their_globbed_files = autoload_roots
+        .keys()
         .par_bridge()
         .map(|absolute_autoload_path| {
             let glob_path = absolute_autoload_path.join("**/*.rb");
@@ -80,7 +101,7 @@ fn inferred_constants_from_autoload_paths(
 
             (absolute_autoload_path, files)
         })
-        .collect::<HashMap<PathBuf, Vec<PathBuf>>>();
+        .collect::<HashMap<&PathBuf, Vec<PathBuf>>>();
 
     debug!("Finding autoload path for each file");
     // Then, we want to know *which* autoload path is the one that defines a given constant.
@@ -127,10 +148,13 @@ fn inferred_constants_from_autoload_paths(
                         .to_owned(),
                 }
             } else {
+                let default_namespace =
+                    autoload_roots.get(absolute_autoload_path).unwrap();
                 inferred_constant_from_file(
                     absolute_path_of_definition,
                     absolute_autoload_path,
                     acronyms,
+                    default_namespace,
                 )
             }
         })
@@ -146,6 +170,7 @@ fn inferred_constant_from_file(
     absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
     acronyms: &HashSet<String>,
+    default_namespace: &String,
 ) -> ConstantDefinition {
     let relative_path =
         absolute_path.strip_prefix(absolute_autoload_path).unwrap();
@@ -154,12 +179,12 @@ fn inferred_constant_from_file(
 
     let relative_path_str = relative_path.to_str().unwrap();
     let camelized_path = inflector_shim::camelize(relative_path_str, acronyms);
-    let fully_qualified_name = format!("::{}", camelized_path);
+    let fully_qualified_name =
+        format!("{}::{}", default_namespace, camelized_path);
 
-    let absolute_path_of_definition = absolute_path.to_path_buf();
     ConstantDefinition {
         fully_qualified_name,
-        absolute_path_of_definition,
+        absolute_path_of_definition: absolute_path.to_path_buf(),
     }
 }
 
@@ -236,6 +261,22 @@ mod tests {
             }],
             get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
                 .resolve(&String::from("Foo"), &[])
+                .unwrap()
+        );
+
+        teardown();
+    }
+
+    #[test]
+    fn constant_in_overridden_namespace() {
+        assert_eq!(
+            vec![ConstantDefinition {
+                fully_qualified_name: "::Company::Widget".to_string(),
+                absolute_path_of_definition: get_absolute_root(SIMPLE_APP)
+                    .join("app/company_data/widget.rb")
+            }],
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
+                .resolve(&String::from("Widget"), &["Company"])
                 .unwrap()
         );
 
@@ -356,6 +397,7 @@ mod tests {
             absolute_root,
             &configuration.cache_directory,
             !configuration.cache_enabled,
+            &configuration.autoload_roots,
         );
         let actual_constant_map = constant_resolver
             .fully_qualified_constant_name_to_constant_definition_map();
@@ -410,8 +452,16 @@ mod tests {
                     .join("app/services/some_root_class.rb"),
             }],
         );
-        assert_eq!(&expected_constant_map, actual_constant_map);
+        expected_constant_map.insert(
+            "::Company::Widget".to_owned(),
+            vec![ConstantDefinition {
+                fully_qualified_name: "::Company::Widget".to_owned(),
+                absolute_path_of_definition: absolute_root
+                    .join("app/company_data/widget.rb"),
+            }],
+        );
 
+        assert_eq!(&expected_constant_map, actual_constant_map);
         teardown();
     }
 }

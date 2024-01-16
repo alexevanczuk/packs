@@ -29,6 +29,7 @@ pub struct Configuration {
     pub layers: Layers,
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
+    pub autoload_roots: HashMap<PathBuf, String>,
     pub custom_associations: Vec<String>,
     pub stdin_file_path: Option<PathBuf>,
     // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
@@ -108,6 +109,8 @@ pub(crate) fn from_raw(
     };
 
     let ignored_definitions = raw_config.ignored_definitions;
+    let autoload_roots: HashMap<PathBuf, String> = raw_config.autoload_roots;
+
     let packs_first_mode = raw_config.packs_first_mode;
 
     let custom_associations = raw_config
@@ -132,6 +135,7 @@ pub(crate) fn from_raw(
         layers,
         experimental_parser,
         ignored_definitions,
+        autoload_roots,
         custom_associations,
         stdin_file_path,
         print_files,
@@ -166,6 +170,7 @@ mod tests {
             absolute_root.join("packs/baz/app/services/baz.rb"),
             absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
             absolute_root.join("app/services/some_root_class.rb"),
+            absolute_root.join("app/company_data/widget.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();
@@ -293,6 +298,7 @@ mod tests {
             absolute_root.join("packs/baz/app/services/baz.rb"),
             absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
             absolute_root.join("app/services/some_root_class.rb"),
+            absolute_root.join("app/company_data/widget.rb"),
         ]
         .into_iter()
         .collect::<HashSet<PathBuf>>();

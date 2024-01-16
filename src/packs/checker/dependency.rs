@@ -258,7 +258,6 @@ mod tests {
     }
 
     fn build_foo_reference_bar_reference() -> Reference {
-        
         Reference {
             constant_name: String::from("::Bar"),
             defining_pack_name: Some(String::from("packs/bar")),
