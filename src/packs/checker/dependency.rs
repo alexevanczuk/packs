@@ -258,7 +258,8 @@ mod tests {
     }
 
     fn build_foo_reference_bar_reference() -> Reference {
-        let reference = Reference {
+        
+        Reference {
             constant_name: String::from("::Bar"),
             defining_pack_name: Some(String::from("packs/bar")),
             referencing_pack_name: String::from("packs/foo"),
@@ -269,8 +270,7 @@ mod tests {
                 "packs/bar/app/services/bar.rb",
             )),
             source_location: SourceLocation { line: 3, column: 1 },
-        };
-        reference
+        }
     }
 
     #[test]

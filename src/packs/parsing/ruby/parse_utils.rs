@@ -121,7 +121,7 @@ pub fn get_reference_from_active_record_association(
         .any(|association_method| node.method_name == *association_method);
 
     if is_association {
-        let first_arg: Option<&Node> = node.args.get(0);
+        let first_arg: Option<&Node> = node.args.first();
 
         let mut name: Option<String> = None;
         for node in node.args.iter() {
