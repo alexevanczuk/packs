@@ -163,6 +163,7 @@ mod tests {
         assert_eq!(actual.absolute_root, absolute_root);
 
         let expected_included_files = vec![
+            absolute_root.join("frontend/ui_helper.rb"),
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/services/foo/bar.rb"),
@@ -291,6 +292,7 @@ mod tests {
         let configuration = configuration::get(&absolute_root);
         let actual_paths = configuration.intersect_files(vec![]);
         let expected_paths = vec![
+            absolute_root.join("frontend/ui_helper.rb"),
             absolute_root.join("packs/bar/app/services/bar.rb"),
             absolute_root.join("packs/foo/app/services/foo.rb"),
             absolute_root.join("packs/foo/app/services/foo/bar.rb"),
