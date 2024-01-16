@@ -103,11 +103,12 @@ pub fn camelize(s: &str, acronyms: &HashSet<String>) -> String {
         .replace_all(&new_string, |caps: &regex::Captures| {
             let matched_slash = caps.get(1);
             let word = caps.get(2).unwrap().as_str();
-            let capitalized_word = if lowercase_acronyms_to_originals.contains_key(word) {
-                lowercase_acronyms_to_originals[word].to_string()
-            } else {
-                capitalize(word)
-            };
+            let capitalized_word =
+                if lowercase_acronyms_to_originals.contains_key(word) {
+                    lowercase_acronyms_to_originals[word].to_string()
+                } else {
+                    capitalize(word)
+                };
 
             if matched_slash.is_some() {
                 format!("::{}", capitalized_word)
