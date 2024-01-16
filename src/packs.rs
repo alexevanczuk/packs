@@ -235,6 +235,7 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
             &configuration.absolute_root,
             &configuration.cache_directory,
             !configuration.cache_enabled,
+            &configuration.autoload_roots,
         )
     };
 

@@ -486,7 +486,8 @@ end
         .unresolved_references;
 
         assert_eq!(references.len(), 1);
-        let reference = references.first()
+        let reference = references
+            .first()
             .expect("There should be a reference at index 0");
 
         assert_eq!(
@@ -516,7 +517,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 2);
-        let reference1 = references.first()
+        let reference1 = references
+            .first()
             .expect("There should be a reference at index 0");
 
         assert_eq!(
@@ -564,7 +566,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 1);
-        let reference = references.first()
+        let reference = references
+            .first()
             .expect("There should be a reference at index 0");
 
         assert_eq!(
@@ -595,7 +598,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 1);
-        let reference = references.first()
+        let reference = references
+            .first()
             .expect("There should be a reference at index 0");
 
         assert_eq!(
@@ -729,7 +733,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 2);
-        let first_reference = references.first()
+        let first_reference = references
+            .first()
             .expect("There should be a reference at index 0");
         assert_eq!(
             UnresolvedReference {
@@ -763,7 +768,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 1);
-        let first_reference = references.first()
+        let first_reference = references
+            .first()
             .expect("There should be a reference at index 0");
         assert_eq!(
             UnresolvedReference {
@@ -842,7 +848,8 @@ FOO = BAR
         .unresolved_references;
 
         assert_eq!(references.len(), 1);
-        let first_reference = references.first()
+        let first_reference = references
+            .first()
             .expect("There should be a reference at index 0");
 
         assert_eq!(
@@ -1257,7 +1264,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 2);
-        let first_reference = references.first()
+        let first_reference = references
+            .first()
             .expect("There should be a reference at index 0");
         let second_reference = references
             .get(1)
@@ -1285,7 +1293,8 @@ end
         )
         .unresolved_references;
         assert_eq!(references.len(), 1);
-        let reference = references.first()
+        let reference = references
+            .first()
             .expect("There should be a reference at index 0");
         assert_eq!(
             UnresolvedReference {
