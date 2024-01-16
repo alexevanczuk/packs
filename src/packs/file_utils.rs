@@ -55,13 +55,8 @@ pub fn build_glob_set(globs: &[String]) -> GlobSet {
     builder.build().unwrap()
 }
 
-pub fn process_glob_pattern(pattern: &str, paths: &mut Vec<PathBuf>) {
-    for path in glob::glob(pattern)
-        .expect("Failed to read glob pattern")
-        .flatten()
-    {
-        paths.push(path);
-    }
+pub fn expand_glob(pattern: &str) -> Vec<PathBuf> {
+    glob::glob(pattern).unwrap().map(|p| p.unwrap()).collect()
 }
 
 pub fn glob_ruby_files_in_dirs(dirs: Vec<&PathBuf>) -> Vec<PathBuf> {

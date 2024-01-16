@@ -10,7 +10,9 @@ use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Value;
 
-use super::{checker::ViolationIdentifier, PackageTodo};
+use super::{
+    checker::ViolationIdentifier, file_utils::expand_glob, PackageTodo,
+};
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub struct Pack {
@@ -263,6 +265,15 @@ impl Pack {
         pack
     }
 
+    pub fn default_autoload_roots(&self) -> Vec<PathBuf> {
+        let root_pattern = self.yml.parent().unwrap().join("app").join("*");
+        let concerns_pattern = root_pattern.join("concerns");
+        let mut roots = expand_glob(root_pattern.to_str().unwrap());
+        roots.extend(expand_glob(concerns_pattern.to_str().unwrap()));
+
+        roots
+    }
+
     pub fn relative_yml(&self) -> PathBuf {
         self.relative_path.join("package.yml")
     }
@@ -416,6 +427,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util;
+
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -592,6 +605,17 @@ owner: Foobar
 
         let expected = r#""#.trim_start();
 
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_autoload_roots() {
+        let root = test_util::get_absolute_root(test_util::SIMPLE_APP);
+        let pack =
+            Pack::from_path(root.join("package.yml").as_path(), root.as_path());
+
+        let actual = pack.default_autoload_roots();
+        let expected = vec![root.join("app/services")];
         assert_eq!(expected, actual)
     }
 }
