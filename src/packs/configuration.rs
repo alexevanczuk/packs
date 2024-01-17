@@ -1,17 +1,15 @@
-use super::caching::cache::Cache;
-use super::caching::create_cache_dir_idempotently;
-use super::caching::noop_cache::NoopCache;
-use super::caching::per_file_cache::PerFileCache;
+use super::caching::{
+    cache::Cache, create_cache_dir_idempotently, noop_cache::NoopCache,
+    per_file_cache::PerFileCache,
+};
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
-use super::raw_configuration::RawConfiguration;
-use super::constant_resolver::ConstantResolverConfiguration;
-use super::PackSet;
 
-use crate::packs::raw_configuration;
-use crate::packs::walk_directory::WalkDirectoryResult;
-
-use crate::packs::walk_directory;
+use super::{
+    constant_resolver::ConstantResolverConfiguration, raw_configuration,
+    raw_configuration::RawConfiguration, walk_directory,
+    walk_directory::WalkDirectoryResult, PackSet,
+};
 
 use std::collections::HashMap;
 use std::{
