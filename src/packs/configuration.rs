@@ -29,6 +29,7 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub autoload_roots: HashMap<PathBuf, String>,
+    pub inflections_path: PathBuf,
     pub custom_associations: Vec<String>,
     pub stdin_file_path: Option<PathBuf>,
     // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
@@ -82,6 +83,7 @@ impl Configuration {
             cache_directory: &self.cache_directory,
             cache_enabled: self.cache_enabled,
             autoload_roots: &self.autoload_roots,
+            inflections_path: &self.inflections_path,
         }
     }
 }
@@ -123,6 +125,12 @@ pub(crate) fn from_raw(
 
     let packs_first_mode = raw_config.packs_first_mode;
 
+    let inflections_path = absolute_root.join(
+        raw_config
+            .inflections_path
+            .unwrap_or(PathBuf::from("config/initializers/inflections.rb")),
+    );
+
     let custom_associations = raw_config
         .custom_associations
         .iter()
@@ -146,6 +154,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         autoload_roots,
+        inflections_path,
         custom_associations,
         stdin_file_path,
         print_files,

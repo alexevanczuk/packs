@@ -117,7 +117,7 @@ fn inferred_constants_from_autoload_paths(
     }
 
     debug!("Getting acronyms from disk");
-    let acronyms = &get_acronyms_from_disk(&configuration.absolute_root);
+    let acronyms = &get_acronyms_from_disk(configuration.inflections_path);
 
     debug!("Inferring constants from file name (using cache)");
     let constants: Vec<ConstantDefinition> = file_to_longest_path
