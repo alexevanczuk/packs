@@ -64,6 +64,10 @@ pub(crate) struct RawConfiguration {
     #[serde(default)]
     pub autoload_roots: HashMap<PathBuf, String>,
 
+    // Relative path to inflections file
+    #[serde(default)]
+    pub inflections_path: Option<PathBuf>,
+
     // Use packs copy
     #[serde(default)]
     pub packs_first_mode: bool,

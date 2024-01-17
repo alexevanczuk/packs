@@ -49,10 +49,7 @@ pub(crate) fn get_all_references(
         // The zeitwerk constant resolver doesn't look at processed files to get definitions
         let constant_resolver = get_zeitwerk_constant_resolver(
             &configuration.pack_set,
-            &configuration.absolute_root,
-            &configuration.cache_directory,
-            !configuration.cache_enabled,
-            &configuration.autoload_roots,
+            &configuration.constant_resolver_configuration(),
         );
 
         (constant_resolver, processed_files)

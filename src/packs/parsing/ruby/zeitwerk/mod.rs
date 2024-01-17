@@ -11,7 +11,9 @@ use tracing::debug;
 
 use crate::packs::{
     caching::create_cache_dir_idempotently,
-    constant_resolver::{ConstantDefinition, ConstantResolver},
+    constant_resolver::{
+        ConstantDefinition, ConstantResolver, ConstantResolverConfiguration,
+    },
     file_utils::expand_glob,
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
@@ -23,31 +25,19 @@ use super::inflector_shim;
 
 pub fn get_zeitwerk_constant_resolver(
     pack_set: &PackSet,
-    absolute_root: &Path,
-    cache_dir: &Path,
-    cache_disabled: bool,
-    autoload_root_globs: &HashMap<PathBuf, String>,
+    configuration: &ConstantResolverConfiguration,
 ) -> Box<dyn ConstantResolver + Send + Sync> {
-    let constants = inferred_constants_from_pack_set(
-        pack_set,
-        absolute_root,
-        cache_dir,
-        cache_disabled,
-        autoload_root_globs,
-    );
+    let constants = inferred_constants_from_pack_set(pack_set, configuration);
 
     ZeitwerkConstantResolver::create(constants)
 }
 
 fn inferred_constants_from_pack_set(
     pack_set: &PackSet,
-    absolute_root: &Path,
-    cache_dir: &Path,
-    cache_disabled: bool,
-    autoload_root_globs: &HashMap<PathBuf, String>,
+    configuration: &ConstantResolverConfiguration,
 ) -> Vec<ConstantDefinition> {
     // build the full list of default autoload roots from the pack set, using the default namespace for each.
-    let mut autoload_roots: HashMap<PathBuf, String> = pack_set
+    let mut full_autoload_roots: HashMap<PathBuf, String> = pack_set
         .packs
         .iter()
         .flat_map(|pack| pack.default_autoload_roots())
@@ -55,40 +45,36 @@ fn inferred_constants_from_pack_set(
         .collect();
 
     // override the default autoload roots with any that may have been explicitly specified.
-    autoload_root_globs.iter().for_each(|(rel_path, ns)| {
-        let abs_path = absolute_root.join(rel_path);
-        let ns = if ns == "::Object" {
-            String::from("")
-        } else {
-            ns.to_owned()
-        };
-        expand_glob(abs_path.to_str().unwrap())
-            .iter()
-            .for_each(|path| {
-                autoload_roots.insert(path.to_owned(), ns.clone());
-            });
-    });
+    configuration
+        .autoload_roots
+        .iter()
+        .for_each(|(rel_path, ns)| {
+            let abs_path = configuration.absolute_root.join(rel_path);
+            let ns = if ns == "::Object" {
+                String::from("")
+            } else {
+                ns.to_owned()
+            };
+            expand_glob(abs_path.to_str().unwrap())
+                .iter()
+                .for_each(|path| {
+                    full_autoload_roots.insert(path.to_owned(), ns.clone());
+                });
+        });
 
-    inferred_constants_from_autoload_paths(
-        autoload_roots,
-        absolute_root,
-        cache_dir,
-        cache_disabled,
-    )
+    inferred_constants_from_autoload_paths(configuration, full_autoload_roots)
 }
 
 fn inferred_constants_from_autoload_paths(
-    autoload_roots: HashMap<PathBuf, String>,
-    absolute_root: &Path,
-    cache_dir: &Path,
-    cache_disabled: bool,
+    configuration: &ConstantResolverConfiguration,
+    full_autoload_roots: HashMap<PathBuf, String>,
 ) -> Vec<ConstantDefinition> {
     debug!("Get constant resolver cache");
-    let cache_data = get_constant_resolver_cache(cache_dir);
+    let cache_data = get_constant_resolver_cache(configuration.cache_directory);
 
     debug!("Globbing out autoload paths");
     // First, we get a map of each autoload path to the files they map to.
-    let autoload_paths_to_their_globbed_files = autoload_roots
+    let autoload_paths_to_their_globbed_files = full_autoload_roots
         .keys()
         .par_bridge()
         .map(|absolute_autoload_path| {
@@ -131,7 +117,7 @@ fn inferred_constants_from_autoload_paths(
     }
 
     debug!("Getting acronyms from disk");
-    let acronyms = &get_acronyms_from_disk(absolute_root);
+    let acronyms = &get_acronyms_from_disk(configuration.inflections_path);
 
     debug!("Inferring constants from file name (using cache)");
     let constants: Vec<ConstantDefinition> = file_to_longest_path
@@ -149,7 +135,7 @@ fn inferred_constants_from_autoload_paths(
                 }
             } else {
                 let default_namespace =
-                    autoload_roots.get(absolute_autoload_path).unwrap();
+                    full_autoload_roots.get(absolute_autoload_path).unwrap();
                 inferred_constant_from_file(
                     absolute_path_of_definition,
                     absolute_autoload_path,
@@ -161,7 +147,11 @@ fn inferred_constants_from_autoload_paths(
         .collect::<Vec<ConstantDefinition>>();
 
     debug!("Caching constant definitions");
-    cache_constant_definitions(&constants, cache_dir, cache_disabled);
+    cache_constant_definitions(
+        &constants,
+        configuration.cache_directory,
+        !configuration.cache_enabled,
+    );
 
     constants
 }
@@ -390,14 +380,9 @@ mod tests {
 
         let configuration = configuration::get(absolute_root);
 
-        let pack_set = configuration.pack_set;
-
         let constant_resolver = get_zeitwerk_constant_resolver(
-            &pack_set,
-            absolute_root,
-            &configuration.cache_directory,
-            !configuration.cache_enabled,
-            &configuration.autoload_roots,
+            &configuration.pack_set,
+            &configuration.constant_resolver_configuration(),
         );
         let actual_constant_map = constant_resolver
             .fully_qualified_constant_name_to_constant_definition_map();

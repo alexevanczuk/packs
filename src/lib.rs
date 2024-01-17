@@ -30,10 +30,7 @@ mod test_util {
 
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
-            &absolute_root,
-            &configuration.cache_directory,
-            true,
-            &configuration.autoload_roots,
+            &configuration.constant_resolver_configuration(),
         )
     }
 

@@ -232,10 +232,7 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
         }
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
-            &configuration.absolute_root,
-            &configuration.cache_directory,
-            !configuration.cache_enabled,
-            &configuration.autoload_roots,
+            &configuration.constant_resolver_configuration(),
         )
     };
 

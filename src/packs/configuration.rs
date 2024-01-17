@@ -1,16 +1,15 @@
-use super::caching::cache::Cache;
-use super::caching::create_cache_dir_idempotently;
-use super::caching::noop_cache::NoopCache;
-use super::caching::per_file_cache::PerFileCache;
+use super::caching::{
+    cache::Cache, create_cache_dir_idempotently, noop_cache::NoopCache,
+    per_file_cache::PerFileCache,
+};
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
-use super::raw_configuration::RawConfiguration;
-use super::PackSet;
 
-use crate::packs::raw_configuration;
-use crate::packs::walk_directory::WalkDirectoryResult;
-
-use crate::packs::walk_directory;
+use super::{
+    constant_resolver::ConstantResolverConfiguration, raw_configuration,
+    raw_configuration::RawConfiguration, walk_directory,
+    walk_directory::WalkDirectoryResult, PackSet,
+};
 
 use std::collections::HashMap;
 use std::{
@@ -30,6 +29,7 @@ pub struct Configuration {
     pub experimental_parser: bool,
     pub ignored_definitions: HashMap<String, HashSet<PathBuf>>,
     pub autoload_roots: HashMap<PathBuf, String>,
+    pub inflections_path: PathBuf,
     pub custom_associations: Vec<String>,
     pub stdin_file_path: Option<PathBuf>,
     // Note that it'd probably be better to use the logger library, `tracing` (see logger.rs)
@@ -74,6 +74,18 @@ impl Configuration {
             Box::new(NoopCache {})
         }
     }
+
+    pub(crate) fn constant_resolver_configuration(
+        &self,
+    ) -> ConstantResolverConfiguration {
+        ConstantResolverConfiguration {
+            absolute_root: &self.absolute_root,
+            cache_directory: &self.cache_directory,
+            cache_enabled: self.cache_enabled,
+            autoload_roots: &self.autoload_roots,
+            inflections_path: &self.inflections_path,
+        }
+    }
 }
 
 pub(crate) fn get(absolute_root: &Path) -> Configuration {
@@ -113,6 +125,12 @@ pub(crate) fn from_raw(
 
     let packs_first_mode = raw_config.packs_first_mode;
 
+    let inflections_path = absolute_root.join(
+        raw_config
+            .inflections_path
+            .unwrap_or(PathBuf::from("config/initializers/inflections.rb")),
+    );
+
     let custom_associations = raw_config
         .custom_associations
         .iter()
@@ -136,6 +154,7 @@ pub(crate) fn from_raw(
         experimental_parser,
         ignored_definitions,
         autoload_roots,
+        inflections_path,
         custom_associations,
         stdin_file_path,
         print_files,
