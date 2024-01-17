@@ -8,6 +8,14 @@ pub struct ConstantDefinition {
     pub absolute_path_of_definition: PathBuf,
 }
 
+#[derive(Debug)]
+pub struct ConstantResolverConfiguration<'a> {
+    pub absolute_root: &'a PathBuf,
+    pub cache_directory: &'a PathBuf,
+    pub cache_enabled: bool,
+    pub autoload_roots: &'a HashMap<PathBuf, String>,
+}
+
 pub trait ConstantResolver {
     fn resolve(
         &self,

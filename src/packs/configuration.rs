@@ -5,6 +5,7 @@ use super::caching::per_file_cache::PerFileCache;
 use super::checker::architecture::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 use super::raw_configuration::RawConfiguration;
+use super::constant_resolver::ConstantResolverConfiguration;
 use super::PackSet;
 
 use crate::packs::raw_configuration;
@@ -72,6 +73,17 @@ impl Configuration {
             Box::new(PerFileCache { cache_dir })
         } else {
             Box::new(NoopCache {})
+        }
+    }
+
+    pub(crate) fn constant_resolver_configuration(
+        &self,
+    ) -> ConstantResolverConfiguration {
+        ConstantResolverConfiguration {
+            absolute_root: &self.absolute_root,
+            cache_directory: &self.cache_directory,
+            cache_enabled: self.cache_enabled,
+            autoload_roots: &self.autoload_roots,
         }
     }
 }
