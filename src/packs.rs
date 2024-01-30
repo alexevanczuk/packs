@@ -177,6 +177,13 @@ pub fn check_unnecessary_dependencies(
     }
 }
 
+pub fn update_dependencies_for_constant(
+    configuration: &Configuration,
+    constant: String,
+) -> anyhow::Result<()> {
+    todo!()
+}
+
 pub fn list(configuration: Configuration) {
     for pack in configuration.pack_set.packs {
         println!("{}", pack.yml.display())

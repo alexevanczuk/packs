@@ -80,6 +80,14 @@ enum Command {
     },
 
     #[clap(
+        about = "Add missing dependencies to packs referencing the supplied constant"
+    )]
+    UpdateDependenciesForConstant {
+        /// Update every pack that references this constant
+        constant: String,
+    },
+
+    #[clap(
         about = "Check for dependencies that when removed produce no violations."
     )]
     CheckUnnecessaryDependencies {
@@ -206,6 +214,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         Command::CheckUnnecessaryDependencies { auto_correct } => {
             packs::check_unnecessary_dependencies(&configuration, auto_correct)
         }
+        Command::UpdateDependenciesForConstant { constant } => Ok(
+            packs::update_dependencies_for_constant(&configuration, constant)?,
+        ),
         Command::DeleteCache => {
             packs::delete_cache(configuration);
             Ok(())
