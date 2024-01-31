@@ -22,8 +22,11 @@ packs/foo, packs/bar",
         .arg("validate")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("1 validation error(s) detected:"))
-        .stdout(predicate::str::contains(expected_message));
+        .stdout(predicate::str::contains("2 validation error(s) detected:"))
+        .stdout(predicate::str::contains(expected_message))
+        .stdout(predicate::str::contains(
+            "Package cannot list itself as a dependency: packs/baz/package.yml",
+        ));
 
     common::teardown();
     Ok(())

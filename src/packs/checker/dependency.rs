@@ -41,10 +41,20 @@ impl ValidatorInterface for Checker {
         match configuration.pack_set.all_pack_dependencies(configuration) {
             Ok(pack_dependencies) => {
                 for pack_dependency in pack_dependencies {
-                    add_edge(
-                        pack_dependency.from_pack,
-                        pack_dependency.to_pack,
-                    );
+                    if pack_dependency.from_pack == pack_dependency.to_pack {
+                        error_messages.push(format!(
+                            "Package cannot list itself as a dependency: {}",
+                            pack_dependency
+                                .from_pack
+                                .relative_yml()
+                                .to_string_lossy()
+                        ));
+                    } else {
+                        add_edge(
+                            pack_dependency.from_pack,
+                            pack_dependency.to_pack,
+                        );
+                    }
                 }
             }
             Err(msg) => {
@@ -283,7 +293,8 @@ mod tests {
         );
 
         let error = checker.validate(&configuration);
-        let expected_message = vec![String::from(
+        let expected_message = vec![String::from("Package cannot list itself as a dependency: packs/baz/package.yml"),
+            String::from(
             "
 Found 1 strongly connected components (i.e. dependency cycles)
 The following groups of packages form a cycle:
