@@ -13,6 +13,7 @@ pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
 pub(crate) mod walk_directory;
 
+mod constant_dependencies;
 mod file_utils;
 mod logger;
 mod pack_set;
@@ -174,6 +175,35 @@ pub fn check_unnecessary_dependencies(
         checker::remove_unnecessary_dependencies(configuration)
     } else {
         checker::check_unnecessary_dependencies(configuration)
+    }
+}
+
+pub fn update_dependencies_for_constant(
+    configuration: &Configuration,
+    constant_name: &str,
+) -> anyhow::Result<()> {
+    match constant_dependencies::update_dependencies_for_constant(
+        configuration,
+        constant_name,
+    ) {
+        Ok(num_updated) => {
+            match num_updated {
+                0 => println!(
+                    "No dependencies to update for constant '{}'",
+                    constant_name
+                ),
+                1 => println!(
+                    "Successfully updated 1 dependency for constant '{}'",
+                    constant_name
+                ),
+                _ => println!(
+                    "Successfully updated {} dependencies for constant '{}'",
+                    num_updated, constant_name
+                ),
+            }
+            Ok(())
+        }
+        Err(err) => Err(anyhow::anyhow!(err)),
     }
 }
 
