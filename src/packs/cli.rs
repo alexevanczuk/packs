@@ -80,7 +80,7 @@ enum Command {
     },
 
     #[clap(
-        about = "Add missing depedencies for the pack that defines the constant"
+        about = "Add missing dependencies for the pack that defines the constant"
     )]
     UpdateDependenciesForConstant {
         /// Update every pack that references this constant
