@@ -89,6 +89,9 @@ jobs:
       - test
       - lints
       - check
+    outputs:
+      new_version: ${{ steps.check_for_version_changes.outputs.new_version }}
+      changed: ${{ steps.check_for_version_changes.outputs.changed }}
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
@@ -128,8 +131,6 @@ jobs:
       - name: cargo publish and create GitHub Release if current commit has updated the version in Cargo.toml
         if: steps.check_for_version_changes.outputs.changed == 'true'
         run: |
-          # We will need to create a linux binary for folks who want to use this in CI/CD
-
           # This combines the intel and m1 binaries into a single binary
           lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
 
@@ -152,3 +153,24 @@ jobs:
         if: steps.check_for_version_changes.outputs.changed == 'false'
         run: |
           echo "No diff to the version found in Cargo.toml. Skipping publishing."
+  upload-linux-bin:
+    needs: release
+    if: github.ref == 'refs/heads/main' && ${{needs.release.outputs.changed}} == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup target add x86_64-unknown-linux-gnu
+      - name: Build
+        run: cargo build --release --target x86_64-unknown-linux-gnu  
+      - name: Upload linux binary
+        run: |
+          tar -czf target/packs-linux-unknown.tar.gz -C target/x86_64-unknown-linux-gnu/release pks packs
+          gh release upload v$NEW_VERSION target/packs-linux-unknown.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ needs.release.outputs.new_version }}
+
+    
