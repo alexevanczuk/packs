@@ -49,6 +49,54 @@ pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
+
+pub fn init(path: &PathBuf) {
+    let root_package = "\
+# This file represents the root package of the application
+# Please validate the configuration using `packwerk validate` (for Rails applications) or running the auto generated
+# test case (for non-Rails projects). You can then use `packwerk check` to check your code.
+
+# Change to `true` to turn on dependency checks for this package
+enforce_dependencies: false
+
+# A list of this package's dependencies
+# Note that packages in this list require their own `package.yml` file
+# dependencies:
+# - \"packages/billing\"
+";
+    let packs_config = "\
+# See: Setting up the configuration file
+# https://github.com/Shopify/packwerk/blob/main/USAGE.md#configuring-packwerk
+
+# List of patterns for folder paths to include
+# include:
+# - \"**/*.{rb,rake,erb}\"
+
+# List of patterns for folder paths to exclude
+# exclude:
+# - \"{bin,node_modules,script,tmp,vendor}/**/*\"
+
+# Patterns to find package configuration files
+# package_paths: \"**/\"
+
+# List of custom associations, if any
+# custom_associations:
+# - \"cache_belongs_to\"
+
+# Whether or not you want the cache enabled (disabled by default)
+# cache: true
+
+# Where you want the cache to be stored (default below)
+# cache_directory: \"tmp/cache/packwerk\"
+";
+    let root_package_path = path.join("package.yml");
+    let packs_config_path = path.join("packwerk.yml"); // Can you just create a packs.yml?
+    std::fs::write(root_package_path.clone(), root_package).unwrap();
+    std::fs::write(packs_config_path.clone(), packs_config).unwrap();
+
+    println!("Creating '{}' and '{}'", packs_config_path.display(), root_package_path.display());
+}
+
 fn create(configuration: &Configuration, name: String) -> anyhow::Result<()> {
     let existing_pack = configuration.pack_set.for_pack(&name);
     if existing_pack.is_ok() {
