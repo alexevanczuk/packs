@@ -97,6 +97,14 @@ pub struct Pack {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub automatic_pack_namespace: Option<CheckerSetting>, // TODO this is actually under metadata: for some reason
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
         serialize_with = "serialize_sorted_option_hashset_of_strings"
     )]
     pub visible_to: Option<HashSet<String>>,

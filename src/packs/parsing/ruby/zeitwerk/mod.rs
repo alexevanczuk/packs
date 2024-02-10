@@ -62,10 +62,11 @@ fn inferred_constants_from_pack_set(
                 });
         });
 
-    inferred_constants_from_autoload_paths(configuration, full_autoload_roots)
+    inferred_constants_from_autoload_paths(pack_set, configuration, full_autoload_roots)
 }
 
 fn inferred_constants_from_autoload_paths(
+    pack_set: &PackSet,
     configuration: &ConstantResolverConfiguration,
     full_autoload_roots: HashMap<PathBuf, String>,
 ) -> Vec<ConstantDefinition> {
@@ -137,6 +138,7 @@ fn inferred_constants_from_autoload_paths(
                 let default_namespace =
                     full_autoload_roots.get(absolute_autoload_path).unwrap();
                 inferred_constant_from_file(
+                    pack_set,
                     absolute_path_of_definition,
                     absolute_autoload_path,
                     acronyms,
@@ -157,6 +159,7 @@ fn inferred_constants_from_autoload_paths(
 }
 
 fn inferred_constant_from_file(
+    pack_set: &PackSet,
     absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
     acronyms: &HashSet<String>,
@@ -169,8 +172,13 @@ fn inferred_constant_from_file(
 
     let relative_path_str = relative_path.to_str().unwrap();
     let camelized_path = inflector_shim::camelize(relative_path_str, acronyms);
-    let fully_qualified_name =
-        format!("{}::{}", default_namespace, camelized_path);
+    let pack = pack_set.for_file(absolute_path).unwrap();
+    
+    let fully_qualified_name = if pack.automatic_pack_namespace.is_some() {
+        format!("{}::{}", default_namespace, camelized_path)
+    } else {
+        format!("{}::{}::{}", inflector_shim::camelize(&pack.name.clone(), acronyms), default_namespace, camelized_path)
+    };   
 
     ConstantDefinition {
         fully_qualified_name,
