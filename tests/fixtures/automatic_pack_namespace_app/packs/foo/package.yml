@@ -1,0 +1,5 @@
+enforce_dependencies: true
+enforce_privacy: true
+dependencies:
+- packs/baz
+automatic_pack_namespace: true

@@ -18,6 +18,7 @@ use crate::packs::{
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
 };
+use crate::packs::pack::CheckerSetting;
 
 use self::constant_resolver::ZeitwerkConstantResolver;
 
@@ -173,11 +174,22 @@ fn inferred_constant_from_file(
     let relative_path_str = relative_path.to_str().unwrap();
     let camelized_path = inflector_shim::camelize(relative_path_str, acronyms);
     let pack = pack_set.for_file(absolute_path).unwrap();
-    
-    let fully_qualified_name = if pack.automatic_pack_namespace.is_some() {
+
+    let automatic_namespace = match &pack.automatic_pack_namespace {
+        Some(setting) => setting,
+        None => &CheckerSetting::False,
+    };
+
+    let fully_qualified_name = if automatic_namespace.is_false() {
         format!("{}::{}", default_namespace, camelized_path)
     } else {
-        format!("{}::{}::{}", inflector_shim::camelize(&pack.name.clone(), acronyms), default_namespace, camelized_path)
+        let pack_name = &pack.name.clone();
+        // TODO: the packs location from configuration
+        let pack_namespace = &pack_name.strip_prefix("packs/").unwrap_or(pack_name).to_string();
+        println!("pack {}", inflector_shim::camelize(pack_namespace, acronyms));
+        println!("{}::{}", inflector_shim::camelize(pack_namespace, acronyms), camelized_path);
+        // Do we need to account for default_namespace ?
+        format!("{}::{}", inflector_shim::camelize(pack_namespace, acronyms), camelized_path)
     };   
 
     ConstantDefinition {
@@ -279,6 +291,21 @@ mod tests {
         );
 
         teardown();
+    }
+
+
+    #[test]
+    fn automatic_pack_namespace_constant() {
+        let absolute_root = get_absolute_root("tests/fixtures/automatic_pack_namespace_app");
+        let resolver = get_zeitwerk_constant_resolver_for_fixture("tests/fixtures/automatic_pack_namespace_app");
+        assert_eq!(
+            vec![ConstantDefinition {
+                fully_qualified_name: "::Foo::Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/bar.rb")
+            }],
+            resolver.resolve("Bar", &["Foo"]).unwrap()
+        );
     }
 
     #[test]
