@@ -136,10 +136,26 @@ fn inferred_constants_from_autoload_paths(
                         .to_owned(),
                 }
             } else {
-                let default_namespace =
-                    full_autoload_roots.get(absolute_autoload_path).unwrap();
+                let pack = pack_set.for_file(absolute_path_of_definition).unwrap();
+                let automatic_namespace = match &pack.automatic_pack_namespace {
+                    Some(setting) => setting,
+                    None => &CheckerSetting::False,
+                };
+                let pack_namespace;
+                // TODO: Do we need to support both autoload_roots and automatic_namespace enabled at same time?
+                let default_namespace = if automatic_namespace.is_false() {
+                    full_autoload_roots.get(absolute_autoload_path).unwrap()
+                } else {
+                    let pack_name = &pack.name.clone();
+                    // TODO: the packs root eg "packs/" should come from configuration
+                    let pack_root_dir = &pack_name.strip_prefix("packs/").unwrap_or(pack_name).to_string();
+                    // TODO: not sure how best to return the value here, either get issues with type
+                    // or I get warnings about temp value lifetimes
+                    pack_namespace = inflector_shim::camelize(pack_root_dir, acronyms);
+                    &pack_namespace
+                };
+
                 inferred_constant_from_file(
-                    pack_set,
                     absolute_path_of_definition,
                     absolute_autoload_path,
                     acronyms,
@@ -160,7 +176,6 @@ fn inferred_constants_from_autoload_paths(
 }
 
 fn inferred_constant_from_file(
-    pack_set: &PackSet,
     absolute_path: &Path,
     absolute_autoload_path: &PathBuf,
     acronyms: &HashSet<String>,
@@ -173,24 +188,8 @@ fn inferred_constant_from_file(
 
     let relative_path_str = relative_path.to_str().unwrap();
     let camelized_path = inflector_shim::camelize(relative_path_str, acronyms);
-    let pack = pack_set.for_file(absolute_path).unwrap();
-
-    let automatic_namespace = match &pack.automatic_pack_namespace {
-        Some(setting) => setting,
-        None => &CheckerSetting::False,
-    };
-
-    let fully_qualified_name = if automatic_namespace.is_false() {
-        format!("{}::{}", default_namespace, camelized_path)
-    } else {
-        let pack_name = &pack.name.clone();
-        // TODO: the packs location from configuration
-        let pack_namespace = &pack_name.strip_prefix("packs/").unwrap_or(pack_name).to_string();
-        println!("pack {}", inflector_shim::camelize(pack_namespace, acronyms));
-        println!("{}::{}", inflector_shim::camelize(pack_namespace, acronyms), camelized_path);
-        // Do we need to account for default_namespace ?
-        format!("{}::{}", inflector_shim::camelize(pack_namespace, acronyms), camelized_path)
-    };   
+    let fully_qualified_name =
+        format!("{}::{}", default_namespace, camelized_path);
 
     ConstantDefinition {
         fully_qualified_name,
@@ -293,21 +292,6 @@ mod tests {
         teardown();
     }
 
-
-    #[test]
-    fn automatic_pack_namespace_constant() {
-        let absolute_root = get_absolute_root("tests/fixtures/automatic_pack_namespace_app");
-        let resolver = get_zeitwerk_constant_resolver_for_fixture("tests/fixtures/automatic_pack_namespace_app");
-        assert_eq!(
-            vec![ConstantDefinition {
-                fully_qualified_name: "::Foo::Bar".to_string(),
-                absolute_path_of_definition: absolute_root
-                    .join("packs/foo/app/services/bar.rb")
-            }],
-            resolver.resolve("Bar", &["Foo"]).unwrap()
-        );
-    }
-
     #[test]
     fn nested_reference_to_unnested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
@@ -336,6 +320,22 @@ mod tests {
                 fully_qualified_name: "::Foo::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
+            }],
+            resolver.resolve("Bar", &["Foo"]).unwrap()
+        );
+
+        teardown();
+    }
+
+    #[test]
+    fn automatic_pack_namespace_constant() {
+        let absolute_root = get_absolute_root("tests/fixtures/automatic_pack_namespace_app");
+        let resolver = get_zeitwerk_constant_resolver_for_fixture("tests/fixtures/automatic_pack_namespace_app");
+        assert_eq!(
+            vec![ConstantDefinition {
+                fully_qualified_name: "::Foo::Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/bar.rb")
             }],
             resolver.resolve("Bar", &["Foo"]).unwrap()
         );

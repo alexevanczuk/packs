@@ -19,8 +19,5 @@
 # Whether or not you want the cache enabled (disabled by default)
 cache: false
 
-autoload_roots:
-  app/company_data: "::Company"
-
 # Where you want the cache to be stored (default below)
 # cache_directory: 'tmp/cache/packwerk'
