@@ -32,10 +32,12 @@ pub(crate) use self::parsing::ruby::experimental::get_experimental_constant_reso
 pub(crate) use self::parsing::ruby::zeitwerk::get_zeitwerk_constant_resolver;
 pub(crate) use self::parsing::ParsedDefinition;
 pub(crate) use self::parsing::UnresolvedReference;
+use anyhow::bail;
 pub(crate) use configuration::Configuration;
 pub(crate) use package_todo::PackageTodo;
 
 // External imports
+use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -91,7 +93,13 @@ pub fn check(
     configuration: &Configuration,
     files: Vec<String>,
 ) -> anyhow::Result<()> {
-    checker::check_all(configuration, files)
+    let result = checker::check_all(configuration, files)
+        .context("Failed to check files")?;
+    println!("{}", result);
+    if result.has_violations() {
+        bail!("Violations found!")
+    }
+    Ok(())
 }
 
 pub fn update(configuration: &Configuration) -> anyhow::Result<()> {
