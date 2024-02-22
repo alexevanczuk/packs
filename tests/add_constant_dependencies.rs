@@ -2,7 +2,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use serial_test::serial;
-use std::{collections::HashSet, error::Error, path::PathBuf};
+use std::{collections::HashSet, path::PathBuf};
 
 mod common;
 

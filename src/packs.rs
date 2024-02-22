@@ -38,7 +38,6 @@ pub(crate) use package_todo::PackageTodo;
 // External imports
 use serde::Deserialize;
 use serde::Serialize;
-use std::error::Error;
 use std::path::PathBuf;
 
 pub fn greet() {
@@ -91,13 +90,11 @@ See https://github.com/rubyatscale/packs#readme for more info!",
 pub fn check(
     configuration: &Configuration,
     files: Vec<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     checker::check_all(configuration, files)
 }
 
-pub fn update(
-    configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn update(configuration: &Configuration) -> anyhow::Result<()> {
     checker::update(configuration)
 }
 
@@ -105,7 +102,7 @@ pub fn add_dependency(
     configuration: &Configuration,
     from: String,
     to: String,
-) -> Result<(), Box<dyn Error>> {
+) -> anyhow::Result<()> {
     let pack_set = &configuration.pack_set;
 
     let from_pack = pack_set
@@ -146,9 +143,7 @@ pub fn add_dependency(
     Ok(())
 }
 
-pub fn list_included_files(
-    configuration: Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn list_included_files(configuration: Configuration) -> anyhow::Result<()> {
     configuration
         .included_files
         .iter()
@@ -156,9 +151,7 @@ pub fn list_included_files(
     Ok(())
 }
 
-pub fn validate(
-    configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn validate(configuration: &Configuration) -> anyhow::Result<()> {
     checker::validate_all(configuration)
 }
 
@@ -170,7 +163,7 @@ pub fn configuration(project_root: PathBuf) -> Configuration {
 pub fn check_unnecessary_dependencies(
     configuration: &Configuration,
     auto_correct: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     if auto_correct {
         checker::remove_unnecessary_dependencies(configuration)
     } else {
