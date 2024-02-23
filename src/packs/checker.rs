@@ -14,6 +14,7 @@ use crate::packs::package_todo;
 use crate::packs::Configuration;
 use crate::packs::PackSet;
 
+use anyhow::bail;
 // External imports
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
@@ -218,7 +219,7 @@ impl<'a> CheckAllBuilder<'a> {
 pub(crate) fn check_all(
     configuration: &Configuration,
     files: Vec<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     let checkers = get_checkers(configuration);
 
     debug!("Intersecting input files with configuration included files");
@@ -271,7 +272,7 @@ pub(crate) fn check_all(
     }
 
     if errors_present {
-        Err("Packwerk check failed".into())
+        bail!("Packwerk check failed")
     } else {
         println!("No violations detected!");
         Ok(())
@@ -300,7 +301,7 @@ fn validate(configuration: &Configuration) -> Vec<String> {
 
 pub(crate) fn validate_all(
     configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     let validation_errors = validate(configuration);
     if !validation_errors.is_empty() {
         println!("{} validation error(s) detected:", validation_errors.len());
@@ -308,16 +309,14 @@ pub(crate) fn validate_all(
             println!("{}\n", validation_error);
         }
 
-        Err("Packwerk validate failed".into())
+        bail!("Packwerk validate failed")
     } else {
         println!("Packwerk validate succeeded!");
         Ok(())
     }
 }
 
-pub(crate) fn update(
-    configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
     let checkers = get_checkers(configuration);
 
     let violations = get_all_violations(
@@ -333,7 +332,7 @@ pub(crate) fn update(
 
 pub(crate) fn remove_unnecessary_dependencies(
     configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
     for (pack, dependency_names) in unnecessary_dependencies.iter() {
         remove_reference_to_dependency(pack, dependency_names);
@@ -343,7 +342,7 @@ pub(crate) fn remove_unnecessary_dependencies(
 
 pub(crate) fn check_unnecessary_dependencies(
     configuration: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> anyhow::Result<()> {
     let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
     if unnecessary_dependencies.is_empty() {
         Ok(())
@@ -356,7 +355,7 @@ pub(crate) fn check_unnecessary_dependencies(
                 )
             }
         }
-        Err("List unnecessary dependencies failed".into())
+        bail!("List unnecessary dependencies failed")
     }
 }
 

@@ -145,12 +145,14 @@ struct ExposeMonkeyPatchesArgs {
 }
 
 impl Args {
-    fn absolute_project_root(&self) -> Result<PathBuf, std::io::Error> {
-        self.project_root.canonicalize()
+    fn absolute_project_root(&self) -> anyhow::Result<PathBuf> {
+        self.project_root
+            .canonicalize()
+            .map_err(anyhow::Error::from)
     }
 }
 
-pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+pub fn run() -> anyhow::Result<()> {
     let args = Args::parse();
     let absolute_root = args
         .absolute_project_root()
