@@ -21,12 +21,15 @@ use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use reference::Reference;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::reference_extractor::get_all_references;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
     pub file: String,
@@ -74,7 +77,7 @@ pub fn get_referencing_pack<'a>(
     referencing_pack_result.unwrap_or_else(error_closure)
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
     pub identifier: ViolationIdentifier,
@@ -101,10 +104,61 @@ pub(crate) trait ValidatorInterface {
 }
 
 #[derive(Debug, PartialEq)]
-struct CheckAll<'a> {
-    reportable_violations: HashSet<&'a Violation>,
-    stale_violations: Vec<&'a ViolationIdentifier>,
-    strict_mode_violations: Vec<&'a ViolationIdentifier>,
+pub struct CheckAllResult {
+    reportable_violations: HashSet<Violation>,
+    stale_violations: Vec<ViolationIdentifier>,
+    strict_mode_violations: Vec<ViolationIdentifier>,
+}
+
+impl CheckAllResult {
+    pub fn has_violations(&self) -> bool {
+        !self.reportable_violations.is_empty()
+            || !self.stale_violations.is_empty()
+            || !self.strict_mode_violations.is_empty()
+    }
+
+    fn write_violations(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if !self.reportable_violations.is_empty() {
+            writeln!(
+                f,
+                "{} violation(s) detected:",
+                self.reportable_violations.len()
+            )?;
+            for violation in self.reportable_violations.iter() {
+                writeln!(f, "{}", violation.message)?;
+            }
+        }
+
+        if !self.stale_violations.is_empty() {
+            writeln!(
+                f,
+                "There were stale violations found, please run `packs update`"
+            )?;
+        }
+
+        if !self.strict_mode_violations.is_empty() {
+            for v in self.strict_mode_violations.iter() {
+                let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
+                                        v.referencing_pack_name,
+                                        v.violation_type,
+                                        v.defining_pack_name,
+                                        v.violation_type
+            );
+                writeln!(f, "{}", error_message)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Display for CheckAllResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.has_violations() {
+            self.write_violations(f)
+        } else {
+            write!(f, "No violations detected!")
+        }
+    }
 }
 struct CheckAllBuilder<'a> {
     configuration: &'a Configuration,
@@ -128,15 +182,25 @@ impl<'a> CheckAllBuilder<'a> {
         }
     }
 
-    pub fn build(mut self) -> CheckAll<'a> {
+    pub fn build(mut self) -> CheckAllResult {
         let recorded_violations = &self.configuration.pack_set.all_violations;
 
-        CheckAll {
+        CheckAllResult {
             reportable_violations: self
-                .build_reportable_violations(recorded_violations),
-            stale_violations: self.build_stale_violations(recorded_violations),
+                .build_reportable_violations(recorded_violations)
+                .into_iter()
+                .cloned()
+                .collect(),
+            stale_violations: self
+                .build_stale_violations(recorded_violations)
+                .into_iter()
+                .cloned()
+                .collect(),
             strict_mode_violations: self
-                .build_strict_mode_violations(recorded_violations),
+                .build_strict_mode_violations(recorded_violations)
+                .into_iter()
+                .cloned()
+                .collect(),
         }
     }
 
@@ -219,7 +283,7 @@ impl<'a> CheckAllBuilder<'a> {
 pub(crate) fn check_all(
     configuration: &Configuration,
     files: Vec<String>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<CheckAllResult> {
     let checkers = get_checkers(configuration);
 
     debug!("Intersecting input files with configuration included files");
@@ -233,50 +297,9 @@ pub(crate) fn check_all(
         absolute_paths,
         violations,
     };
-    let check_all =
+    let check_all_result =
         CheckAllBuilder::new(configuration, &found_violations).build();
-    let mut errors_present = false;
-
-    if !check_all.reportable_violations.is_empty() {
-        for violation in check_all.reportable_violations.iter() {
-            println!("{}\n", violation.message);
-        }
-
-        println!(
-            "{} violation(s) detected:",
-            check_all.reportable_violations.len()
-        );
-
-        errors_present = true;
-    }
-
-    if !check_all.stale_violations.is_empty() {
-        println!(
-            "There were stale violations found, please run `packs update`"
-        );
-        errors_present = true;
-    }
-
-    if !check_all.strict_mode_violations.is_empty() {
-        for v in check_all.strict_mode_violations {
-            let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
-                                        v.referencing_pack_name,
-                                        v.violation_type,
-                                        v.defining_pack_name,
-                                        v.violation_type
-            );
-            println!("{}", error_message);
-        }
-
-        errors_present = true;
-    }
-
-    if errors_present {
-        bail!("Packwerk check failed")
-    } else {
-        println!("No violations detected!");
-        Ok(())
-    }
+    Ok(check_all_result)
 }
 
 fn validate(configuration: &Configuration) -> Vec<String> {
