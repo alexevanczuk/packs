@@ -88,20 +88,22 @@ pub fn process_files_with_cache(
     paths: &HashSet<PathBuf>,
     cache: Box<dyn Cache + Send + Sync>,
     configuration: &Configuration,
-) -> Vec<ProcessedFile> {
+) -> anyhow::Result<Vec<ProcessedFile>> {
     paths
         .par_iter()
-        .map(|absolute_path| -> ProcessedFile {
+        .map(|absolute_path| -> anyhow::Result<ProcessedFile> {
             if is_stdin_file(absolute_path, configuration) {
-                process_file(absolute_path, configuration)
+                Ok(process_file(absolute_path, configuration))
             } else {
-                match cache.get(absolute_path) {
-                    CacheResult::Processed(processed_file) => processed_file,
+                match cache.get(absolute_path)? {
+                    CacheResult::Processed(processed_file) => {
+                        Ok(processed_file)
+                    }
                     CacheResult::Miss(empty_cache_entry) => {
                         let processed_file =
                             process_file(absolute_path, configuration);
                         cache.write(&empty_cache_entry, &processed_file);
-                        processed_file
+                        Ok(processed_file)
                     }
                 }
             }

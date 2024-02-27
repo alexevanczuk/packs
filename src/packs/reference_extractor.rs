@@ -13,7 +13,7 @@ use super::{checker::reference::Reference, Configuration};
 pub(crate) fn get_all_references(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-) -> Vec<Reference> {
+) -> anyhow::Result<Vec<Reference>> {
     let cache = configuration.get_cache();
 
     debug!("Getting unresolved references (using cache if possible)");
@@ -26,7 +26,7 @@ pub(crate) fn get_all_references(
             &configuration.included_files,
             cache,
             configuration,
-        );
+        )?;
 
         let constant_resolver = get_experimental_constant_resolver(
             &configuration.absolute_root,
@@ -44,7 +44,7 @@ pub(crate) fn get_all_references(
         (constant_resolver, processed_files_to_check)
     } else {
         let processed_files: Vec<ProcessedFile> =
-            process_files_with_cache(absolute_paths, cache, configuration);
+            process_files_with_cache(absolute_paths, cache, configuration)?;
 
         // The zeitwerk constant resolver doesn't look at processed files to get definitions
         let constant_resolver = get_zeitwerk_constant_resolver(
@@ -78,5 +78,5 @@ pub(crate) fn get_all_references(
 
     debug!("Finished turning unresolved references into fully qualified references");
 
-    references
+    Ok(references)
 }

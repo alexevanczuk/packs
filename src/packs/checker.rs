@@ -291,7 +291,7 @@ pub(crate) fn check_all(
         configuration.intersect_files(files.clone());
 
     let violations: HashSet<Violation> =
-        get_all_violations(configuration, &absolute_paths, &checkers);
+        get_all_violations(configuration, &absolute_paths, &checkers)?;
     let found_violations = FoundViolations {
         checkers,
         absolute_paths,
@@ -346,7 +346,7 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
         configuration,
         &configuration.included_files,
         &checkers,
-    );
+    )?;
 
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
@@ -356,7 +356,7 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
 pub(crate) fn remove_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
-    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration)?;
     for (pack, dependency_names) in unnecessary_dependencies.iter() {
         remove_reference_to_dependency(pack, dependency_names);
     }
@@ -366,7 +366,7 @@ pub(crate) fn remove_unnecessary_dependencies(
 pub(crate) fn check_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
-    let unnecessary_dependencies = get_unnecessary_dependencies(configuration);
+    let unnecessary_dependencies = get_unnecessary_dependencies(configuration)?;
     if unnecessary_dependencies.is_empty() {
         Ok(())
     } else {
@@ -384,9 +384,9 @@ pub(crate) fn check_unnecessary_dependencies(
 
 fn get_unnecessary_dependencies(
     configuration: &Configuration,
-) -> HashMap<Pack, Vec<String>> {
+) -> anyhow::Result<HashMap<Pack, Vec<String>>> {
     let references =
-        get_all_references(configuration, &configuration.included_files);
+        get_all_references(configuration, &configuration.included_files)?;
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
     for reference in references {
         let defining_pack_name = reference.defining_pack_name;
@@ -416,15 +416,15 @@ fn get_unnecessary_dependencies(
         }
     }
 
-    unnecessary_dependencies
+    Ok(unnecessary_dependencies)
 }
 
 fn get_all_violations(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
     checkers: &Vec<Box<dyn CheckerInterface + Send + Sync>>,
-) -> HashSet<Violation> {
-    let references = get_all_references(configuration, absolute_paths);
+) -> anyhow::Result<HashSet<Violation>> {
+    let references = get_all_references(configuration, absolute_paths)?;
 
     debug!("Running checkers on resolved references");
 
@@ -440,7 +440,7 @@ fn get_all_violations(
 
     debug!("Finished running checkers");
 
-    violations
+    Ok(violations)
 }
 
 fn get_checkers(

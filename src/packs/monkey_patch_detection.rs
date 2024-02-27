@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, collections::HashMap, path::PathBuf};
 
+use anyhow::bail;
 use tracing::debug;
 
 use crate::packs::{
@@ -14,10 +15,10 @@ pub fn expose_monkey_patches(
     configuration: &Configuration,
     rubydir: &PathBuf,
     gemdir: &PathBuf,
-) -> String {
+) -> anyhow::Result<String> {
     let mut lines_to_print: Vec<String> = vec![];
     if !configuration.experimental_parser {
-        panic!("This command is only supported with the experimental parser! `packs help` for more info.")
+        bail!("This command is only supported with the experimental parser! `packs help` for more info.")
     }
 
     debug!("Globbing out rubydir and gemdir");
@@ -31,7 +32,7 @@ pub fn expose_monkey_patches(
         &included_files,
         configuration.get_cache(),
         configuration,
-    );
+    )?;
 
     let constant_resolver = get_experimental_constant_resolver(
         &configuration.absolute_root,
@@ -187,7 +188,7 @@ pub fn expose_monkey_patches(
 
     lines_to_print.push("</details>".to_owned());
 
-    lines_to_print.join("\n")
+    Ok(lines_to_print.join("\n"))
 }
 
 fn get_redefinition_line_to_print(
@@ -265,6 +266,7 @@ These monkey patches redefine behavior in a pack within your app (as determined 
             ),
         );
 
-        assert_eq!(expected_message, actual_message);
+        assert!(actual_message.is_ok());
+        assert_eq!(expected_message, actual_message.unwrap());
     }
 }

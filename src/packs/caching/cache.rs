@@ -5,7 +5,7 @@ use crate::packs::ProcessedFile;
 use super::{CacheResult, EmptyCacheEntry};
 
 pub trait Cache {
-    fn get(&self, path: &Path) -> CacheResult;
+    fn get(&self, path: &Path) -> anyhow::Result<CacheResult>;
 
     fn write(
         &self,
