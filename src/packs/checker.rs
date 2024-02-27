@@ -239,32 +239,36 @@ impl<'a> CheckAllBuilder<'a> {
         &mut self,
         recorded_violations: &'a HashSet<ViolationIdentifier>,
     ) -> anyhow::Result<Vec<&'a ViolationIdentifier>> {
-        let mut indexed_checkers: HashMap<
+        let indexed_checkers: HashMap<
             String,
             &Box<dyn CheckerInterface + Send + Sync>,
-        > = HashMap::new();
-        for checker in &self.found_violations.checkers {
-            indexed_checkers.insert(checker.violation_type(), checker);
-        }
-        let mut strict_mode_violations = vec![];
-        for violation in recorded_violations {
-            // get the checker from indexed checkers or return an error
-            let checker = indexed_checkers
-                .get(&violation.violation_type)
-                .context(format!(
+        > = self
+            .found_violations
+            .checkers
+            .iter()
+            .map(|checker| (checker.violation_type(), checker))
+            .collect();
+
+        recorded_violations
+            .iter()
+            .try_fold(vec![], |mut acc, violation| {
+                let checker = indexed_checkers
+                    .get(&violation.violation_type)
+                    .context(format!(
                     "Checker for violation type {} not found",
                     violation.violation_type
                 ))?;
 
-            if checker
-                .is_strict_mode_violation(violation, self.configuration)?
-            {
-                strict_mode_violations.push(violation);
-            }
-        }
-        Ok(strict_mode_violations)
+                if checker
+                    .is_strict_mode_violation(violation, self.configuration)?
+                {
+                    acc.push(violation);
+                }
+                Ok(acc)
+            })
     }
 }
+
 pub(crate) fn check_all(
     configuration: &Configuration,
     files: Vec<String>,
