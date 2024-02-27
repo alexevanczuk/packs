@@ -7,9 +7,9 @@ use super::{cache::Cache, CacheResult, EmptyCacheEntry};
 pub struct NoopCache {}
 
 impl Cache for NoopCache {
-    fn get(&self, _path: &Path) -> CacheResult {
+    fn get(&self, _path: &Path) -> anyhow::Result<CacheResult> {
         // Return nothing!
-        CacheResult::Miss(EmptyCacheEntry::default())
+        Ok(CacheResult::Miss(EmptyCacheEntry::default()))
     }
 
     fn write(

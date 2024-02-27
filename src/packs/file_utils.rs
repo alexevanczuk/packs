@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::packs::Configuration;
+use anyhow::Context;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use regex::Regex;
 
@@ -114,18 +115,18 @@ pub(crate) fn convert_erb_to_ruby_without_sourcemaps(
     extracted_contents.join("\n")
 }
 
-pub(crate) fn file_content_digest(file: &Path) -> String {
+pub(crate) fn file_content_digest(file: &Path) -> anyhow::Result<String> {
     let mut file_content = Vec::new();
 
     // Read the file content
     let mut file_handle = fs::File::open(file)
-        .unwrap_or_else(|_| panic!("Failed to open file {:?}", file));
+        .context(format!("Failed to open file {:?}", file))?;
     file_handle
         .read_to_end(&mut file_content)
-        .expect("Failed to read file");
+        .context(format!("Failed to read file {:?}", file))?;
 
     // Compute the MD5 digest
-    format!("{:x}", md5::compute(&file_content))
+    Ok(format!("{:x}", md5::compute(&file_content)))
 }
 
 pub fn file_read_contents(

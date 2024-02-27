@@ -115,11 +115,11 @@ pub fn add_dependency(
 
     let from_pack = pack_set
         .for_pack(&from)
-        .unwrap_or_else(|_| panic!("`{}` not found", from));
+        .context(format!("`{}` not found", from))?;
 
     let to_pack = pack_set
         .for_pack(&to)
-        .unwrap_or_else(|_| panic!("`{}` not found", to));
+        .context(format!("`{}` not found", to))?;
 
     // Print a warning if the dependency already exists
     if from_pack.dependencies.contains(&to_pack.name) {
@@ -244,13 +244,16 @@ pub struct SourceLocation {
     column: usize,
 }
 
-pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
+pub(crate) fn list_definitions(
+    configuration: &Configuration,
+    ambiguous: bool,
+) -> anyhow::Result<()> {
     let constant_resolver = if configuration.experimental_parser {
         let processed_files: Vec<ProcessedFile> = process_files_with_cache(
             &configuration.included_files,
             configuration.get_cache(),
             configuration,
-        );
+        )?;
 
         get_experimental_constant_resolver(
             &configuration.absolute_root,
@@ -259,7 +262,7 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
         )
     } else {
         if ambiguous {
-            panic!("Ambiguous mode is not supported for the Zeitwerk parser");
+            bail!("Ambiguous mode is not supported for the Zeitwerk parser");
         }
         get_zeitwerk_constant_resolver(
             &configuration.pack_set,
@@ -284,21 +287,23 @@ pub(crate) fn list_definitions(configuration: &Configuration, ambiguous: bool) {
             println!("{:?} is defined at {:?}", name, relative_path);
         }
     }
+    Ok(())
 }
 
 fn expose_monkey_patches(
     configuration: &Configuration,
     rubydir: &PathBuf,
     gemdir: &PathBuf,
-) {
+) -> anyhow::Result<()> {
     println!(
         "{}",
         monkey_patch_detection::expose_monkey_patches(
             configuration,
             rubydir,
             gemdir,
-        )
-    )
+        )?
+    );
+    Ok(())
 }
 
 #[cfg(test)]

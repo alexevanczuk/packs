@@ -19,19 +19,22 @@ pub struct EmptyCacheEntry {
 }
 
 impl EmptyCacheEntry {
-    pub fn new(cache_directory: &Path, filepath: &Path) -> EmptyCacheEntry {
+    pub fn new(
+        cache_directory: &Path,
+        filepath: &Path,
+    ) -> anyhow::Result<EmptyCacheEntry> {
         let file_digest = md5::compute(filepath.to_str().unwrap());
         let file_name_digest = format!("{:x}", file_digest);
         let cache_file_path = cache_directory.join(&file_name_digest);
 
-        let file_contents_digest = file_content_digest(filepath);
+        let file_contents_digest = file_content_digest(filepath)?;
 
-        EmptyCacheEntry {
+        Ok(EmptyCacheEntry {
             filepath: filepath.to_owned(),
             file_contents_digest,
             cache_file_path,
             file_name_digest,
-        }
+        })
     }
 }
 

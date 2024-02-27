@@ -1,6 +1,7 @@
 use crate::packs::ProcessedFile;
 use serde::{Deserialize, Serialize};
 
+use anyhow::Context;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -15,21 +16,22 @@ pub struct PerFileCache {
 }
 
 impl Cache for PerFileCache {
-    fn get(&self, path: &Path) -> CacheResult {
-        let empty_cache_entry = EmptyCacheEntry::new(&self.cache_dir, path);
+    fn get(&self, path: &Path) -> anyhow::Result<CacheResult> {
+        let empty_cache_entry = EmptyCacheEntry::new(&self.cache_dir, path)
+            .context(format!("Failed to create cache entry for {:?}", path))?;
         let cache_entry = CacheEntry::from_empty(&empty_cache_entry);
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
                 == empty_cache_entry.file_contents_digest;
 
             if !file_digests_match {
-                CacheResult::Miss(empty_cache_entry)
+                Ok(CacheResult::Miss(empty_cache_entry))
             } else {
                 let processed_file = cache_entry.processed_file;
-                CacheResult::Processed(processed_file)
+                Ok(CacheResult::Processed(processed_file))
             }
         } else {
-            CacheResult::Miss(empty_cache_entry)
+            Ok(CacheResult::Miss(empty_cache_entry))
         }
     }
 
@@ -116,7 +118,8 @@ mod tests {
 
         let digest = file_content_digest(&PathBuf::from(file_path));
 
-        assert_eq!(digest, expected_digest);
+        assert!(digest.is_ok());
+        assert_eq!(digest.unwrap(), expected_digest);
 
         teardown();
     }

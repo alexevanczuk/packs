@@ -225,17 +225,13 @@ pub fn run() -> anyhow::Result<()> {
         }
         Command::ListDefinitions(args) => {
             let ambiguous = args.ambiguous;
-            packs::list_definitions(&configuration, ambiguous);
-            Ok(())
+            packs::list_definitions(&configuration, ambiguous)
         }
-        Command::ExposeMonkeyPatches(args) => {
-            packs::expose_monkey_patches(
-                &configuration,
-                &args.rubydir,
-                &args.gemdir,
-            );
-            Ok(())
-        }
+        Command::ExposeMonkeyPatches(args) => packs::expose_monkey_patches(
+            &configuration,
+            &args.rubydir,
+            &args.gemdir,
+        ),
         Command::LintPackageYmlFiles => {
             packs::lint_package_yml_files(&configuration);
             Ok(())
