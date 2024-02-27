@@ -183,11 +183,11 @@ impl CheckerInterface for Checker {
         &self,
         violation: &ViolationIdentifier,
         configuration: &Configuration,
-    ) -> bool {
+    ) -> anyhow::Result<bool> {
         let referencing_pack =
             get_referencing_pack(violation, &configuration.pack_set);
 
-        referencing_pack.enforce_dependencies().is_strict()
+        Ok(referencing_pack.enforce_dependencies().is_strict())
     }
 
     fn violation_type(&self) -> String {

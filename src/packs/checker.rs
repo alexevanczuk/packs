@@ -16,6 +16,7 @@ use crate::packs::PackSet;
 
 use anyhow::bail;
 // External imports
+use anyhow::Context;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
@@ -41,20 +42,10 @@ pub struct ViolationIdentifier {
 pub fn get_defining_pack<'a>(
     violation: &ViolationIdentifier,
     packset: &'a PackSet,
-) -> &'a Pack {
-    let defining_pack_result = packset.for_pack(&violation.defining_pack_name);
-
-    // For some reason cargo fmt wasn't formatting this closure correctly when passed directly into unwrap_or_else
-    let error_closure = |_| {
-        let error_message = format!(
-            "ViolationIdentifier#defining_pack is {}, but that pack cannot be found in the packset.",
-            &violation.defining_pack_name
-        );
-
-        panic!("{}", &error_message);
-    };
-
-    defining_pack_result.unwrap_or_else(error_closure)
+) -> anyhow::Result<&'a Pack> {
+    packset.for_pack(&violation.defining_pack_name)
+    .context(format!("ViolationIdentifier#defining_pack is {}, but that pack cannot be found in the packset.", 
+    &violation.defining_pack_name))
 }
 
 pub fn get_referencing_pack<'a>(
@@ -94,7 +85,7 @@ pub(crate) trait CheckerInterface {
         &self,
         offense: &ViolationIdentifier,
         configuration: &Configuration,
-    ) -> bool;
+    ) -> anyhow::Result<bool>;
 
     fn violation_type(&self) -> String;
 }
@@ -182,10 +173,10 @@ impl<'a> CheckAllBuilder<'a> {
         }
     }
 
-    pub fn build(mut self) -> CheckAllResult {
+    pub fn build(mut self) -> anyhow::Result<CheckAllResult> {
         let recorded_violations = &self.configuration.pack_set.all_violations;
 
-        CheckAllResult {
+        Ok(CheckAllResult {
             reportable_violations: self
                 .build_reportable_violations(recorded_violations)
                 .into_iter()
@@ -197,11 +188,11 @@ impl<'a> CheckAllBuilder<'a> {
                 .cloned()
                 .collect(),
             strict_mode_violations: self
-                .build_strict_mode_violations(recorded_violations)
+                .build_strict_mode_violations(recorded_violations)?
                 .into_iter()
                 .cloned()
                 .collect(),
-        }
+        })
     }
 
     fn build_reportable_violations(
@@ -258,7 +249,7 @@ impl<'a> CheckAllBuilder<'a> {
     fn build_strict_mode_violations(
         &mut self,
         recorded_violations: &'a HashSet<ViolationIdentifier>,
-    ) -> Vec<&'a ViolationIdentifier> {
+    ) -> anyhow::Result<Vec<&'a ViolationIdentifier>> {
         let mut indexed_checkers: HashMap<
             String,
             &Box<dyn CheckerInterface + Send + Sync>,
@@ -266,18 +257,23 @@ impl<'a> CheckAllBuilder<'a> {
         for checker in &self.found_violations.checkers {
             indexed_checkers.insert(checker.violation_type(), checker);
         }
+        let mut strict_mode_violations = vec![];
+        for violation in recorded_violations {
+            // get the checker from indexed checkers or return an error
+            let checker = indexed_checkers
+                .get(&violation.violation_type)
+                .context(format!(
+                    "Checker for violation type {} not found",
+                    violation.violation_type
+                ))?;
 
-        let strict_mode_violations: Vec<&'a ViolationIdentifier> =
-            recorded_violations
-                .iter()
-                .filter(|v| {
-                    indexed_checkers
-                        .get(&v.violation_type)
-                        .unwrap()
-                        .is_strict_mode_violation(v, self.configuration)
-                })
-                .collect();
-        strict_mode_violations
+            if checker
+                .is_strict_mode_violation(violation, self.configuration)?
+            {
+                strict_mode_violations.push(violation);
+            }
+        }
+        Ok(strict_mode_violations)
     }
 }
 pub(crate) fn check_all(
@@ -297,9 +293,7 @@ pub(crate) fn check_all(
         absolute_paths,
         violations,
     };
-    let check_all_result =
-        CheckAllBuilder::new(configuration, &found_violations).build();
-    Ok(check_all_result)
+    Ok(CheckAllBuilder::new(configuration, &found_violations).build()?)
 }
 
 fn validate(configuration: &Configuration) -> Vec<String> {
