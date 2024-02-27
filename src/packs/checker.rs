@@ -51,21 +51,10 @@ pub fn get_defining_pack<'a>(
 pub fn get_referencing_pack<'a>(
     violation: &ViolationIdentifier,
     packset: &'a PackSet,
-) -> &'a Pack {
-    let referencing_pack_result =
-        packset.for_pack(&violation.referencing_pack_name);
-
-    // For some reason cargo fmt wasn't formatting this closure correctly when passed directly into unwrap_or_else
-    let error_closure = |_| {
-        let error_message = format!(
-            "ViolationIdentifier#referencing_pack is {}, but that pack cannot be found in the packset.",
-            &violation.referencing_pack_name
-        );
-
-        panic!("{}", &error_message);
-    };
-
-    referencing_pack_result.unwrap_or_else(error_closure)
+) -> anyhow::Result<&'a Pack> {
+    packset.for_pack(&violation.referencing_pack_name)
+    .context(format!("ViolationIdentifier#referencing_pack is {}, but that pack cannot be found in the packset.",
+&violation.referencing_pack_name))
 }
 
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
@@ -293,7 +282,7 @@ pub(crate) fn check_all(
         absolute_paths,
         violations,
     };
-    Ok(CheckAllBuilder::new(configuration, &found_violations).build()?)
+    CheckAllBuilder::new(configuration, &found_violations).build()
 }
 
 fn validate(configuration: &Configuration) -> Vec<String> {

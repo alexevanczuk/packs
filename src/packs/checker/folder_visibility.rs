@@ -55,7 +55,7 @@ impl CheckerInterface for Checker {
         configuration: &Configuration,
     ) -> anyhow::Result<bool> {
         let referencing_pack =
-            get_referencing_pack(violation, &configuration.pack_set);
+            get_referencing_pack(violation, &configuration.pack_set)?;
 
         Ok(referencing_pack.enforce_folder_visibility().is_strict())
     }
