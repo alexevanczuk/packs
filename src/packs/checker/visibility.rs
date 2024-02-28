@@ -79,11 +79,11 @@ impl CheckerInterface for Checker {
         &self,
         violation: &ViolationIdentifier,
         configuration: &Configuration,
-    ) -> bool {
+    ) -> anyhow::Result<bool> {
         let defining_pack =
-            get_defining_pack(violation, &configuration.pack_set);
+            get_defining_pack(violation, &configuration.pack_set)?;
 
-        defining_pack.enforce_visibility().is_strict()
+        Ok(defining_pack.enforce_visibility().is_strict())
     }
 
     fn violation_type(&self) -> String {
