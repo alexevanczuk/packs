@@ -132,22 +132,17 @@ pub(crate) fn file_content_digest(file: &Path) -> anyhow::Result<String> {
 pub fn file_read_contents(
     path: &Path,
     configuration: &Configuration,
-) -> String {
+) -> anyhow::Result<String> {
     if is_stdin_file(path, configuration) {
-        io::read_to_string(io::stdin()).unwrap_or_else(|_| {
-            panic!(
-                "Failed to read contents of {} from stdin",
-                path.to_string_lossy()
-            )
-        })
+        Ok(io::read_to_string(io::stdin()).context(format!(
+            "Failed to read contents of {} from stdin",
+            path.to_string_lossy()
+        ))?)
     } else {
-        fs::read_to_string(path).unwrap_or_else(|_| {
-            println!(
-                "Failed to read contents of {} – skipping this file",
-                path.to_string_lossy()
-            );
-            "".to_string()
-        })
+        fs::read_to_string(path).context(format!(
+            "Failed to read contents of {}",
+            path.to_string_lossy()
+        ))
     }
 }
 
