@@ -23,7 +23,7 @@ use super::{
 pub fn process_file(
     path: &Path,
     configuration: &Configuration,
-) -> ProcessedFile {
+) -> anyhow::Result<ProcessedFile> {
     if configuration.print_files {
         println!("Started processing {}", path.display());
     }
@@ -49,11 +49,11 @@ pub fn process_file(
     } else {
         // Later, we can perhaps have this error, since in theory the Configuration.intersect
         // method should make sure we never get any files we can't handle.
-        ProcessedFile {
+        Ok(ProcessedFile {
             absolute_path: path.to_path_buf(),
             unresolved_references: vec![],
             definitions: vec![], // TODO
-        }
+        })
     };
 
     if configuration.print_files {
@@ -93,7 +93,7 @@ pub fn process_files_with_cache(
         .par_iter()
         .map(|absolute_path| -> anyhow::Result<ProcessedFile> {
             if is_stdin_file(absolute_path, configuration) {
-                Ok(process_file(absolute_path, configuration))
+                process_file(absolute_path, configuration)
             } else {
                 match cache.get(absolute_path)? {
                     CacheResult::Processed(processed_file) => {
@@ -101,7 +101,7 @@ pub fn process_files_with_cache(
                     }
                     CacheResult::Miss(empty_cache_entry) => {
                         let processed_file =
-                            process_file(absolute_path, configuration);
+                            process_file(absolute_path, configuration)?;
                         cache.write(&empty_cache_entry, &processed_file);
                         Ok(processed_file)
                     }

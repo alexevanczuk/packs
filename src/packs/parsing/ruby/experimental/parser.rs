@@ -182,9 +182,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 pub(crate) fn process_from_path(
     path: &Path,
     configuration: &Configuration,
-) -> ProcessedFile {
-    let contents = file_read_contents(path, configuration);
-    process_from_contents(contents, path, configuration)
+) -> anyhow::Result<ProcessedFile> {
+    let contents = file_read_contents(path, configuration)?;
+    Ok(process_from_contents(contents, path, configuration))
 }
 
 pub(crate) fn process_from_contents(
