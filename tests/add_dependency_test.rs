@@ -23,7 +23,8 @@ fn test_add_dependency() -> Result<(), Box<dyn Error>> {
 
     let config = packs::packs::configuration(PathBuf::from(
         "tests/fixtures/app_with_missing_dependency",
-    ));
+    ))
+    .unwrap();
 
     let pack = config.pack_set.for_pack("packs/baz").unwrap();
 
@@ -62,7 +63,8 @@ fn test_add_dependency_creating_cycle() -> Result<(), Box<dyn Error>> {
 
     let config = packs::packs::configuration(PathBuf::from(
         "tests/fixtures/app_with_missing_dependency",
-    ));
+    ))
+    .unwrap();
 
     let pack = config.pack_set.for_pack("packs/bar").unwrap();
 
@@ -92,7 +94,8 @@ fn test_add_dependency_unnecessarily() -> Result<(), Box<dyn Error>> {
 
     let config = packs::packs::configuration(PathBuf::from(
         "tests/fixtures/app_with_missing_dependency",
-    ));
+    ))
+    .unwrap();
 
     let pack = config.pack_set.for_pack("packs/foo").unwrap();
 

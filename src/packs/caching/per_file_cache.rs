@@ -105,9 +105,10 @@ mod tests {
     use super::*;
 
     fn teardown() {
-        packs::delete_cache(configuration::get(&PathBuf::from(
-            "tests/fixtures/simple_app",
-        )));
+        packs::delete_cache(
+            configuration::get(&PathBuf::from("tests/fixtures/simple_app"))
+                .unwrap(),
+        );
     }
 
     #[test]

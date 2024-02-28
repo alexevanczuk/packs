@@ -160,7 +160,7 @@ pub fn run() -> anyhow::Result<()> {
 
     install_logger(args.debug);
 
-    let mut configuration = packs::configuration::get(&absolute_root);
+    let mut configuration = packs::configuration::get(&absolute_root)?;
 
     if args.print_files {
         configuration.print_files = true;

@@ -22,7 +22,8 @@ fn test_add_constant_dependencies() -> anyhow::Result<()> {
 
     let config = packs::packs::configuration(PathBuf::from(
         "tests/fixtures/app_with_missing_dependencies",
-    ));
+    ))
+    .unwrap();
 
     let pack = config.pack_set.for_pack("packs/foo").unwrap();
     assert_eq!(pack.dependencies.len(), 0);

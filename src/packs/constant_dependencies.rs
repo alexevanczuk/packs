@@ -207,7 +207,8 @@ mod tests {
                     referencing_pack_baz,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         }
     }

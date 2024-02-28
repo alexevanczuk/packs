@@ -230,9 +230,10 @@ mod tests {
     use crate::packs::configuration;
 
     fn teardown() {
-        packs::delete_cache(configuration::get(&PathBuf::from(
-            "tests/fixtures/simple_app",
-        )));
+        packs::delete_cache(
+            configuration::get(&PathBuf::from("tests/fixtures/simple_app"))
+                .unwrap(),
+        );
     }
 
     use crate::test_util::{
@@ -250,6 +251,7 @@ mod tests {
                     .join("packs/foo/app/services/foo.rb")
             }],
             get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
+                .unwrap()
                 .resolve(&String::from("Foo"), &[])
                 .unwrap()
         );
@@ -266,6 +268,7 @@ mod tests {
                     .join("app/company_data/widget.rb")
             }],
             get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP)
+                .unwrap()
                 .resolve(&String::from("Widget"), &["Company"])
                 .unwrap()
         );
@@ -276,7 +279,8 @@ mod tests {
     #[test]
     fn nested_reference_to_unnested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
+        let resolver =
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP).unwrap();
 
         assert_eq!(
             vec![ConstantDefinition {
@@ -295,7 +299,8 @@ mod tests {
     #[test]
     fn nested_reference_to_nested_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
+        let resolver =
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP).unwrap();
         assert_eq!(
             vec![ConstantDefinition {
                 fully_qualified_name: "::Foo::Bar".to_string(),
@@ -311,7 +316,8 @@ mod tests {
     #[test]
     fn nested_reference_to_global_constant() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
+        let resolver =
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP).unwrap();
 
         assert_eq!(
             vec![ConstantDefinition {
@@ -328,7 +334,8 @@ mod tests {
     #[test]
     fn nested_reference_to_constant_defined_within_another_file() {
         let absolute_root = get_absolute_root(SIMPLE_APP);
-        let resolver = get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP);
+        let resolver =
+            get_zeitwerk_constant_resolver_for_fixture(SIMPLE_APP).unwrap();
         assert_eq!(
             vec![ConstantDefinition {
                 fully_qualified_name: "::Bar::BAR".to_string(),
@@ -345,7 +352,7 @@ mod tests {
     fn inflected_constant() {
         let app = "tests/fixtures/app_with_inflections";
         let absolute_root = get_absolute_root(app);
-        let resolver = get_zeitwerk_constant_resolver_for_fixture(app);
+        let resolver = get_zeitwerk_constant_resolver_for_fixture(app).unwrap();
 
         assert_eq!(
             vec![ConstantDefinition {
@@ -378,7 +385,7 @@ mod tests {
             .canonicalize()
             .expect("Could not canonicalize path");
 
-        let configuration = configuration::get(absolute_root);
+        let configuration = configuration::get(absolute_root).unwrap();
 
         let constant_resolver = get_zeitwerk_constant_resolver(
             &configuration.pack_set,

@@ -258,7 +258,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
         assert_eq!(None, checker.check(&reference, &configuration))
@@ -312,7 +313,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
 
@@ -380,7 +382,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
 
@@ -444,7 +447,8 @@ mod tests {
                     to_pack.clone(),
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             layers: Layers {
                 layers: test_case.layers,
             },
@@ -510,7 +514,8 @@ mod tests {
             .canonicalize()
             .expect("Could not canonicalize path")
             .as_path(),
-        );
+        )
+        .unwrap();
         let checker = Checker {
             layers: Layers {
                 layers: vec![
