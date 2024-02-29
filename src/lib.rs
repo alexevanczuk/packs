@@ -24,14 +24,14 @@ mod test_util {
 
     pub fn get_zeitwerk_constant_resolver_for_fixture(
         fixture_name: &str,
-    ) -> Box<dyn ConstantResolver> {
+    ) -> anyhow::Result<Box<dyn ConstantResolver>> {
         let absolute_root = get_absolute_root(fixture_name);
-        let configuration = configuration::get(&absolute_root);
+        let configuration = configuration::get(&absolute_root)?;
 
-        get_zeitwerk_constant_resolver(
+        Ok(get_zeitwerk_constant_resolver(
             &configuration.pack_set,
             &configuration.constant_resolver_configuration(),
-        )
+        ))
     }
 
     // Note that instead, we could derive the `Default` trait on `Pack`
@@ -84,6 +84,7 @@ mod test_util {
                 RawConfiguration::default(),
                 walk_directory_result,
             )
+            .unwrap() // TODO: potentially convert `default` to `new` and return a Result
         }
     }
 }

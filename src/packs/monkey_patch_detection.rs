@@ -254,7 +254,8 @@ These monkey patches redefine behavior in a pack within your app (as determined 
 
         let mut configuration = configuration::get(&PathBuf::from(
             "tests/fixtures/app_with_monkey_patches",
-        ));
+        ))
+        .unwrap();
         configuration.experimental_parser = true;
         let actual_message = expose_monkey_patches(
             &configuration,

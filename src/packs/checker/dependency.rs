@@ -210,7 +210,8 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
         let reference = Reference {
             constant_name: String::from("::Foo"),
             defining_pack_name: Some(String::from("packs/foo")),
@@ -234,7 +235,8 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
         let reference = build_foo_reference_bar_reference();
 
         let expected_violation = Violation {
@@ -261,7 +263,8 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
         let reference = build_foo_reference_bar_reference();
 
         assert_eq!(checker.check(&reference, &configuration), None)
@@ -290,7 +293,8 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
 
         let error = checker.validate(&configuration);
         let expected_message = vec![String::from("Package cannot list itself as a dependency: packs/baz/package.yml"),
@@ -312,7 +316,8 @@ packs/foo, packs/bar",
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
 
         let error = checker.validate(&configuration);
         assert_eq!(error, None);
@@ -329,7 +334,8 @@ packs/foo, packs/bar",
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-        );
+        )
+        .unwrap();
 
         checker.validate(&configuration);
     }

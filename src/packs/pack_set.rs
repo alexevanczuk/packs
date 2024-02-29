@@ -33,7 +33,7 @@ impl PackSet {
     pub fn build(
         packs: HashSet<Pack>,
         owning_package_yml_for_file: HashMap<PathBuf, PathBuf>,
-    ) -> PackSet {
+    ) -> anyhow::Result<PackSet> {
         let packs: Vec<Pack> = packs
             .into_iter()
             .sorted_by(|packa, packb| {
@@ -65,15 +65,15 @@ impl PackSet {
         let indexed_packs = indexed_packs_by_name;
 
         if indexed_packs.get(".").is_none() {
-            panic!("No root pack found. First double check a root pack exists (a package.yml file in the application root). Secondly, double check your packwerk.yml `package_paths` includes the root pack by using command packs list-packs.");
+            bail!("No root pack found. First double check a root pack exists (a package.yml file in the application root). Secondly, double check your packwerk.yml `package_paths` includes the root pack by using command packs list-packs.");
         }
 
-        PackSet {
+        Ok(PackSet {
             indexed_packs,
             packs,
             all_violations,
             owning_pack_name_for_file,
-        }
+        })
     }
 
     pub fn for_file(&self, absolute_file_path: &Path) -> Option<&Pack> {
@@ -155,7 +155,7 @@ mod tests {
         let mut packs = HashSet::new();
         packs.insert(foo_pack);
         packs.insert(root_pack);
-        PackSet::build(packs, HashMap::new())
+        PackSet::build(packs, HashMap::new()).unwrap()
     }
 
     #[test]

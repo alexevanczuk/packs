@@ -141,7 +141,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
 
@@ -199,7 +200,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
         assert_eq!(
@@ -252,7 +254,8 @@ mod tests {
                     referencing_pack,
                 ]),
                 HashMap::new(),
-            ),
+            )
+            .unwrap(),
             ..Configuration::default()
         };
         assert_eq!(None, checker.check(&reference, &configuration))
