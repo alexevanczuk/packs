@@ -56,27 +56,34 @@ pub(crate) fn get_all_references(
     };
 
     debug!("Turning unresolved references into fully qualified references");
-    let references: Vec<Reference> = processed_files_to_check
+    let references: anyhow::Result<Vec<Reference>> = processed_files_to_check
         .par_iter()
-        .flat_map(|processed_file| {
-            let references: Vec<Reference> = processed_file
-                .unresolved_references
-                .iter()
-                .flat_map(|unresolved_ref| {
-                    Reference::from_unresolved_reference(
+        .try_fold(
+            Vec::new,
+            // Start with an empty vector for each thread
+            |mut acc, processed_file| {
+                // Try to fold results within a thread
+                for unresolved_ref in &processed_file.unresolved_references {
+                    let mut refs = Reference::from_unresolved_reference(
                         configuration,
                         constant_resolver.as_ref(),
                         unresolved_ref,
                         &processed_file.absolute_path,
-                    )
-                })
-                .collect::<Vec<Reference>>();
-
-            references
-        })
-        .collect();
-
+                    )?;
+                    acc.append(&mut refs); // Collect references, return error if any
+                }
+                Ok(acc)
+            },
+        )
+        .try_reduce(
+            Vec::new, // Start with an empty vector for the reduction
+            |mut acc, mut vec| {
+                // Try to reduce results across threads
+                acc.append(&mut vec); // Combine vectors, no error expected here
+                Ok(acc)
+            },
+        );
     debug!("Finished turning unresolved references into fully qualified references");
 
-    Ok(references)
+    references
 }

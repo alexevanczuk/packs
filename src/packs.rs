@@ -332,6 +332,7 @@ mod tests {
                 .pack_set
                 .for_file(&absolute_file_path)
                 .unwrap()
+                .unwrap()
                 .name
         )
     }

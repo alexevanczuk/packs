@@ -76,19 +76,20 @@ impl PackSet {
         })
     }
 
-    pub fn for_file(&self, absolute_file_path: &Path) -> Option<&Pack> {
-        self.owning_pack_name_for_file.get(absolute_file_path).map(
-            |pack_name| {
-                let error_closure = |_| {
-                    panic!(
-                        "Walking the directory identified that the following file belongs to {}, but that pack cannot be found in the packset:\n{}",
-                        pack_name,
-                        &absolute_file_path.display(),
-                    )
-                };
-                self.for_pack(pack_name).unwrap_or_else(error_closure)
-            },
-        )
+    pub fn for_file(
+        &self,
+        absolute_file_path: &Path,
+    ) -> anyhow::Result<Option<&Pack>> {
+        self.owning_pack_name_for_file
+            .get(absolute_file_path)
+            .map(|pack_name| self.for_pack(pack_name))
+            .transpose()
+            .map_err(|_| {
+                anyhow::Error::msg(format!(
+                    "Walking the directory identified that the following file belongs to a pack, but that pack cannot be found in the packset:\n{}",
+                    absolute_file_path.display()
+                ))
+            })
     }
 
     pub fn for_pack(&self, pack_name: &str) -> Result<&Pack> {

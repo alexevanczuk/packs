@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use anyhow::bail;
+
 use crate::packs::{
     constant_resolver::ConstantResolver, pack::Pack,
     parsing::UnresolvedReference, Configuration, PackSet, SourceLocation,
@@ -35,17 +37,18 @@ impl Reference {
         constant_resolver: &(dyn ConstantResolver + Send + Sync),
         unresolved_reference: &UnresolvedReference,
         referencing_file_path: &Path,
-    ) -> Vec<Reference> {
-        let referencing_pack_name = configuration
+    ) -> anyhow::Result<Vec<Reference>> {
+        let referencing_pack_name = match configuration
             .pack_set
-            .for_file(referencing_file_path)
+            .for_file(referencing_file_path)?
             .map(|pack| pack.name.clone())
-            .unwrap_or_else(|| {
-                panic!(
-                    "Could not find pack for referencing file path: {}",
-                    &referencing_file_path.display()
-                )
-            });
+        {
+            Some(pack_name) => pack_name,
+            None => bail!(
+                "Could not find pack for referencing file path: {}",
+                &referencing_file_path.display()
+            ),
+        };
 
         let loc = &unresolved_reference.location;
         let source_location = SourceLocation {
@@ -71,7 +74,7 @@ impl Reference {
             .resolve(&unresolved_reference.name, &str_namespace_path);
 
         if let Some(constant_definitions) = &maybe_constant_definition {
-            constant_definitions
+            Ok(constant_definitions
                 .iter()
                 .map(move |constant| {
                     let absolute_path_of_definition =
@@ -86,13 +89,13 @@ impl Reference {
 
                     let defining_pack_name = configuration
                         .pack_set
-                        .for_file(absolute_path_of_definition)
+                        .for_file(absolute_path_of_definition)?
                         .map(|pack| pack.name.clone());
 
                     let relative_defining_file = Some(relative_defining_file);
                     let constant_name = constant.fully_qualified_name.clone();
 
-                    Reference {
+                    Ok(Reference {
                         constant_name,
                         defining_pack_name,
                         referencing_pack_name: referencing_pack_name.clone(),
@@ -100,23 +103,23 @@ impl Reference {
                             .clone(),
                         source_location: source_location.clone(),
                         relative_defining_file,
-                    }
+                    })
                 })
-                .collect()
+                .collect::<anyhow::Result<Vec<Reference>>>()?)
         } else {
             let defining_pack_name = None;
             let relative_defining_file = None;
             // Contant name is not known, so we'll just use the unresolved name for now
             let constant_name = unresolved_reference.name.clone();
 
-            vec![Reference {
+            Ok(vec![Reference {
                 constant_name,
                 defining_pack_name,
                 referencing_pack_name,
                 relative_referencing_file,
                 source_location,
                 relative_defining_file,
-            }]
+            }])
         }
     }
 }
