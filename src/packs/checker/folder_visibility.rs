@@ -11,16 +11,16 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
-    ) -> Option<Violation> {
+    ) -> anyhow::Result<Option<Violation>> {
         let pack_set = &configuration.pack_set;
         let referencing_pack = &reference.referencing_pack(pack_set);
         let relative_defining_file = &reference.relative_defining_file;
         if relative_defining_file.is_none() {
-            return None;
+            return Ok(None);
         }
-        let defining_pack = &reference.defining_pack(pack_set);
+        let defining_pack = &reference.defining_pack(pack_set)?;
         if defining_pack.is_none() {
-            return None;
+            return Ok(None);
         }
         let defining_pack = defining_pack.unwrap();
         if !folder_visible(referencing_pack, defining_pack).unwrap() {
@@ -40,12 +40,12 @@ impl CheckerInterface for Checker {
                 referencing_pack_name: referencing_pack.name.clone(),
                 defining_pack_name: defining_pack.name.clone(),
             };
-            Some(Violation {
+            Ok(Some(Violation {
                 message,
                 identifier,
-            })
+            }))
         } else {
-            None
+            Ok(None)
         }
     }
 

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 
 use crate::packs::{
     constant_resolver::ConstantResolver, pack::Pack,
@@ -18,11 +18,19 @@ pub struct Reference {
 }
 
 impl Reference {
-    pub fn defining_pack<'a>(&self, pack_set: &'a PackSet) -> Option<&'a Pack> {
+    pub fn defining_pack<'a>(
+        &self,
+        pack_set: &'a PackSet,
+    ) -> anyhow::Result<Option<&'a Pack>> {
         if let Some(name) = &self.defining_pack_name {
-            Some(pack_set.for_pack(name).unwrap_or_else(|_| panic!("Reference#defining_pack_name is {}, but that pack is not found in pack set.", &name)))
+            Ok(Some(pack_set
+                .for_pack(name)
+                .context(format!(
+                    "Reference#defining_pack_name is {}, but that pack is not found in pack set.",
+                    &name
+                ))?))
         } else {
-            None
+            Ok(None)
         }
     }
 

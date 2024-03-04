@@ -68,7 +68,7 @@ pub(crate) trait CheckerInterface {
         &self,
         reference: &Reference,
         configuration: &Configuration,
-    ) -> Option<Violation>;
+    ) -> anyhow::Result<Option<Violation>>;
 
     fn is_strict_mode_violation(
         &self,
@@ -415,19 +415,24 @@ fn get_all_violations(
 
     debug!("Running checkers on resolved references");
 
-    let violations: HashSet<Violation> = checkers
+    let violations = checkers
         .into_par_iter()
-        .flat_map(|c| {
-            references
-                .par_iter()
-                .flat_map(|r| c.check(r, configuration))
-                .collect::<HashSet<Violation>>()
+        .try_fold(HashSet::new, |mut acc, c| {
+            for reference in &references {
+                if let Some(violation) = c.check(reference, configuration)? {
+                    acc.insert(violation);
+                }
+            }
+            Ok(acc)
         })
-        .collect();
+        .try_reduce(HashSet::new, |mut acc, v| {
+            acc.extend(v);
+            Ok(acc)
+        });
 
     debug!("Finished running checkers");
 
-    Ok(violations)
+    violations
 }
 
 fn get_checkers(
