@@ -109,26 +109,27 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
-    ) -> Option<Violation> {
+    ) -> anyhow::Result<Option<Violation>> {
         let referencing_pack =
             reference.referencing_pack(&configuration.pack_set);
 
         if referencing_pack.enforce_dependencies().is_false() {
-            return None;
+            return Ok(None);
         }
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack(&configuration.pack_set);
+        let defining_pack =
+            &reference.defining_pack(&configuration.pack_set)?;
 
         if defining_pack.is_none() {
-            return None;
+            return Ok(None);
         }
 
         let defining_pack = defining_pack.unwrap();
 
         let defining_pack_name = &defining_pack.name;
         if referencing_pack_name == defining_pack_name {
-            return None;
+            return Ok(None);
         }
 
         let referencing_pack_dependencies = &referencing_pack.dependencies;
@@ -170,13 +171,13 @@ impl CheckerInterface for Checker {
                 defining_pack_name: defining_pack_name.clone(),
             };
 
-            return Some(Violation {
+            return Ok(Some(Violation {
                 message,
                 identifier,
-            });
+            }));
         }
 
-        None
+        Ok(None)
     }
 
     fn is_strict_mode_violation(
@@ -224,7 +225,7 @@ mod tests {
             )),
             source_location: SourceLocation { line: 3, column: 1 },
         };
-        assert_eq!(None, checker.check(&reference, &configuration))
+        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
     }
 
     #[test]
@@ -251,7 +252,7 @@ mod tests {
         };
         assert_eq!(
             expected_violation,
-            checker.check(&reference, &configuration).unwrap()
+            checker.check(&reference, &configuration).unwrap().unwrap()
         )
     }
 
@@ -267,7 +268,7 @@ mod tests {
         .unwrap();
         let reference = build_foo_reference_bar_reference();
 
-        assert_eq!(checker.check(&reference, &configuration), None)
+        assert_eq!(checker.check(&reference, &configuration).unwrap(), None)
     }
 
     fn build_foo_reference_bar_reference() -> Reference {

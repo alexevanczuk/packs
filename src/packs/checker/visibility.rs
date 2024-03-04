@@ -14,20 +14,21 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
-    ) -> Option<Violation> {
+    ) -> anyhow::Result<Option<Violation>> {
         let referencing_pack =
             &reference.referencing_pack(&configuration.pack_set);
         let relative_defining_file = &reference.relative_defining_file;
 
         let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack(&configuration.pack_set);
+        let defining_pack =
+            &reference.defining_pack(&configuration.pack_set)?;
         if defining_pack.is_none() {
-            return None;
+            return Ok(None);
         }
         let defining_pack = defining_pack.unwrap();
 
         if defining_pack.enforce_visibility().is_false() {
-            return None;
+            return Ok(None);
         }
 
         if defining_pack
@@ -36,17 +37,17 @@ impl CheckerInterface for Checker {
             .unwrap_or(&HashSet::new())
             .contains(referencing_pack_name)
         {
-            return None;
+            return Ok(None);
         }
 
         let defining_pack_name = &defining_pack.name;
 
         if relative_defining_file.is_none() {
-            return None;
+            return Ok(None);
         }
 
         if referencing_pack_name == defining_pack_name {
-            return None;
+            return Ok(None);
         }
 
         let message = format!(
@@ -69,10 +70,10 @@ impl CheckerInterface for Checker {
             defining_pack_name: defining_pack_name.clone(),
         };
 
-        Some(Violation {
+        Ok(Some(Violation {
             message,
             identifier,
-        })
+        }))
     }
 
     fn is_strict_mode_violation(
@@ -146,7 +147,7 @@ mod tests {
             ..Configuration::default()
         };
 
-        assert_eq!(None, checker.check(&reference, &configuration))
+        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
     }
 
     #[test]
@@ -206,7 +207,7 @@ mod tests {
         };
         assert_eq!(
             expected_violation,
-            checker.check(&reference, &configuration).unwrap()
+            checker.check(&reference, &configuration).unwrap().unwrap()
         )
     }
 
@@ -258,6 +259,6 @@ mod tests {
             .unwrap(),
             ..Configuration::default()
         };
-        assert_eq!(None, checker.check(&reference, &configuration))
+        assert_eq!(None, checker.check(&reference, &configuration).unwrap());
     }
 }
