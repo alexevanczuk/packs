@@ -195,11 +195,10 @@ pub(crate) fn walk_directory(
 
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, path::PathBuf};
+    use std::path::PathBuf;
 
     use crate::packs::{
-        raw_configuration::RawConfiguration,
-        walk_directory::{walk_directory, WalkDirectoryResult},
+        raw_configuration::RawConfiguration, walk_directory::walk_directory,
     };
 
     #[test]
