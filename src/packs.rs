@@ -46,11 +46,11 @@ pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
-fn create(configuration: &Configuration, name: String) {
+fn create(configuration: &Configuration, name: String) -> anyhow::Result<()> {
     let existing_pack = configuration.pack_set.for_pack(&name);
     if existing_pack.is_ok() {
         println!("`{}` already exists!", &name);
-        return;
+        return Ok(());
     }
     let new_pack_path =
         configuration.absolute_root.join(&name).join("package.yml");
@@ -60,9 +60,9 @@ fn create(configuration: &Configuration, name: String) {
         &configuration.absolute_root,
         "enforce_dependencies: true",
         PackageTodo::default(),
-    );
+    )?;
 
-    write_pack_to_disk(&new_pack);
+    write_pack_to_disk(&new_pack)?;
 
     let readme = format!(
 "Welcome to `{}`!
@@ -84,9 +84,10 @@ See https://github.com/rubyatscale/packs#readme for more info!",
 );
 
     let readme_path = configuration.absolute_root.join(&name).join("README.md");
-    std::fs::write(readme_path, readme).unwrap();
+    std::fs::write(readme_path, readme).context("Failed to write README.md")?;
 
     println!("Successfully created `{}`!", name);
+    Ok(())
 }
 
 pub fn check(
@@ -132,7 +133,7 @@ pub fn add_dependency(
 
     let new_from_pack = from_pack.add_dependency(to_pack);
 
-    write_pack_to_disk(&new_from_pack);
+    write_pack_to_disk(&new_from_pack)?;
 
     // Note: Ideally we wouldn't have to refetch the configuration and could instead
     // either update the existing one OR modify the existing one and return a new one
@@ -214,10 +215,13 @@ pub fn list(configuration: Configuration) {
     }
 }
 
-pub fn lint_package_yml_files(configuration: &Configuration) {
+pub fn lint_package_yml_files(
+    configuration: &Configuration,
+) -> anyhow::Result<()> {
     for pack in &configuration.pack_set.packs {
-        write_pack_to_disk(pack)
+        write_pack_to_disk(pack)?
     }
+    Ok(())
 }
 
 pub fn delete_cache(configuration: Configuration) {
