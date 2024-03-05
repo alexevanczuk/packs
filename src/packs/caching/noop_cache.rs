@@ -16,7 +16,8 @@ impl Cache for NoopCache {
         &self,
         _empty_cache_entry: &EmptyCacheEntry,
         _processed_file: &ProcessedFile,
-    ) {
+    ) -> anyhow::Result<()> {
         // Do nothing!
+        Ok(())
     }
 }

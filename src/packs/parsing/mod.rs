@@ -102,7 +102,7 @@ pub fn process_files_with_cache(
                     CacheResult::Miss(empty_cache_entry) => {
                         let processed_file =
                             process_file(absolute_path, configuration)?;
-                        cache.write(&empty_cache_entry, &processed_file);
+                        cache.write(&empty_cache_entry, &processed_file)?;
                         Ok(processed_file)
                     }
                 }
