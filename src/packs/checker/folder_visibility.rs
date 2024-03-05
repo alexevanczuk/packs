@@ -13,7 +13,7 @@ impl CheckerInterface for Checker {
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
         let pack_set = &configuration.pack_set;
-        let referencing_pack = &reference.referencing_pack(pack_set);
+        let referencing_pack = &reference.referencing_pack(pack_set)?;
         let relative_defining_file = &reference.relative_defining_file;
         if relative_defining_file.is_none() {
             return Ok(None);

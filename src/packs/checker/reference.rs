@@ -34,8 +34,13 @@ impl Reference {
         }
     }
 
-    pub fn referencing_pack<'a>(&self, pack_set: &'a PackSet) -> &'a Pack {
-        pack_set.for_pack(&self.referencing_pack_name).unwrap_or_else(|_| panic!("Reference#referencing_pack_name is {}, but that pack is not found in pack set.", &self.referencing_pack_name))
+    pub fn referencing_pack<'a>(
+        &self,
+        pack_set: &'a PackSet,
+    ) -> anyhow::Result<&'a Pack> {
+        pack_set.for_pack(&self.referencing_pack_name).
+        context(format!("Reference#referencing_pack_name is {}, but that pack is not found in pack set.", 
+        &self.referencing_pack_name))
     }
 }
 
