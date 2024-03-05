@@ -111,7 +111,7 @@ impl CheckerInterface for Checker {
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
         let referencing_pack =
-            reference.referencing_pack(&configuration.pack_set);
+            reference.referencing_pack(&configuration.pack_set)?;
 
         if referencing_pack.enforce_dependencies().is_false() {
             return Ok(None);

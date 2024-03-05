@@ -16,7 +16,7 @@ impl CheckerInterface for Checker {
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
         let referencing_pack =
-            &reference.referencing_pack(&configuration.pack_set);
+            &reference.referencing_pack(&configuration.pack_set)?;
         let relative_defining_file = &reference.relative_defining_file;
 
         let referencing_pack_name = &referencing_pack.name;
