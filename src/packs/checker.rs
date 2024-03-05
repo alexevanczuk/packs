@@ -345,7 +345,7 @@ pub(crate) fn remove_unnecessary_dependencies(
 ) -> anyhow::Result<()> {
     let unnecessary_dependencies = get_unnecessary_dependencies(configuration)?;
     for (pack, dependency_names) in unnecessary_dependencies.iter() {
-        remove_reference_to_dependency(pack, dependency_names);
+        remove_reference_to_dependency(pack, dependency_names)?;
     }
     Ok(())
 }
@@ -449,7 +449,10 @@ fn get_checkers(
     ]
 }
 
-fn remove_reference_to_dependency(pack: &Pack, dependency_names: &[String]) {
+fn remove_reference_to_dependency(
+    pack: &Pack,
+    dependency_names: &[String],
+) -> anyhow::Result<()> {
     let without_dependency = pack
         .dependencies
         .iter()
@@ -458,5 +461,6 @@ fn remove_reference_to_dependency(pack: &Pack, dependency_names: &[String]) {
         dependencies: without_dependency.cloned().collect(),
         ..pack.clone()
     };
-    write_pack_to_disk(&updated_pack);
+    write_pack_to_disk(&updated_pack)?;
+    Ok(())
 }

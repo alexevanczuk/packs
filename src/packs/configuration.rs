@@ -91,7 +91,7 @@ impl Configuration {
 pub(crate) fn get(absolute_root: &Path) -> anyhow::Result<Configuration> {
     debug!("Beginning to build configuration");
 
-    let raw_config = raw_configuration::get(absolute_root);
+    let raw_config = raw_configuration::get(absolute_root)?;
     let walk_directory_result =
         walk_directory(absolute_root.to_path_buf(), &raw_config)?;
 

@@ -30,7 +30,7 @@ pub fn update_dependencies_for_constant(
 
         for pack in packs_for_update.iter() {
             let cloned_pack = pack.add_dependency(defining_pack);
-            write_pack_to_disk(&cloned_pack);
+            write_pack_to_disk(&cloned_pack)?;
         }
 
         Ok(packs_for_update.len())

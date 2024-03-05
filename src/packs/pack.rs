@@ -208,12 +208,12 @@ impl Pack {
             PackageTodo::default()
         };
 
-        Ok(Pack::from_contents(
+        Pack::from_contents(
             package_yml_absolute_path,
             absolute_root,
             &yaml_contents,
             package_todo,
-        ))
+        )
     }
 
     pub fn from_contents(
@@ -221,14 +221,15 @@ impl Pack {
         absolute_root: &Path,
         package_yml_contents: &str,
         package_todo: PackageTodo,
-    ) -> Pack {
+    ) -> anyhow::Result<Pack> {
         let pack_result = serde_yaml::from_str(package_yml_contents);
-        let pack: Pack = match pack_result {
+        let pack = match pack_result {
             Ok(pack) => pack,
             Err(e) => {
-                panic!(
+                anyhow::bail!(
                     "Failed to deserialize the YAML at {:?} with error: {:?}",
-                    package_yml_absolute_path, e
+                    package_yml_absolute_path,
+                    e
                 )
             }
         };
@@ -238,12 +239,12 @@ impl Pack {
             .unwrap();
         let mut relative_path = package_yml_relative_path
             .parent()
-            .expect("Expected package to be in a parent directory")
+            .context("Expected package to be in a parent directory")?
             .to_owned();
 
         let mut name = relative_path
             .to_str()
-            .expect("Non-unicode characters?")
+            .context("Non-unicode characters?")?
             .to_owned();
         let yml = package_yml_absolute_path;
 
@@ -261,7 +262,7 @@ impl Pack {
             ..pack
         };
 
-        pack
+        Ok(pack)
     }
 
     pub fn default_autoload_roots(&self) -> Vec<PathBuf> {
@@ -369,25 +370,28 @@ pub fn serialize_pack(pack: &Pack) -> String {
     }
 }
 
-pub fn write_pack_to_disk(pack: &Pack) {
+pub fn write_pack_to_disk(pack: &Pack) -> anyhow::Result<()> {
     let serialized_pack = serialize_pack(pack);
-    let pack_dir = pack.yml.parent().unwrap_or_else(|| {
-        panic!("Failed to get parent directory of pack {:?}", &pack.yml)
-    });
+    let pack_dir = pack.yml.parent().ok_or_else(|| {
+        anyhow::Error::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("Failed to get parent directory of pack {:?}", &pack.yml),
+        ))
+    })?;
 
-    std::fs::create_dir_all(pack_dir).unwrap_or_else(|e| {
-        panic!(
-            "Failed to create directory for pack {:?} with error {:?}",
-            &pack_dir, e
-        )
-    });
+    std::fs::create_dir_all(pack_dir).map_err(|e| {
+        anyhow::Error::new(e).context(format!(
+            "Failed to create directory for pack {:?}",
+            &pack_dir
+        ))
+    })?;
 
-    std::fs::write(&pack.yml, serialized_pack).unwrap_or_else(|e| {
-        panic!(
-            "Failed to write pack to disk {:?} with error {:?}",
-            &pack.yml, e
-        )
-    });
+    std::fs::write(&pack.yml, serialized_pack).map_err(|e| {
+        anyhow::Error::new(e)
+            .context(format!("Failed to write pack to disk {:?}", &pack.yml))
+    })?;
+
+    Ok(())
 }
 
 fn serialize_checker_setting<S>(

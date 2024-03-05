@@ -233,12 +233,8 @@ pub fn run() -> anyhow::Result<()> {
             &args.gemdir,
         ),
         Command::LintPackageYmlFiles => {
-            packs::lint_package_yml_files(&configuration);
-            Ok(())
+            packs::lint_package_yml_files(&configuration)
         }
-        Command::Create { name } => {
-            packs::create(&configuration, name);
-            Ok(())
-        }
+        Command::Create { name } => packs::create(&configuration, name),
     }
 }
