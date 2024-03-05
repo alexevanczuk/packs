@@ -104,14 +104,6 @@ impl PackSet {
         }
     }
 
-    pub fn root_pack(&self) -> &Pack {
-        self.indexed_packs.get(".").unwrap_or_else(|| {
-            panic!(
-                "No root pack found. This error should have been caught when buiding the pack set"
-            )
-        })
-    }
-
     // Returns all of the package dependencies in the pack set.
     pub fn all_pack_dependencies<'a>(
         &'a self,

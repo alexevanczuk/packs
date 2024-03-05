@@ -93,7 +93,7 @@ pub(crate) fn get(absolute_root: &Path) -> anyhow::Result<Configuration> {
 
     let raw_config = raw_configuration::get(absolute_root);
     let walk_directory_result =
-        walk_directory(absolute_root.to_path_buf(), &raw_config);
+        walk_directory(absolute_root.to_path_buf(), &raw_config)?;
 
     from_raw(absolute_root, raw_config, walk_directory_result)
 }
