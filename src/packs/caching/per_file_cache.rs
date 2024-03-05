@@ -19,7 +19,7 @@ impl Cache for PerFileCache {
     fn get(&self, path: &Path) -> anyhow::Result<CacheResult> {
         let empty_cache_entry = EmptyCacheEntry::new(&self.cache_dir, path)
             .context(format!("Failed to create cache entry for {:?}", path))?;
-        let cache_entry = CacheEntry::from_empty(&empty_cache_entry);
+        let cache_entry = CacheEntry::from_empty(&empty_cache_entry)?;
         if let Some(cache_entry) = cache_entry {
             let file_digests_match = cache_entry.file_contents_digest
                 == empty_cache_entry.file_contents_digest;
@@ -39,7 +39,7 @@ impl Cache for PerFileCache {
         &self,
         empty_cache_entry: &EmptyCacheEntry,
         processed_file: &ProcessedFile,
-    ) {
+    ) -> anyhow::Result<()> {
         let file_contents_digest =
             empty_cache_entry.file_contents_digest.to_owned();
 
@@ -51,17 +51,18 @@ impl Cache for PerFileCache {
         };
 
         let cache_data = serde_json::to_string(&cache_entry)
-            .expect("Failed to serialize references");
+            .context("Failed to serialize references")?;
         let mut file = File::create(&empty_cache_entry.cache_file_path)
-            .unwrap_or_else(|e| {
-                panic!(
-                    "Failed to create cache file {:?}: {}",
-                    empty_cache_entry.cache_file_path, e
-                )
-            });
+            .map_err(|e| {
+                anyhow::Error::new(e).context(format!(
+                    "Failed to create cache file {:?}",
+                    empty_cache_entry.cache_file_path
+                ))
+            })?;
 
         file.write_all(cache_data.as_bytes())
-            .expect("Failed to write cache file");
+            .context("Failed to write cache file")?;
+        Ok(())
     }
 }
 
@@ -72,25 +73,26 @@ pub struct CacheEntry {
 }
 
 impl CacheEntry {
-    pub fn from_empty(empty: &EmptyCacheEntry) -> Option<CacheEntry> {
+    pub fn from_empty(
+        empty: &EmptyCacheEntry,
+    ) -> anyhow::Result<Option<CacheEntry>> {
         let cache_file_path = &empty.cache_file_path;
 
         if cache_file_path.exists() {
-            Some(read_json_file(cache_file_path).unwrap_or_else(|_| {
-                panic!("Failed to read cache file {:?}", cache_file_path)
-            }))
+            let cache_entry = read_json_file(cache_file_path)?;
+            Ok(Some(cache_entry))
         } else {
-            None
+            Ok(None)
         }
     }
 }
 
-pub fn read_json_file(
-    path: &PathBuf,
-) -> Result<CacheEntry, Box<dyn std::error::Error>> {
-    let file = std::fs::File::open(path)?;
+pub fn read_json_file(path: &PathBuf) -> anyhow::Result<CacheEntry> {
+    let file = std::fs::File::open(path)
+        .context(format!("Failed to open file {:?}", path))?;
     let reader = std::io::BufReader::new(file);
-    let data = serde_json::from_reader(reader)?;
+    let data = serde_json::from_reader(reader)
+        .context("Failed to deserialize CacheEntry")?;
     Ok(data)
 }
 

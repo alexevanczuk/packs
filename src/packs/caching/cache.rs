@@ -11,5 +11,5 @@ pub trait Cache {
         &self,
         empty_cache_entry: &EmptyCacheEntry,
         processed_file: &ProcessedFile,
-    );
+    ) -> anyhow::Result<()>;
 }
