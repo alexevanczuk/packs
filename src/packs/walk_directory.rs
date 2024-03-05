@@ -37,7 +37,7 @@ impl jwalk::ClientState for ProcessReadDirState {
 pub(crate) fn walk_directory(
     absolute_root: PathBuf,
     raw: &RawConfiguration,
-) -> WalkDirectoryResult {
+) -> anyhow::Result<WalkDirectoryResult> {
     debug!("Beginning directory walk");
 
     let mut included_files: HashSet<PathBuf> = HashSet::new();
@@ -162,7 +162,7 @@ pub(crate) fn walk_directory(
             // We can remove this once we fix the bug.
             && (package_paths_set.is_match(relative_path.parent().unwrap()) || absolute_path.parent().unwrap() == absolute_root)
         {
-            let pack = Pack::from_path(&absolute_path, &absolute_root);
+            let pack = Pack::from_path(&absolute_path, &absolute_root)?;
             included_packs.insert(pack);
         }
 
@@ -186,11 +186,11 @@ pub(crate) fn walk_directory(
 
     debug!("Finished directory walk");
 
-    WalkDirectoryResult {
+    Ok(WalkDirectoryResult {
         included_files,
         included_packs,
         owning_package_yml_for_file,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -203,7 +203,7 @@ mod tests {
     };
 
     #[test]
-    fn test_walk_directory() -> Result<(), Box<dyn Error>> {
+    fn test_walk_directory() -> anyhow::Result<()> {
         let absolute_path = PathBuf::from("tests/fixtures/simple_app")
             .canonicalize()
             .expect("Could not canonicalize path");
@@ -213,8 +213,10 @@ mod tests {
             ..RawConfiguration::default()
         };
 
-        let WalkDirectoryResult { included_files, .. } =
+        let walk_directory_result =
             walk_directory(absolute_path.clone(), &raw_config);
+        assert!(walk_directory_result.is_ok());
+        let included_files = walk_directory_result?.included_files;
 
         let node_module_file =
             absolute_path.join("node_modules/subfolder/file.rb");

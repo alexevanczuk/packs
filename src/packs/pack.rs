@@ -6,6 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
 use core::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Value;
@@ -167,22 +168,22 @@ impl Pack {
     pub fn from_path(
         package_yml_absolute_path: &Path,
         absolute_root: &Path,
-    ) -> Pack {
+    ) -> anyhow::Result<Pack> {
         let mut yaml_contents = String::new();
-        let mut file =
-            File::open(package_yml_absolute_path).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to open the YAML file at {:?} with error: {:?}",
-                    package_yml_absolute_path, e
-                )
-            });
 
-        file.read_to_string(&mut yaml_contents).unwrap_or_else(|e| {
-            panic!(
-                "Failed to read the YAML file at {:?} with error: {:?}",
-                package_yml_absolute_path, e
-            )
-        });
+        let mut file = File::open(package_yml_absolute_path).map_err(|e| {
+            anyhow::Error::new(e).context(format!(
+                "Failed to open the YAML file at {:?}",
+                package_yml_absolute_path
+            ))
+        })?;
+
+        file.read_to_string(&mut yaml_contents).map_err(|e| {
+            anyhow::Error::new(e).context(format!(
+                "Failed to read the YAML file at {:?}",
+                package_yml_absolute_path
+            ))
+        })?;
 
         let absolute_path_to_package_todo = package_yml_absolute_path
             .parent()
@@ -194,27 +195,25 @@ impl Pack {
         {
             let mut package_todo_contents = String::new();
             let mut file = File::open(&absolute_path_to_package_todo)
-                .expect("Failed to open the package_todo.yml file");
+                .context("Failed to open the package_todo.yml file")?;
             file.read_to_string(&mut package_todo_contents)
-                .expect("Could not read the package_todo.yml file");
-            serde_yaml::from_str(&package_todo_contents).unwrap_or_else(|e| {
-
-                panic!(
-                    "Failed to deserialize the package_todo.yml file at {} with error {}",
-                    absolute_path_to_package_todo.display(),
-                    e
+                .context("Could not read the package_todo.yml file")?;
+            serde_yaml::from_str(&package_todo_contents).with_context(|| {
+                format!(
+                    "Failed to deserialize the package_todo.yml file at {}",
+                    absolute_path_to_package_todo.display()
                 )
-            })
+            })?
         } else {
             PackageTodo::default()
         };
 
-        Pack::from_contents(
+        Ok(Pack::from_contents(
             package_yml_absolute_path,
             absolute_root,
             &yaml_contents,
             package_todo,
-        )
+        ))
     }
 
     pub fn from_contents(
@@ -613,8 +612,9 @@ owner: Foobar
         let root = test_util::get_absolute_root(test_util::SIMPLE_APP);
         let pack =
             Pack::from_path(root.join("package.yml").as_path(), root.as_path());
+        assert!(pack.is_ok());
 
-        let actual = pack.default_autoload_roots();
+        let actual = pack.unwrap().default_autoload_roots();
         let expected =
             vec![root.join("app/company_data"), root.join("app/services")];
         assert_eq!(expected, actual)
