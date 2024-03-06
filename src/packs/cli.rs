@@ -113,6 +113,12 @@ enum Command {
     )]
     ListPacks,
 
+    #[clap(about = "List packs that depend on a pack")]
+    ListPackDependents {
+        /// The pack that is depended on
+        pack: String,
+    },
+
     #[clap(
         about = "List analyzed files based on configuration in packwerk.yml (for debugging purposes)"
     )]
@@ -184,6 +190,9 @@ pub fn run() -> anyhow::Result<()> {
         Command::ListPacks => {
             packs::list(configuration);
             Ok(())
+        }
+        Command::ListPackDependents { pack } => {
+            packs::list_dependents(&configuration, pack)
         }
         Command::AddDependency { from, to } => {
             packs::add_dependency(&configuration, from, to)

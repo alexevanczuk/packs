@@ -7,6 +7,7 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
+pub(crate) mod dependents;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
@@ -306,6 +307,16 @@ fn expose_monkey_patches(
             gemdir,
         )?
     );
+    Ok(())
+}
+
+fn list_dependents(
+    configuration: &Configuration,
+    pack_name: String,
+) -> anyhow::Result<()> {
+    println!("listing dependents");
+    let dependents = dependents::find_dependents(configuration, &pack_name)?;
+    println!("{}", dependents);
     Ok(())
 }
 
