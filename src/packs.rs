@@ -314,9 +314,38 @@ fn list_dependents(
     configuration: &Configuration,
     pack_name: String,
 ) -> anyhow::Result<()> {
-    println!("listing dependents");
+    println!("Pack dependents for {}\n", pack_name);
     let dependents = dependents::find_dependents(configuration, &pack_name)?;
-    println!("{}", dependents);
+    println!(
+        "Public dependents ({}):",
+        dependents.public_dependents.len()
+    );
+    if dependents.public_dependents.is_empty() {
+        println!("- None");
+    } else {
+        for dependent in dependents.public_dependents {
+            println!("- {}", dependent);
+        }
+    }
+    println!(
+        "\nDependents with violations ({}):",
+        dependents.violation_dependents.len()
+    );
+    if dependents.violation_dependents.is_empty() {
+        println!("- None");
+    } else {
+        let mut dependent_packs_with_violations =
+            dependents.violation_dependents.keys().collect::<Vec<_>>();
+        dependent_packs_with_violations.sort();
+        for dependent in dependent_packs_with_violations {
+            println!("- {}", dependent);
+            for (violation_type, count) in
+                &dependents.violation_dependents[dependent]
+            {
+                println!("  - {}: {}", violation_type, count);
+            }
+        }
+    }
     Ok(())
 }
 

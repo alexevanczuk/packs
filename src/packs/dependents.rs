@@ -1,7 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use super::Configuration;
-use std::fmt::Display;
 
 type PackName = String;
 type ViolationType = String;
@@ -9,15 +8,9 @@ type ViolationCount = usize;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Dependents {
-    public_dependents: HashSet<PackName>,
-    violation_dependents:
+    pub public_dependents: Vec<PackName>,
+    pub violation_dependents:
         HashMap<PackName, HashMap<ViolationType, ViolationCount>>,
-}
-
-impl Display for Dependents {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Dependents")
-    }
 }
 
 pub fn find_dependents(
@@ -26,17 +19,14 @@ pub fn find_dependents(
 ) -> anyhow::Result<Dependents> {
     let pack = configuration.pack_set.for_pack(pack_name)?;
 
-    let public_dependents: HashSet<PackName> = configuration
+    let mut public_dependents: Vec<PackName> = configuration
         .pack_set
         .packs
         .iter()
-        .filter(|p| {
-            dbg!(&p.name);
-            dbg!(&p.dependencies);
-            p.name != pack.name && p.dependencies.contains(&pack.name)
-        })
+        .filter(|p| p.name != pack.name && p.dependencies.contains(&pack.name))
         .map(|p| p.name.clone())
         .collect();
+    public_dependents.sort();
 
     let mut violation_dependents: HashMap<
         PackName,
@@ -79,7 +69,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn find_dependents_with_violations() {
+    fn find_public_dependents() {
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/simple_app")
                 .canonicalize()
@@ -90,12 +80,14 @@ mod tests {
 
         let dependents = find_dependents(&configuration, "packs/baz").unwrap();
         assert_eq!(dependents.public_dependents.len(), 1);
-        assert!(dependents.public_dependents.contains("packs/foo"));
+        assert!(dependents
+            .public_dependents
+            .contains(&String::from("packs/foo")));
         assert_eq!(dependents.violation_dependents.len(), 0);
     }
 
     #[test]
-    fn find_dependents_without_violations() {
+    fn find_dependents_with_violations() {
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/contains_package_todo")
                 .canonicalize()
