@@ -285,8 +285,7 @@ pub(crate) fn list_definitions(
         for definition in definitions {
             let relative_path = definition
                 .absolute_path_of_definition
-                .strip_prefix(&configuration.absolute_root)
-                .unwrap();
+                .strip_prefix(&configuration.absolute_root)?;
 
             println!("{:?} is defined at {:?}", name, relative_path);
         }

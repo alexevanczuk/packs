@@ -172,7 +172,7 @@ impl<'a> CheckAllBuilder<'a> {
                 .cloned()
                 .collect(),
             stale_violations: self
-                .build_stale_violations(recorded_violations)
+                .build_stale_violations(recorded_violations)?
                 .into_iter()
                 .cloned()
                 .collect(),
@@ -205,25 +205,37 @@ impl<'a> CheckAllBuilder<'a> {
     fn build_stale_violations(
         &mut self,
         recorded_violations: &'a HashSet<ViolationIdentifier>,
-    ) -> Vec<&'a ViolationIdentifier> {
+    ) -> anyhow::Result<Vec<&'a ViolationIdentifier>> {
         let found_violation_identifiers: HashSet<&ViolationIdentifier> = self
             .found_violations
             .violations
             .par_iter()
             .map(|v| &v.identifier)
             .collect();
-
         let relative_files = self
             .found_violations
             .absolute_paths
             .iter()
             .map(|p| {
                 p.strip_prefix(&self.configuration.absolute_root)
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
+                    .map_err(|e| {
+                        anyhow::Error::new(e).context(format!(
+                            "Failed to strip prefix from {:?}",
+                            &self.configuration.absolute_root
+                        ))
+                    })
+                    .and_then(|path| {
+                        path.to_str().ok_or_else(|| {
+                            anyhow::Error::new(std::fmt::Error).context(
+                                format!(
+                                    "Path ({:?}) cannot be converted to &str",
+                                    &path
+                                ),
+                            )
+                        })
+                    })
             })
-            .collect::<HashSet<&str>>();
+            .collect::<anyhow::Result<HashSet<&str>>>()?;
 
         let stale_violations = recorded_violations
             .par_iter()
@@ -232,7 +244,7 @@ impl<'a> CheckAllBuilder<'a> {
                     && !found_violation_identifiers.contains(v_identifier)
             })
             .collect::<Vec<&ViolationIdentifier>>();
-        stale_violations
+        Ok(stale_violations)
     }
 
     fn build_strict_mode_violations(
