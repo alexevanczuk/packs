@@ -208,6 +208,10 @@ mod tests {
     use std::collections::{HashMap, HashSet};
     use std::path::PathBuf;
 
+    use crate::packs::checker::common_test::tests::{
+        build_expected_violation, default_defining_pack,
+        default_referencing_pack, test_check, TestChecker,
+    };
     use crate::packs::{
         configuration,
         pack::{CheckerSetting, Pack},
@@ -216,178 +220,106 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn referencing_and_defining_pack_are_identical() {
-        let checker = Checker {
-            layers: Layers::default(),
-        };
-
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            enforce_visibility: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
-    }
-
-    #[test]
-    fn reference_is_an_architecture_violation() {
-        let checker = Checker {
+    fn checker_with_layers() -> Checker {
+        Checker {
             layers: Layers {
                 layers: vec![
                     String::from("product"),
                     String::from("utilities"),
                 ],
             },
-        };
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            layer: Some(String::from("product")),
-            ..Pack::default()
-        };
-        let referencing_pack = Pack {
-            name: String::from("packs/bar"),
-            layer: Some(String::from("utilities")),
-            enforce_architecture: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/bar/app/services/bar.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/foo/app/services/foo.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        let expected_violation = Violation {
-            message: String::from("packs/bar/app/services/bar.rb:3:1\nArchitecture violation: `::Foo` belongs to `packs/foo` (whose layer is `product`) cannot be accessed from `packs/bar` (whose layer is `utilities`)"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("architecture"),
-                file: String::from("packs/bar/app/services/bar.rb"),
-                constant_name: String::from("::Foo"),
-                referencing_pack_name: String::from("packs/bar"),
-                defining_pack_name: String::from("packs/foo"),
-            },
-        };
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        }
     }
 
     #[test]
-    fn reference_is_not_an_architecture_violation() {
-        let checker = Checker {
-            layers: Layers {
-                layers: vec![
-                    String::from("product"),
-                    String::from("utilities"),
-                ],
+    fn referencing_and_defining_pack_are_identical() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/bar".to_owned(),
+                enforce_architecture: Some(CheckerSetting::True),
+                layer: Some("product".to_string()),
+                ..default_referencing_pack()
             },
+            ..Default::default()
         };
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            layer: Some(String::from("utilities")),
-            ..Pack::default()
+        test_check(&checker_with_layers(), &mut test_checker)
+    }
+    #[test]
+    fn reference_is_an_architecture_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+               layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_architecture: Some(CheckerSetting::True),
+                layer: Some("utilities".to_string()),
+                ..default_referencing_pack()
+            },
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
+                "architecture".to_string())),
+            ..Default::default()
         };
-        let referencing_pack = Pack {
-            name: String::from("packs/bar"),
-            layer: Some(String::from("product")),
-            enforce_architecture: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
+        test_check(&checker_with_layers(), &mut test_checker)
+    }
 
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/bar/app/services/bar.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/foo/app/services/foo.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
+    #[test]
+    fn reference_is_an_architecture_violation_but_not_enforced(
+    ) -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_architecture: Some(CheckerSetting::False),
+                layer: Some("utilities".to_string()),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
         };
+        test_check(&checker_with_layers(), &mut test_checker)
+    }
 
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
+    #[test]
+    fn reference_is_not_an_architecture_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                layer: Some("utilities".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_architecture: Some(CheckerSetting::False),
+                layer: Some("product".to_string()),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
         };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
+        test_check(&checker_with_layers(), &mut test_checker)
     }
 
     struct ArchitectureTestCase {
