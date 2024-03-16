@@ -215,7 +215,7 @@ mod tests {
     use crate::packs::{
         configuration,
         pack::{CheckerSetting, Pack},
-        PackSet, SourceLocation,
+        PackSet,
     };
 
     use super::*;
@@ -239,19 +239,23 @@ mod tests {
             referenced_constant_name: Some(String::from("::Bar")),
             defining_pack: Some(Pack {
                 name: "packs/bar".to_owned(),
-                layer: Some("product".to_string()),
+               layer: Some("product".to_string()),
                 ..default_defining_pack()
             }),
             referencing_pack: Pack {
-                name: "packs/bar".to_owned(),
+                name: "packs/foo".to_owned(),
                 enforce_architecture: Some(CheckerSetting::True),
-                layer: Some("product".to_string()),
+                layer: Some("utilities".to_string()),
                 ..default_referencing_pack()
             },
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
+                "architecture".to_string())),
             ..Default::default()
         };
         test_check(&checker_with_layers(), &mut test_checker)
     }
+
     #[test]
     fn reference_is_an_architecture_violation() -> anyhow::Result<()> {
         let mut test_checker = TestChecker {
