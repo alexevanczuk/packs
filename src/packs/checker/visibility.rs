@@ -94,7 +94,12 @@ impl CheckerInterface for Checker {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
+
+    use self::packs::checker::common_test::tests::{
+        build_expected_violation, default_defining_pack,
+        default_referencing_pack, test_check, TestChecker,
+    };
 
     use super::*;
     use crate::packs::{
@@ -103,162 +108,69 @@ mod tests {
     };
 
     #[test]
-    fn referencing_and_defining_pack_are_identical() {
-        let checker = Checker {};
-
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            enforce_visibility: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
-    }
-
-    #[test]
-    fn reference_is_a_visibility_violation() {
-        let checker = Checker {};
-
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            enforce_visibility: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
-        let referencing_pack = Pack {
-            name: String::from("packs/bar"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/bar/app/services/bar.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/foo/app/services/foo.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let expected_violation = Violation {
-            message: String::from("packs/bar/app/services/bar.rb:3:1\nVisibility violation: `::Foo` belongs to `packs/foo`, which is not visible to `packs/bar`"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("visibility"),
-                file: String::from("packs/bar/app/services/bar.rb"),
-                constant_name: String::from("::Foo"),
-                referencing_pack_name: String::from("packs/bar"),
-                defining_pack_name: String::from("packs/foo"),
+    fn referencing_and_defining_pack_are_identical() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_visibility: Some(CheckerSetting::True),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/bar".to_owned(),
+                relative_path: PathBuf::from("packs/bar"),
+                ..default_referencing_pack()
             },
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn reference_is_not_a_visibility_violation() {
-        let checker = Checker {};
+    fn test_with_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_visibility: Some(CheckerSetting::True),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack{
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()},
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
+                "visibility".to_string())),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
 
+    #[test]
+    fn reference_is_not_a_visibility_violation() -> anyhow::Result<()> {
         let mut visible_to = HashSet::new();
-        visible_to.insert(String::from("packs/bar"));
+        visible_to.insert(String::from("packs/foo"));
 
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            visible_to: Some(visible_to),
-            enforce_visibility: Some(CheckerSetting::True),
-            ..Pack::default()
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_visibility: Some(CheckerSetting::True),
+                visible_to: Some(visible_to),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
         };
-        let referencing_pack = Pack {
-            name: String::from("packs/bar"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/bar/app/services/bar.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/foo/app/services/foo.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap());
+        test_check(&Checker {}, &mut test_checker)
     }
 }
