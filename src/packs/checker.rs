@@ -2,6 +2,7 @@
 pub(crate) mod architecture;
 mod dependency;
 
+mod common_test;
 mod folder_visibility;
 mod privacy;
 pub(crate) mod reference;

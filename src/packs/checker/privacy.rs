@@ -47,7 +47,6 @@ impl CheckerInterface for Checker {
         // and probably find a better way to check if the constant is public
 
         let public_folder = &defining_pack.public_folder();
-
         let is_public = relative_defining_file
             .as_ref()
             .unwrap()
@@ -74,7 +73,7 @@ impl CheckerInterface for Checker {
                         &format!("{}::", private_constant);
                     reference.constant_name.starts_with(namespaced_constant)
                 });
-
+            dbg!(constant_is_private, constant_is_in_private_namespace);
             if !constant_is_private && !constant_is_in_private_namespace {
                 return Ok(None);
             }
@@ -133,7 +132,13 @@ impl CheckerInterface for Checker {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
+
+    use self::packs::checker::common_test::tests::{
+        build_expected_violation, build_expected_violation_with_constant,
+        default_defining_pack, default_referencing_pack, test_check,
+        TestChecker,
+    };
 
     use super::*;
     use crate::packs::{
@@ -142,559 +147,363 @@ mod tests {
     };
 
     #[test]
-    fn referencing_and_defining_pack_are_identical() {
-        let checker = Checker {};
-
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            enforce_privacy: Some(CheckerSetting::True),
-            ..Pack::default()
+    fn test_reference_and_defining_packs_are_identical() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/foo".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                ignored_private_constants: HashSet::from([String::from(
+                    "::Bar",
+                )]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_check() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
+    fn test_with_ignored_private_constants() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                ignored_private_constants: HashSet::from([String::from(
+                    "::Bar",
+                )]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
+        test_check(&Checker {}, &mut test_checker)
+    }
 
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
+    #[test]
+    fn test_with_privacy_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                ignored_private_constants: HashSet::from([String::from("::Taco")]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            expected_violation: Some(build_expected_violation(
+                String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
+                String::from("privacy"),
             )),
-            source_location: SourceLocation { line: 3, column: 1 },
+            ..Default::default()
         };
+        test_check(&Checker {}, &mut test_checker)
+    }
 
-        let expected_violation = Violation {
-            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("privacy"),
-                file: String::from("packs/foo/app/services/foo.rb"),
+    #[test]
+    fn test_without_privacy_enforcement() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::False),
+                ignored_private_constants: HashSet::from([String::from(
+                    "::Taco",
+                )]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_public_constant() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
                 constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
                 referencing_pack_name: String::from("packs/foo"),
-                defining_pack_name: String::from("packs/bar"),
-            },
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/public/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                public_folder: Some(PathBuf::from("packs/bar/app/public")),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_ignored_private_constants() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/foo"),
-            enforce_privacy: Some(CheckerSetting::True),
-            ignored_private_constants: HashSet::from([String::from("::Foo")]),
-            ..Pack::default()
-        };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/bar"),
-            ..Pack::default()
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/bar/app/services/bar.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/foo/app/services/foo.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
-    }
-
-    #[test]
-    fn test_public_folder_detection_works() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
-        };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/public/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let expected_violation = Violation {
-            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("privacy"),
-                file: String::from("packs/foo/app/services/foo.rb"),
+    fn test_public_folder_detection() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
                 constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
                 referencing_pack_name: String::from("packs/foo"),
-                defining_pack_name: String::from("packs/bar"),
-            },
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/public/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            expected_violation: None,
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_custom_public_folder_detection_works() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            public_folder: Some(PathBuf::from("packs/bar/app/api")),
-            enforce_privacy: Some(CheckerSetting::True),
-            ..Pack::default()
-        };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/api/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
-    }
-
-    #[test]
-    fn test_private_constants_includes_referenced_constant() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")]
-                .into_iter()
-                .collect(),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
-        };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/api/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let expected_violation = Violation {
-            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("privacy"),
-                file: String::from("packs/foo/app/services/foo.rb"),
+    fn test_custom_public_folder_detection() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
                 constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
                 referencing_pack_name: String::from("packs/foo"),
-                defining_pack_name: String::from("packs/bar"),
-            },
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/api/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                public_folder: Some(PathBuf::from("packs/bar/app/api")),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            expected_violation: None,
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_private_constants_includes_parent_of_referenced_constant() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")]
-                .into_iter()
-                .collect(),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
+    fn test_privacy_constants_exclude_referenced_constant() -> anyhow::Result<()>
+    {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
+                constant_name: String::from("::Different"),
+                defining_pack_name: Some(String::from("packs/bar")),
+                referencing_pack_name: String::from("packs/foo"),
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/services/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                private_constants: vec![String::from("::Bar")]
+                    .into_iter()
+                    .collect(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            expected_violation: None,
+            ..Default::default()
         };
+        test_check(&Checker {}, &mut test_checker)
+    }
 
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar::BarChild"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/api/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let expected_violation = Violation {
-            message: String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar::BarChild` is private to `packs/bar`, but referenced from `packs/foo`"),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("privacy"),
-                file: String::from("packs/foo/app/services/foo.rb"),
+    #[test]
+    fn test_privacy_constants_includes_parent_of_referenced_constant(
+    ) -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
                 constant_name: String::from("::Bar::BarChild"),
+                defining_pack_name: Some(String::from("packs/bar")),
                 referencing_pack_name: String::from("packs/foo"),
-                defining_pack_name: String::from("packs/bar"),
-            },
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/services/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                private_constants: vec![String::from("::Bar")]
+                    .into_iter()
+                    .collect(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            expected_violation: Some(build_expected_violation_with_constant(
+                String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar::BarChild` is private to `packs/bar`, but referenced from `packs/foo`"),
+                String::from("privacy"),
+                String::from("::Bar::BarChild")
+            )),
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_private_constants_match_full_namespace() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")]
-                .into_iter()
-                .collect(),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
+    fn test_privacy_constants_match_full_namespace() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
+                constant_name: String::from("::Barbie::BarChild"),
+                defining_pack_name: Some(String::from("packs/bar")),
+                referencing_pack_name: String::from("packs/foo"),
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/api/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                private_constants: vec![String::from("::Bar")]
+                    .into_iter()
+                    .collect(),
+                public_folder: Some(PathBuf::from("packs/bar/app/public")),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Barbie::BarChild"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/api/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap());
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_private_constants_does_not_include_referenced_constant() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            private_constants: vec![String::from("::DifferentConstant")]
-                .into_iter()
-                .collect(),
-            enforce_privacy: Some(CheckerSetting::True),
-            ..Pack::default()
+    fn test_private_constants_does_not_include_referenced_constant(
+    ) -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
+                constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
+                referencing_pack_name: String::from("packs/foo"),
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/api/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                private_constants: vec![String::from("::DifferentConstant")]
+                    .into_iter()
+                    .collect(),
+                public_folder: Some(PathBuf::from("packs/bar/app/public")),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
-
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/api/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap());
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_private_constants_does_include_referenced_public_constant() {
-        let checker = Checker {};
-        let defining_pack = Pack {
-            name: String::from("packs/bar"),
-            private_constants: vec![String::from("::Bar")]
-                .into_iter()
-                .collect(),
-            enforce_privacy: Some(CheckerSetting::True),
-            public_folder: Some(PathBuf::from("packs/bar/app/public")),
-            ..Pack::default()
+    fn test_private_constants_does_include_referenced_public_constant(
+    ) -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
+                constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
+                referencing_pack_name: String::from("packs/foo"),
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/public/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                relative_path: PathBuf::from("packs/bar"),
+                private_constants: vec![String::from("::Bar")]
+                    .into_iter()
+                    .collect(),
+                public_folder: Some(PathBuf::from("packs/bar/app/public")),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
+        test_check(&Checker {}, &mut test_checker)
+    }
 
-        let referencing_pack = Pack {
-            name: String::from("packs/foo"),
-            ..Pack::default()
+    #[test]
+    fn test_defining_pack_not_found() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: Some(Reference {
+                constant_name: String::from("::Bar"),
+                defining_pack_name: Some(String::from("packs/bar")),
+                referencing_pack_name: String::from("packs/foo"),
+                relative_referencing_file: String::from(
+                    "packs/foo/app/services/foo.rb",
+                ),
+                relative_defining_file: Some(String::from(
+                    "packs/bar/app/public/bar.rb",
+                )),
+                source_location: SourceLocation { line: 3, column: 1 },
+            }),
+            configuration: None,
+            defining_pack: None,
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
         };
-
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let reference = Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(defining_pack.name.to_owned()),
-            referencing_pack_name: referencing_pack.name.to_owned(),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/public/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    defining_pack,
-                    referencing_pack,
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            ..Configuration::default()
-        };
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
+        let result = test_check(&Checker {}, &mut test_checker);
+        assert!(result.is_err());
+        Ok(())
     }
 }
