@@ -7,7 +7,7 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
-pub(crate) mod dependents;
+pub(crate) mod dependencies;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
@@ -310,38 +310,31 @@ fn expose_monkey_patches(
     Ok(())
 }
 
-fn list_dependents(
+fn list_dependencies(
     configuration: &Configuration,
     pack_name: String,
 ) -> anyhow::Result<()> {
-    println!("Pack dependents for {}\n", pack_name);
-    let dependents = dependents::find_dependents(configuration, &pack_name)?;
-    println!(
-        "Public dependents ({}):",
-        dependents.public_dependents.len()
-    );
-    if dependents.public_dependents.is_empty() {
+    println!("Pack dependencies for {}\n", pack_name);
+    let dependencies =
+        dependencies::find_dependencies(configuration, &pack_name)?;
+    println!("Explicit ({}):", dependencies.explicit.len());
+    if dependencies.explicit.is_empty() {
         println!("- None");
     } else {
-        for dependent in dependents.public_dependents {
-            println!("- {}", dependent);
+        for dependency in dependencies.explicit {
+            println!("- {}", dependency);
         }
     }
-    println!(
-        "\nDependents with violations ({}):",
-        dependents.violation_dependents.len()
-    );
-    if dependents.violation_dependents.is_empty() {
+    println!("\nImplicit (violations) ({}):", dependencies.implicit.len());
+    if dependencies.implicit.is_empty() {
         println!("- None");
     } else {
         let mut dependent_packs_with_violations =
-            dependents.violation_dependents.keys().collect::<Vec<_>>();
+            dependencies.implicit.keys().collect::<Vec<_>>();
         dependent_packs_with_violations.sort();
         for dependent in dependent_packs_with_violations {
             println!("- {}", dependent);
-            for (violation_type, count) in
-                &dependents.violation_dependents[dependent]
-            {
+            for (violation_type, count) in &dependencies.implicit[dependent] {
                 println!("  - {}: {}", violation_type, count);
             }
         }

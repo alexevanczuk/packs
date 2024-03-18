@@ -114,7 +114,7 @@ enum Command {
     ListPacks,
 
     #[clap(about = "List packs that depend on a pack")]
-    ListPackDependents {
+    ListPackDependencies {
         /// The pack that is depended on
         pack: String,
     },
@@ -191,8 +191,8 @@ pub fn run() -> anyhow::Result<()> {
             packs::list(configuration);
             Ok(())
         }
-        Command::ListPackDependents { pack } => {
-            packs::list_dependents(&configuration, pack)
+        Command::ListPackDependencies { pack } => {
+            packs::list_dependencies(&configuration, pack)
         }
         Command::AddDependency { from, to } => {
             packs::add_dependency(&configuration, from, to)

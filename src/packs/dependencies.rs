@@ -7,28 +7,27 @@ type ViolationType = String;
 type ViolationCount = usize;
 
 #[derive(Debug, Default, PartialEq, Eq)]
-pub struct Dependents {
-    pub public_dependents: Vec<PackName>,
-    pub violation_dependents:
-        HashMap<PackName, HashMap<ViolationType, ViolationCount>>,
+pub struct Dependencies {
+    pub explicit: Vec<PackName>,
+    pub implicit: HashMap<PackName, HashMap<ViolationType, ViolationCount>>,
 }
 
-pub fn find_dependents(
+pub fn find_dependencies(
     configuration: &Configuration,
     pack_name: &str,
-) -> anyhow::Result<Dependents> {
+) -> anyhow::Result<Dependencies> {
     let pack = configuration.pack_set.for_pack(pack_name)?;
 
-    let mut public_dependents: Vec<PackName> = configuration
+    let mut public_dependencies: Vec<PackName> = configuration
         .pack_set
         .packs
         .iter()
         .filter(|p| p.name != pack.name && p.dependencies.contains(&pack.name))
         .map(|p| p.name.clone())
         .collect();
-    public_dependents.sort();
+    public_dependencies.sort();
 
-    let mut violation_dependents: HashMap<
+    let mut implicit_dependencies: HashMap<
         PackName,
         HashMap<ViolationType, ViolationCount>,
     > = HashMap::new();
@@ -40,7 +39,7 @@ pub fn find_dependents(
             {
                 if violation_pack_name == &pack.name {
                     for violation_group in violation_groups.values() {
-                        let entry = violation_dependents
+                        let entry = implicit_dependencies
                             .entry(current_pack.name.clone())
                             .or_default();
                         for violation_type in &violation_group.violation_types {
@@ -55,9 +54,9 @@ pub fn find_dependents(
         }
     }
 
-    Ok(Dependents {
-        public_dependents,
-        violation_dependents,
+    Ok(Dependencies {
+        explicit: public_dependencies,
+        implicit: implicit_dependencies,
     })
 }
 
@@ -69,7 +68,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn find_public_dependents() {
+    fn find_explicit_dependencies() {
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/simple_app")
                 .canonicalize()
@@ -78,16 +77,15 @@ mod tests {
         )
         .unwrap();
 
-        let dependents = find_dependents(&configuration, "packs/baz").unwrap();
-        assert_eq!(dependents.public_dependents.len(), 1);
-        assert!(dependents
-            .public_dependents
-            .contains(&String::from("packs/foo")));
-        assert_eq!(dependents.violation_dependents.len(), 0);
+        let dependencies =
+            find_dependencies(&configuration, "packs/baz").unwrap();
+        assert_eq!(dependencies.explicit.len(), 1);
+        assert!(dependencies.explicit.contains(&String::from("packs/foo")));
+        assert_eq!(dependencies.implicit.len(), 0);
     }
 
     #[test]
-    fn find_dependents_with_violations() {
+    fn find_implicit_dependencies() {
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/contains_package_todo")
                 .canonicalize()
@@ -96,20 +94,14 @@ mod tests {
         )
         .unwrap();
 
-        let dependents = find_dependents(&configuration, "packs/bar").unwrap();
-        assert_eq!(dependents.public_dependents.len(), 0);
-        assert_eq!(dependents.violation_dependents.len(), 1);
+        let dependencies =
+            find_dependencies(&configuration, "packs/bar").unwrap();
+        assert_eq!(dependencies.explicit.len(), 0);
+        assert_eq!(dependencies.implicit.len(), 1);
+        assert_eq!(dependencies.implicit.get("packs/foo").unwrap().len(), 1);
         assert_eq!(
-            dependents
-                .violation_dependents
-                .get("packs/foo")
-                .unwrap()
-                .len(),
-            1
-        );
-        assert_eq!(
-            dependents
-                .violation_dependents
+            dependencies
+                .implicit
                 .get("packs/foo")
                 .unwrap()
                 .get("dependency")
