@@ -198,92 +198,84 @@ impl CheckerInterface for Checker {
 
 #[cfg(test)]
 mod tests {
+    use self::packs::{
+        checker::common_test::tests::{
+            build_expected_violation, default_defining_pack,
+            default_referencing_pack, test_check, TestChecker,
+        },
+        pack::CheckerSetting,
+    };
+
     use super::*;
     use crate::packs::*;
     use pretty_assertions::assert_eq;
-    use std::path::PathBuf;
+    use std::{collections::HashSet, path::PathBuf};
 
     #[test]
-    fn referencing_and_defining_pack_are_identical() {
-        let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        )
-        .unwrap();
-        let reference = Reference {
-            constant_name: String::from("::Foo"),
-            defining_pack_name: Some(String::from("packs/foo")),
-            referencing_pack_name: String::from("packs/foo"),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        };
-        assert_eq!(None, checker.check(&reference, &configuration).unwrap())
-    }
-
-    #[test]
-    fn test_check() {
-        let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/simple_app")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        )
-        .unwrap();
-        let reference = build_foo_reference_bar_reference();
-
-        let expected_violation = Violation {
-            message: String::from("packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."),
-            identifier: ViolationIdentifier {
-                violation_type: String::from("dependency"),
-                file: String::from("packs/foo/app/services/foo.rb"),
-                constant_name: String::from("::Bar"),
-                referencing_pack_name: String::from("packs/foo"),
-                defining_pack_name: String::from("packs/bar"),
+    fn test_reference_and_defining_packs_are_identical() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/bar".to_owned(),
+                relative_path: PathBuf::from("packs/bar"),
+                enforce_dependencies: Some(CheckerSetting::True),
+                ..default_referencing_pack()
             },
+            ..Default::default()
         };
-        assert_eq!(
-            expected_violation,
-            checker.check(&reference, &configuration).unwrap().unwrap()
-        )
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
-    fn test_ignored_dependency() {
-        let checker = Checker {};
-        let configuration = configuration::get(
-            PathBuf::from("tests/fixtures/app_with_ignored_dependency")
-                .canonicalize()
-                .expect("Could not canonicalize path")
-                .as_path(),
-        )
-        .unwrap();
-        let reference = build_foo_reference_bar_reference();
-
-        assert_eq!(checker.check(&reference, &configuration).unwrap(), None)
+    fn test_with_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack{
+                relative_path: PathBuf::from("packs/foo"),
+                enforce_dependencies: Some(CheckerSetting::True),
+                ..default_referencing_pack()},
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
+                "dependency".to_string())),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
     }
 
-    fn build_foo_reference_bar_reference() -> Reference {
-        Reference {
-            constant_name: String::from("::Bar"),
-            defining_pack_name: Some(String::from("packs/bar")),
-            referencing_pack_name: String::from("packs/foo"),
-            relative_referencing_file: String::from(
-                "packs/foo/app/services/foo.rb",
-            ),
-            relative_defining_file: Some(String::from(
-                "packs/bar/app/services/bar.rb",
-            )),
-            source_location: SourceLocation { line: 3, column: 1 },
-        }
+    #[test]
+    fn test_ignored_dependency() -> anyhow::Result<()> {
+        let mut ignored_dependencies = HashSet::new();
+        ignored_dependencies.insert(String::from("packs/bar"));
+
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                relative_path: PathBuf::from("packs/foo"),
+                ignored_dependencies: ignored_dependencies,
+                enforce_dependencies: Some(CheckerSetting::True),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
