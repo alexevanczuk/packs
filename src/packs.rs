@@ -7,6 +7,7 @@ pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
+pub(crate) mod dependencies;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
@@ -306,6 +307,38 @@ fn expose_monkey_patches(
             gemdir,
         )?
     );
+    Ok(())
+}
+
+fn list_dependencies(
+    configuration: &Configuration,
+    pack_name: String,
+) -> anyhow::Result<()> {
+    println!("Pack dependencies for {}\n", pack_name);
+    let dependencies =
+        dependencies::find_dependencies(configuration, &pack_name)?;
+    println!("Explicit ({}):", dependencies.explicit.len());
+    if dependencies.explicit.is_empty() {
+        println!("- None");
+    } else {
+        for dependency in dependencies.explicit {
+            println!("- {}", dependency);
+        }
+    }
+    println!("\nImplicit (violations) ({}):", dependencies.implicit.len());
+    if dependencies.implicit.is_empty() {
+        println!("- None");
+    } else {
+        let mut dependent_packs_with_violations =
+            dependencies.implicit.keys().collect::<Vec<_>>();
+        dependent_packs_with_violations.sort();
+        for dependent in dependent_packs_with_violations {
+            println!("- {}", dependent);
+            for (violation_type, count) in &dependencies.implicit[dependent] {
+                println!("  - {}: {}", violation_type, count);
+            }
+        }
+    }
     Ok(())
 }
 
