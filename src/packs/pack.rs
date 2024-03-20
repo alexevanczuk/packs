@@ -151,6 +151,7 @@ impl Pack {
                     for file in &violation_group.files {
                         let identifier = ViolationIdentifier {
                             violation_type: violation_type.clone(),
+                            strict: false,
                             file: file.clone(),
                             constant_name: constant_name.clone(),
                             referencing_pack_name: self.name.clone(),

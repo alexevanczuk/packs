@@ -64,6 +64,7 @@ impl CheckerInterface for Checker {
         let file = reference.relative_referencing_file.clone();
         let identifier = ViolationIdentifier {
             violation_type,
+            strict: defining_pack.enforce_visibility().is_strict(),
             file,
             constant_name: reference.constant_name.clone(),
             referencing_pack_name: referencing_pack_name.clone(),
@@ -144,7 +145,29 @@ mod tests {
                 ..default_referencing_pack()},
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
-                "visibility".to_string())),
+                "visibility".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_strict_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_visibility: Some(CheckerSetting::Strict),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack{
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()},
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
+                "visibility".to_string(), true)),
             ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
