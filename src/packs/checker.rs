@@ -120,12 +120,7 @@ impl CheckAllResult {
 
         if !self.strict_mode_violations.is_empty() {
             for v in self.strict_mode_violations.iter() {
-                let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
-                                        v.referencing_pack_name,
-                                        v.violation_type,
-                                        v.defining_pack_name,
-                                        v.violation_type
-            );
+                let error_message = build_strict_violation_message(v);
                 writeln!(f, "{}", error_message)?;
             }
         }
@@ -297,6 +292,16 @@ fn validate(configuration: &Configuration) -> Vec<String> {
     validation_errors
 }
 
+pub(crate) fn build_strict_violation_message(
+    violation_identifier: &ViolationIdentifier,
+) -> String {
+    format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
+    violation_identifier.referencing_pack_name,
+    violation_identifier.violation_type,
+    violation_identifier.defining_pack_name,
+    violation_identifier.violation_type,)
+}
+
 pub(crate) fn validate_all(
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
@@ -323,8 +328,24 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
         &checkers,
     )?;
 
+    let strict_violations = &violations
+        .iter()
+        .filter(|v| v.identifier.strict)
+        .collect::<Vec<&Violation>>();
+    if !strict_violations.is_empty() {
+        for violation in strict_violations {
+            let strict_message =
+                build_strict_violation_message(&violation.identifier);
+            println!("{}", strict_message);
+        }
+        println!(
+            "{} strict mode violation(s) detected. These violations must be fixed for `check` to succeed.",
+            &strict_violations.len()
+        );
+    }
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
+
     Ok(())
 }
 

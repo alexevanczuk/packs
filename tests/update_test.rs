@@ -202,6 +202,10 @@ fn test_update_with_strict_violations() -> anyhow::Result<()> {
         .assert()
         .success()
         .stdout(predicate::str::contains(
+            "packs/foo cannot have privacy violations on packs/bar because strict mode is enabled for privacy violations in the enforcing pack's package.yml file",
+        ))
+        .stdout(predicate::str::contains("1 strict mode violation(s) detected."))
+        .stdout(predicate::str::contains(
             "Successfully updated package_todo.yml files!",
         ));
 
