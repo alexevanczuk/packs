@@ -34,6 +34,7 @@ use super::reference_extractor::get_all_references;
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
+    pub strict: bool,
     pub file: String,
     pub constant_name: String,
     pub referencing_pack_name: String,
@@ -147,7 +148,6 @@ struct CheckAllBuilder<'a> {
 }
 
 struct FoundViolations {
-    checkers: Vec<Box<dyn CheckerInterface + Send + Sync>>,
     absolute_paths: HashSet<PathBuf>,
     violations: HashSet<Violation>,
 }
@@ -178,7 +178,7 @@ impl<'a> CheckAllBuilder<'a> {
                 .cloned()
                 .collect(),
             strict_mode_violations: self
-                .build_strict_mode_violations(recorded_violations)?
+                .build_strict_mode_violations()
                 .into_iter()
                 .cloned()
                 .collect(),
@@ -248,37 +248,13 @@ impl<'a> CheckAllBuilder<'a> {
         Ok(stale_violations)
     }
 
-    fn build_strict_mode_violations(
-        &mut self,
-        recorded_violations: &'a HashSet<ViolationIdentifier>,
-    ) -> anyhow::Result<Vec<&'a ViolationIdentifier>> {
-        let indexed_checkers: HashMap<
-            String,
-            &Box<dyn CheckerInterface + Send + Sync>,
-        > = self
-            .found_violations
-            .checkers
+    fn build_strict_mode_violations(&self) -> Vec<&'a ViolationIdentifier> {
+        self.found_violations
+            .violations
             .iter()
-            .map(|checker| (checker.violation_type(), checker))
-            .collect();
-
-        recorded_violations
-            .iter()
-            .try_fold(vec![], |mut acc, violation| {
-                let checker = indexed_checkers
-                    .get(&violation.violation_type)
-                    .context(format!(
-                    "Checker for violation type {} not found",
-                    violation.violation_type
-                ))?;
-
-                if checker
-                    .is_strict_mode_violation(violation, self.configuration)?
-                {
-                    acc.push(violation);
-                }
-                Ok(acc)
-            })
+            .filter(|v| v.identifier.strict)
+            .map(|v| &v.identifier)
+            .collect()
     }
 }
 
@@ -295,7 +271,6 @@ pub(crate) fn check_all(
     let violations: HashSet<Violation> =
         get_all_violations(configuration, &absolute_paths, &checkers)?;
     let found_violations = FoundViolations {
-        checkers,
         absolute_paths,
         violations,
     };

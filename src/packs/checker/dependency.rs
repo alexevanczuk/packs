@@ -165,6 +165,7 @@ impl CheckerInterface for Checker {
             let file = reference.relative_referencing_file.clone();
             let identifier = ViolationIdentifier {
                 violation_type,
+                strict: referencing_pack.enforce_dependencies().is_strict(),
                 file,
                 constant_name: reference.constant_name.clone(),
                 referencing_pack_name: referencing_pack_name.clone(),
@@ -248,7 +249,29 @@ mod tests {
                 ..default_referencing_pack()},
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
-                "dependency".to_string())),
+                "dependency".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_strict_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack{
+                relative_path: PathBuf::from("packs/foo"),
+                enforce_dependencies: Some(CheckerSetting::Strict),
+                ..default_referencing_pack()},
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
+                "dependency".to_string(), true)),
             ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)

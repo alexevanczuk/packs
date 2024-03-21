@@ -141,6 +141,9 @@ pub fn write_violations_to_disk(
     let mut violations_by_responsible_pack: HashMap<String, Vec<Violation>> =
         HashMap::new();
     for violation in violations {
+        if violation.identifier.strict {
+            continue;
+        }
         let referencing_pack_name =
             violation.identifier.referencing_pack_name.to_owned();
         violations_by_responsible_pack

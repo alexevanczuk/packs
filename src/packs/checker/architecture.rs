@@ -171,6 +171,7 @@ impl CheckerInterface for Checker {
                 let file = reference.relative_referencing_file.clone();
                 let identifier = ViolationIdentifier {
                     violation_type,
+                    strict: referencing_pack.enforce_architecture().is_strict(),
                     file,
                     constant_name: reference.constant_name.clone(),
                     referencing_pack_name: referencing_pack_name.clone(),
@@ -250,7 +251,7 @@ mod tests {
             },
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
-                "architecture".to_string())),
+                "architecture".to_string(), false)),
             ..Default::default()
         };
         test_check(&checker_with_layers(), &mut test_checker)
@@ -275,7 +276,32 @@ mod tests {
             },
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
-                "architecture".to_string())),
+                "architecture".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&checker_with_layers(), &mut test_checker)
+    }
+
+    #[test]
+    fn reference_is_a_strict_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+               layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_architecture: Some(CheckerSetting::Strict),
+                layer: Some("utilities".to_string()),
+                ..default_referencing_pack()
+            },
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
+                "architecture".to_string(), true)),
             ..Default::default()
         };
         test_check(&checker_with_layers(), &mut test_checker)

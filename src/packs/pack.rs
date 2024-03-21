@@ -151,6 +151,7 @@ impl Pack {
                     for file in &violation_group.files {
                         let identifier = ViolationIdentifier {
                             violation_type: violation_type.clone(),
+                            strict: false,
                             file: file.clone(),
                             constant_name: constant_name.clone(),
                             referencing_pack_name: self.name.clone(),
@@ -622,5 +623,40 @@ owner: Foobar
         let expected =
             vec![root.join("app/company_data"), root.join("app/services")];
         assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_all_recorded_violations() -> anyhow::Result<()> {
+        let root = test_util::get_absolute_root(
+            "tests/fixtures/contains_package_todo",
+        );
+        let pack = Pack::from_path(
+            root.join("packs/foo/package.yml").as_path(),
+            root.as_path(),
+        )?;
+
+        let mut actual = pack.all_violations();
+        actual.sort_by(|a, b| a.file.cmp(&b.file));
+
+        let expected = vec![
+            ViolationIdentifier {
+                violation_type: "dependency".to_string(),
+                strict: false,
+                file: "packs/foo/app/services/foo.rb".to_string(),
+                constant_name: "::Bar".to_string(),
+                referencing_pack_name: "packs/foo".to_string(),
+                defining_pack_name: "packs/bar".to_string(),
+            },
+            ViolationIdentifier {
+                violation_type: "dependency".to_string(),
+                strict: false,
+                file: "packs/foo/app/services/other_foo.rb".to_string(),
+                constant_name: "::Bar".to_string(),
+                referencing_pack_name: "packs/foo".to_string(),
+                defining_pack_name: "packs/bar".to_string(),
+            },
+        ];
+        assert_eq!(expected, actual);
+        Ok(())
     }
 }
