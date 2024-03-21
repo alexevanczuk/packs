@@ -28,10 +28,12 @@ pub mod tests {
     pub fn build_expected_violation(
         message: String,
         violation_type: String,
+        strict: bool,
     ) -> Violation {
         build_expected_violation_with_constant(
             message,
             violation_type,
+            strict,
             String::from("::Bar"),
         )
     }
@@ -39,14 +41,16 @@ pub mod tests {
     pub fn build_expected_violation_with_constant(
         message: String,
         violation_type: String,
+        strict: bool,
         constant_name: String,
     ) -> Violation {
         Violation {
             message,
             identifier: ViolationIdentifier {
                 violation_type,
+                strict,
                 file: String::from("packs/foo/app/services/foo.rb"),
-                constant_name: constant_name,
+                constant_name,
                 referencing_pack_name: String::from("packs/foo"),
                 defining_pack_name: String::from("packs/bar"),
             },

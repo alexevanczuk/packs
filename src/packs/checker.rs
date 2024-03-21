@@ -34,6 +34,7 @@ use super::reference_extractor::get_all_references;
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
+    pub strict: bool,
     pub file: String,
     pub constant_name: String,
     pub referencing_pack_name: String,

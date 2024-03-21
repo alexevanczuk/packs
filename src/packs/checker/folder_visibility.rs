@@ -35,6 +35,7 @@ impl CheckerInterface for Checker {
             );
             let identifier = ViolationIdentifier {
                 violation_type: self.violation_type(),
+                strict: defining_pack.enforce_folder_visibility().is_strict(),
                 file: reference.relative_referencing_file.clone(),
                 constant_name: reference.constant_name.clone(),
                 referencing_pack_name: referencing_pack.name.clone(),
@@ -117,7 +118,28 @@ mod tests {
                 ..default_referencing_pack()},
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
-                "folder_visibility".to_string())),
+                "folder_visibility".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+    #[test]
+    fn test_with_strict_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_folder_visibility: Some(CheckerSetting::Strict),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack{
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()},
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
+                "folder_visibility".to_string(), true)),
             ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
