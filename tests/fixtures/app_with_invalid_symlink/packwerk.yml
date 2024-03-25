@@ -1,0 +1,3 @@
+# Whether or not you want the cache enabled (disabled by default)
+cache: false
+
