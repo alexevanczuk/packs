@@ -17,6 +17,9 @@ fn test_check_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
         ))
         .stdout(predicate::str::contains(
             "packs/foo depends on packs/bar but does not use it",
+        ))
+        .stderr(predicate::str::contains(
+           "Error: Found 3 unnecessary dependencies. Run command with `--auto-correct` to remove them.",
         ));
     Ok(())
 }
