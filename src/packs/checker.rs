@@ -13,11 +13,9 @@ use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
 use crate::packs::package_todo;
 use crate::packs::Configuration;
-use crate::packs::PackSet;
 
 use anyhow::bail;
 // External imports
-use anyhow::Context;
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
@@ -40,25 +38,6 @@ pub struct ViolationIdentifier {
     pub referencing_pack_name: String,
     pub defining_pack_name: String,
 }
-
-pub fn get_defining_pack<'a>(
-    violation: &ViolationIdentifier,
-    packset: &'a PackSet,
-) -> anyhow::Result<&'a Pack> {
-    packset.for_pack(&violation.defining_pack_name)
-    .context(format!("ViolationIdentifier#defining_pack is {}, but that pack cannot be found in the packset.", 
-    &violation.defining_pack_name))
-}
-
-pub fn get_referencing_pack<'a>(
-    violation: &ViolationIdentifier,
-    packset: &'a PackSet,
-) -> anyhow::Result<&'a Pack> {
-    packset.for_pack(&violation.referencing_pack_name)
-    .context(format!("ViolationIdentifier#referencing_pack is {}, but that pack cannot be found in the packset.",
-&violation.referencing_pack_name))
-}
-
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct Violation {
     message: String,
@@ -71,12 +50,6 @@ pub(crate) trait CheckerInterface {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>>;
-
-    fn is_strict_mode_violation(
-        &self,
-        offense: &ViolationIdentifier,
-        configuration: &Configuration,
-    ) -> anyhow::Result<bool>;
 
     fn violation_type(&self) -> String;
 }

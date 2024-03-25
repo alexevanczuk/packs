@@ -1,7 +1,4 @@
-use super::{
-    get_referencing_pack, CheckerInterface, ValidatorInterface,
-    ViolationIdentifier,
-};
+use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
@@ -185,17 +182,6 @@ impl CheckerInterface for Checker {
             }
             _ => Ok(None),
         }
-    }
-
-    fn is_strict_mode_violation(
-        &self,
-        violation: &ViolationIdentifier,
-        configuration: &Configuration,
-    ) -> anyhow::Result<bool> {
-        let referencing_pack =
-            get_referencing_pack(violation, &configuration.pack_set)?;
-
-        Ok(referencing_pack.enforce_architecture().is_strict())
     }
 
     fn violation_type(&self) -> String {
