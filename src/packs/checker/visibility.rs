@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::{get_defining_pack, CheckerInterface, ViolationIdentifier};
+use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
 
@@ -75,17 +75,6 @@ impl CheckerInterface for Checker {
             message,
             identifier,
         }))
-    }
-
-    fn is_strict_mode_violation(
-        &self,
-        violation: &ViolationIdentifier,
-        configuration: &Configuration,
-    ) -> anyhow::Result<bool> {
-        let defining_pack =
-            get_defining_pack(violation, &configuration.pack_set)?;
-
-        Ok(defining_pack.enforce_visibility().is_strict())
     }
 
     fn violation_type(&self) -> String {
