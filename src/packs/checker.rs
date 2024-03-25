@@ -120,12 +120,7 @@ impl CheckAllResult {
 
         if !self.strict_mode_violations.is_empty() {
             for v in self.strict_mode_violations.iter() {
-                let error_message = format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
-                                        v.referencing_pack_name,
-                                        v.violation_type,
-                                        v.defining_pack_name,
-                                        v.violation_type
-            );
+                let error_message = build_strict_violation_message(v);
                 writeln!(f, "{}", error_message)?;
             }
         }
@@ -148,7 +143,6 @@ struct CheckAllBuilder<'a> {
 }
 
 struct FoundViolations {
-    checkers: Vec<Box<dyn CheckerInterface + Send + Sync>>,
     absolute_paths: HashSet<PathBuf>,
     violations: HashSet<Violation>,
 }
@@ -179,7 +173,7 @@ impl<'a> CheckAllBuilder<'a> {
                 .cloned()
                 .collect(),
             strict_mode_violations: self
-                .build_strict_mode_violations(recorded_violations)?
+                .build_strict_mode_violations()
                 .into_iter()
                 .cloned()
                 .collect(),
@@ -249,37 +243,13 @@ impl<'a> CheckAllBuilder<'a> {
         Ok(stale_violations)
     }
 
-    fn build_strict_mode_violations(
-        &mut self,
-        recorded_violations: &'a HashSet<ViolationIdentifier>,
-    ) -> anyhow::Result<Vec<&'a ViolationIdentifier>> {
-        let indexed_checkers: HashMap<
-            String,
-            &Box<dyn CheckerInterface + Send + Sync>,
-        > = self
-            .found_violations
-            .checkers
+    fn build_strict_mode_violations(&self) -> Vec<&'a ViolationIdentifier> {
+        self.found_violations
+            .violations
             .iter()
-            .map(|checker| (checker.violation_type(), checker))
-            .collect();
-
-        recorded_violations
-            .iter()
-            .try_fold(vec![], |mut acc, violation| {
-                let checker = indexed_checkers
-                    .get(&violation.violation_type)
-                    .context(format!(
-                    "Checker for violation type {} not found",
-                    violation.violation_type
-                ))?;
-
-                if checker
-                    .is_strict_mode_violation(violation, self.configuration)?
-                {
-                    acc.push(violation);
-                }
-                Ok(acc)
-            })
+            .filter(|v| v.identifier.strict)
+            .map(|v| &v.identifier)
+            .collect()
     }
 }
 
@@ -296,7 +266,6 @@ pub(crate) fn check_all(
     let violations: HashSet<Violation> =
         get_all_violations(configuration, &absolute_paths, &checkers)?;
     let found_violations = FoundViolations {
-        checkers,
         absolute_paths,
         violations,
     };
@@ -321,6 +290,16 @@ fn validate(configuration: &Configuration) -> Vec<String> {
     debug!("Finished validators against packages");
 
     validation_errors
+}
+
+pub(crate) fn build_strict_violation_message(
+    violation_identifier: &ViolationIdentifier,
+) -> String {
+    format!("{} cannot have {} violations on {} because strict mode is enabled for {} violations in the enforcing pack's package.yml file",
+    violation_identifier.referencing_pack_name,
+    violation_identifier.violation_type,
+    violation_identifier.defining_pack_name,
+    violation_identifier.violation_type,)
 }
 
 pub(crate) fn validate_all(
@@ -349,8 +328,24 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
         &checkers,
     )?;
 
+    let strict_violations = &violations
+        .iter()
+        .filter(|v| v.identifier.strict)
+        .collect::<Vec<&Violation>>();
+    if !strict_violations.is_empty() {
+        for violation in strict_violations {
+            let strict_message =
+                build_strict_violation_message(&violation.identifier);
+            println!("{}", strict_message);
+        }
+        println!(
+            "{} strict mode violation(s) detected. These violations must be fixed for `check` to succeed.",
+            &strict_violations.len()
+        );
+    }
     package_todo::write_violations_to_disk(configuration, violations);
     println!("Successfully updated package_todo.yml files!");
+
     Ok(())
 }
 
