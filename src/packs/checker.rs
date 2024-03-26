@@ -347,7 +347,18 @@ pub(crate) fn check_unnecessary_dependencies(
                 )
             }
         }
-        bail!("List unnecessary dependencies failed")
+        let found_message = if unnecessary_dependencies.len() == 1 {
+            "Found 1 unnecessary dependency".to_string()
+        } else {
+            format!(
+                "Found {} unnecessary dependencies",
+                unnecessary_dependencies.len()
+            )
+        };
+        bail!(
+            "{}. Run command with `--auto-correct` to remove them.",
+            found_message,
+        );
     }
 }
 
