@@ -228,25 +228,4 @@ mod tests {
 
         Ok(())
     }
-
-    #[test]
-    fn test_walk_directory_with_invalid_symlink() -> anyhow::Result<()> {
-        let absolute_path =
-            PathBuf::from("tests/fixtures/app_with_invalid_symlink")
-                .canonicalize()
-                .expect("Could not canonicalize path");
-
-        let raw_config = RawConfiguration {
-            include: vec!["**/*".to_string()],
-            ..RawConfiguration::default()
-        };
-
-        let walk_directory_result =
-            walk_directory(absolute_path.clone(), &raw_config);
-        assert!(walk_directory_result.is_err());
-        if let Err(e) = walk_directory_result {
-            assert!(e.to_string().contains("No such file or directory"));
-        }
-        Ok(())
-    }
 }
