@@ -135,7 +135,7 @@ pub(crate) fn walk_directory(
         //     .unwrap();
         // writeln!(file, "{:?}", entry).unwrap();
 
-        let unwrapped_entry = entry.unwrap();
+        let unwrapped_entry = entry?;
 
         // Note that we could also get the dir from absolute_path.is_dir()
         // However, this data appears to be cached on the FileType struct, so we'll use that instead,
@@ -226,6 +226,27 @@ mod tests {
         let contains_bad_file = included_files.contains(&node_module_file);
         assert!(!contains_bad_file);
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_walk_directory_with_invalid_symlink() -> anyhow::Result<()> {
+        let absolute_path =
+            PathBuf::from("tests/fixtures/app_with_invalid_symlink")
+                .canonicalize()
+                .expect("Could not canonicalize path");
+
+        let raw_config = RawConfiguration {
+            include: vec!["**/*".to_string()],
+            ..RawConfiguration::default()
+        };
+
+        let walk_directory_result =
+            walk_directory(absolute_path.clone(), &raw_config);
+        assert!(walk_directory_result.is_err());
+        if let Err(e) = walk_directory_result {
+            assert!(e.to_string().contains("No such file or directory"));
+        }
         Ok(())
     }
 }
