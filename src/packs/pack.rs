@@ -201,7 +201,7 @@ impl Pack {
                 .context("Could not read the package_todo.yml file")?;
             serde_yaml::from_str(&package_todo_contents).with_context(|| {
                 format!(
-                    "Failed to deserialize the package_todo.yml file at {}",
+                    "Failed to deserialize the package_todo.yml file at {}. Try deleting the file and running the `update` command to regenerate it.",
                     absolute_path_to_package_todo.display()
                 )
             })?
