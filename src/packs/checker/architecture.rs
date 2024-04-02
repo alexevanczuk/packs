@@ -146,8 +146,7 @@ impl CheckerInterface for Checker {
             (Some(referencing_layer), Some(defining_layer)) => {
                 if self
                     .layers
-                    .can_depend_on(referencing_layer, defining_layer)
-                    .unwrap()
+                    .can_depend_on(referencing_layer, defining_layer)?
                 {
                     return Ok(None);
                 }
