@@ -248,7 +248,7 @@ mod tests {
         // deleting baz
         // link-baz -> baz
         let baz_path = absolute_path.join("packs/foo/app/services/baz");
-        std::fs::remove_dir_all(&baz_path)?;
+        let _ignore = std::fs::remove_dir_all(&baz_path);
 
         let walk_directory_result =
             walk_directory(absolute_path.clone(), &raw_config);
