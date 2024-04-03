@@ -135,7 +135,12 @@ pub(crate) fn walk_directory(
         //     .unwrap();
         // writeln!(file, "{:?}", entry).unwrap();
 
-        let unwrapped_entry = entry?;
+        let unwrapped_entry = entry;
+        if let Err(_e) = unwrapped_entry {
+            // Encountered an invalid symlink. Being consistent with packwerk, which swallows this error and continues
+            continue;
+        }
+        let unwrapped_entry = unwrapped_entry.unwrap();
 
         // Note that we could also get the dir from absolute_path.is_dir()
         // However, this data appears to be cached on the FileType struct, so we'll use that instead,
@@ -225,6 +230,33 @@ mod tests {
         let node_module_file = absolute_path.join("node_modules/file.rb");
         let contains_bad_file = included_files.contains(&node_module_file);
         assert!(!contains_bad_file);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_walk_directory_with_invalid_symlink() -> anyhow::Result<()> {
+        let absolute_path = PathBuf::from("tests/fixtures/app_with_symlink")
+            .canonicalize()
+            .expect("Could not canonicalize path");
+
+        let raw_config = RawConfiguration {
+            include: vec!["**/*".to_string()],
+            ..RawConfiguration::default()
+        };
+
+        // deleting baz
+        // link-baz -> baz
+        let baz_path = absolute_path.join("packs/foo/app/services/baz");
+        let _ignore = std::fs::remove_dir_all(&baz_path);
+
+        let walk_directory_result =
+            walk_directory(absolute_path.clone(), &raw_config);
+
+        // Restoring baz
+        std::fs::create_dir_all(&baz_path)?;
+
+        assert!(walk_directory_result.is_ok());
 
         Ok(())
     }
