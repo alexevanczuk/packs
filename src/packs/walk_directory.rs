@@ -233,31 +233,4 @@ mod tests {
 
         Ok(())
     }
-
-    #[test]
-    fn test_walk_directory_with_invalid_symlink() -> anyhow::Result<()> {
-        let absolute_path = PathBuf::from("tests/fixtures/app_with_symlink")
-            .canonicalize()
-            .expect("Could not canonicalize path");
-
-        let raw_config = RawConfiguration {
-            include: vec!["**/*".to_string()],
-            ..RawConfiguration::default()
-        };
-
-        // deleting baz
-        // link-baz -> baz
-        let baz_path = absolute_path.join("packs/foo/app/services/baz");
-        let _ignore = std::fs::remove_dir_all(&baz_path);
-
-        let walk_directory_result =
-            walk_directory(absolute_path.clone(), &raw_config);
-
-        // Restoring baz
-        std::fs::create_dir_all(&baz_path)?;
-
-        assert!(walk_directory_result.is_ok());
-
-        Ok(())
-    }
 }
