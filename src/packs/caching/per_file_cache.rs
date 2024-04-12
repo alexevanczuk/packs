@@ -193,8 +193,11 @@ mod tests {
         );
 
         let cache_path = PathBuf::from("tests/fixtures/simple_app/tmp/cache/");
-        fs::write(&cache_path.join(format!("{}", sha)), corrupt_contents)
-            .context("expted to write corrupt cache file")?;
+        fs::create_dir_all(&cache_path)
+            .context("unable to create cache dir")?;
+        let corrupt_file_path = cache_path.join(format!("{}", sha));
+        fs::write(&corrupt_file_path, corrupt_contents)
+            .context("expected to write corrupt cache file")?;
 
         let empty_cache_entry = EmptyCacheEntry::new(
             &cache_path,
