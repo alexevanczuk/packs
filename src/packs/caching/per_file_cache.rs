@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use tracing::warn;
 
 use super::cache::Cache;
 use super::CacheResult;
@@ -79,8 +80,16 @@ impl CacheEntry {
         let cache_file_path = &empty.cache_file_path;
 
         if cache_file_path.exists() {
-            let cache_entry = read_json_file(cache_file_path)?;
-            Ok(Some(cache_entry))
+            match read_json_file(cache_file_path) {
+                Ok(cache_entry) => Ok(Some(cache_entry)),
+                Err(e) => {
+                    warn!(
+                        "Failed to read cache file {:?}: {}",
+                        cache_file_path, e
+                    );
+                    Ok(None)
+                }
+            }
         } else {
             Ok(None)
         }
@@ -98,6 +107,8 @@ pub fn read_json_file(path: &PathBuf) -> anyhow::Result<CacheEntry> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use crate::packs::{
         self, configuration,
         file_utils::file_content_digest,
@@ -169,5 +180,35 @@ mod tests {
         assert_eq!(expected_serialized, actual_serialized);
 
         teardown();
+    }
+
+    #[test]
+    fn test_corrupt_cache() -> anyhow::Result<()> {
+        let sha = "e57a05216069923190a4e03d264d9677";
+        let corrupt_contents: String = String::from(
+            r#"{
+  "file_contents_digest":"e57a05216069923190a4e03d264d9677",
+  "processed_file": 
+}"#,
+        );
+
+        let cache_path = PathBuf::from("tests/fixtures/simple_app/tmp/cache/");
+        fs::create_dir_all(&cache_path)
+            .context("unable to create cache dir")?;
+        let corrupt_file_path = cache_path.join(format!("{}", sha));
+        fs::write(&corrupt_file_path, corrupt_contents)
+            .context("expected to write corrupt cache file")?;
+
+        let empty_cache_entry = EmptyCacheEntry::new(
+            &cache_path,
+            &PathBuf::from(
+                "tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb",
+            ),
+        ).context("expected tests/fixtures/simple_app/packs/foo/app/services/foo/bar.rb to exist")?;
+
+        let entry = CacheEntry::from_empty(&empty_cache_entry)?;
+        assert!(entry.is_none());
+
+        Ok(())
     }
 }
