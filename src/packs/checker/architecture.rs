@@ -1,6 +1,6 @@
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::Pack;
+use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use anyhow::{bail, Result};
 
@@ -35,40 +35,43 @@ impl Layers {
     }
 }
 
+impl Checker {
+    fn validate_pack(&self, pack: &Pack) -> Option<String> {
+        match &pack.layer {
+            Some(layer) => {
+                if self.layers.layers.contains(&layer) {
+                    None
+                } else {
+                    Some(format!(
+                        "Invalid 'layer' option in '{}'. `layer` must be one of the layers defined in `packwerk.yml`",
+                        &pack.relative_yml().to_string_lossy()
+                    ))
+                }
+            }
+            None => match &pack.enforce_architecture {
+                Some(setting) => {
+                    if setting.is_false() {
+                        None
+                    } else {
+                        Some(format!(
+                                "'layer' must be specified in '{}' because `enforce_architecture` is true or strict.",
+                                pack.relative_yml().to_string_lossy()
+                            ))
+                    }
+                }
+                None => None,
+            },
+        }
+    }
+}
+
 impl ValidatorInterface for Checker {
     fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
         let mut error_messages: Vec<String> = vec![];
-        match configuration.pack_set.all_pack_dependencies(configuration) {
-            Ok(dependencies) => {
-                for pack_dependency in dependencies {
-                    let (from_pack, to_pack) =
-                        (pack_dependency.from_pack, pack_dependency.to_pack);
-                    match dependency_permitted(
-                        configuration,
-                        from_pack,
-                        to_pack,
-                    ) {
-                        Ok(true) => continue,
-                        Ok(false) => {
-                            let error_message = format!(
-                                "Invalid 'dependencies' in '{}/package.yml'. '{}/package.yml' has a layer type of '{},' which cannot rely on '{},' which has a layer type of '{}.' `architecture_layers` can be found in packwerk.yml",
-                                from_pack.relative_path.display(),
-                                from_pack.relative_path.display(),
-                                from_pack.layer.clone().unwrap(),
-                                to_pack.name,
-                                to_pack.layer.clone().unwrap(),
-                            );
-                            error_messages.push(error_message);
-                        }
-                        Err(error) => {
-                            error_messages.push(error.to_string());
-                            return Some(error_messages);
-                        }
-                    }
-                }
-            }
-            Err(error) => {
-                error_messages.push(error.to_string());
+
+        for pack in &configuration.pack_set.packs {
+            if let Some(error_message) = self.validate_pack(pack) {
+                error_messages.push(error_message);
             }
         }
 
@@ -452,6 +455,140 @@ mod tests {
         package_yml_architecture_test(test_case);
     }
 
+    fn validate_layers(
+        config_layers: Vec<String>,
+        package_layer: Option<String>,
+        package_enforce_layer: Option<CheckerSetting>,
+    ) -> Option<Vec<String>> {
+        let root_pack = Pack {
+            name: String::from("."),
+            layer: None,
+            ..Pack::default()
+        };
+        let test_pack = Pack {
+            name: String::from("packs/foo"),
+            relative_path: PathBuf::from("packs/foo/package.yml"),
+            layer: package_layer,
+            enforce_architecture: package_enforce_layer,
+            ..Pack::default()
+        };
+        let configuration = Configuration {
+            pack_set: PackSet::build(
+                HashSet::from_iter(vec![root_pack, test_pack]),
+                HashMap::new(),
+            )
+            .unwrap(),
+            ..Configuration::default()
+        };
+        let checker = Checker {
+            layers: Layers {
+                layers: config_layers,
+            },
+        };
+        checker.validate(&configuration)
+    }
+
+    #[test]
+    fn validate_layers_strict_true() {
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("product")),
+            Some(CheckerSetting::Strict),
+        );
+        assert_eq!(result, None);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("product")),
+            Some(CheckerSetting::True),
+        );
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn validate_layers_false_none() {
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            None,
+            Some(CheckerSetting::False),
+        );
+        assert_eq!(result, None);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            None,
+            None,
+        );
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn validate_layers_false_none_but_layer_specified() {
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("product")),
+            Some(CheckerSetting::False),
+        );
+        assert_eq!(result, None);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("product")),
+            None,
+        );
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn validate_layers_true_strict_with_no_layer() {
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            None,
+            Some(CheckerSetting::True),
+        );
+        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_architecture` is true or strict.")]));
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            None,
+            Some(CheckerSetting::Strict),
+        );
+        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_architecture` is true or strict.")]));
+    }
+
+    #[test]
+    fn validate_layers_with_not_found_layer() {
+        let expected_error = Some(vec![String::from("Invalid 'layer' option in 'packs/foo/package.yml/package.yml'. `layer` must be one of the layers defined in `packwerk.yml`")]);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("not defined")),
+            Some(CheckerSetting::True),
+        );
+        assert_eq!(result, expected_error);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("not defined")),
+            Some(CheckerSetting::Strict),
+        );
+        assert_eq!(result, expected_error);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("not defined")),
+            Some(CheckerSetting::False),
+        );
+        assert_eq!(result, expected_error);
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            Some(String::from("not defined")),
+            None,
+        );
+        assert_eq!(result, expected_error);
+    }
+
     #[test]
     fn test_validate_with_architecture_violations() {
         let configuration = configuration::get(
@@ -473,10 +610,15 @@ mod tests {
         };
 
         let error = checker.validate(&configuration);
-        let expected_message = vec![
-            String::from("Invalid 'dependencies' in 'packs/baz/package.yml'. 'packs/baz/package.yml' has a layer type of 'technical_services,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml"),
-            String::from( "Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a layer type of 'product,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml")
+        assert!(error.is_some());
+        let mut errors = error.unwrap();
+        errors.sort();
+
+        let expected_errors = vec![
+            "'layer' must be specified in 'packs/baz/package.yml' because `enforce_architecture` is true or strict.".to_string(), 
+            "Invalid 'layer' option in 'packs/bar/package.yml'. `layer` must be one of the layers defined in `packwerk.yml`".to_string(), 
+            "Invalid 'layer' option in 'packs/foo/package.yml'. `layer` must be one of the layers defined in `packwerk.yml`".to_string()
         ];
-        assert_eq!(error, Some(expected_message));
+        assert_eq!(errors, expected_errors);
     }
 }

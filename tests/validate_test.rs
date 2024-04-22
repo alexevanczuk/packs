@@ -35,12 +35,10 @@ packs/foo, packs/bar",
 #[test]
 fn test_validate_architecture() -> Result<(), Box<dyn Error>> {
     let expected_message_1 = String::from(
-        "
-Invalid 'dependencies' in 'packs/baz/package.yml'. 'packs/baz/package.yml' has a layer type of 'technical_services,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml",
+        "\'layer\' must be specified in \'packs/baz/package.yml\' because `enforce_architecture` is true or strict.",
     );
     let expected_message_2 = String::from(
-        "
-Invalid 'dependencies' in 'packs/foo/package.yml'. 'packs/foo/package.yml' has a layer type of 'product,' which cannot rely on 'packs/bar,' which has a layer type of 'admin.' `architecture_layers` can be found in packwerk.yml",
+        "Invalid \'layer\' option in \'packs/foo/package.yml\'. `layer` must be one of the layers defined in `packwerk.yml`"
     );
 
     Command::cargo_bin("packs")
