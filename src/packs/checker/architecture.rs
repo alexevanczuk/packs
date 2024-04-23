@@ -315,37 +315,6 @@ mod tests {
         test_check(&checker_with_layers(), &mut test_checker)
     }
 
-    struct ArchitectureTestCase {
-        from_pack_name: String,
-        from_pack_layer: Option<String>,
-        from_pack_dependencies: HashSet<String>,
-        from_pack_enforce_architecture: Option<CheckerSetting>,
-        to_pack_name: String,
-        to_pack_layer: Option<String>,
-        layers: Vec<String>,
-        expected_result: bool,
-    }
-
-    impl Default for ArchitectureTestCase {
-        fn default() -> Self {
-            ArchitectureTestCase {
-                from_pack_name: String::from("packs/foo"),
-                from_pack_layer: Some(String::from("utilities")),
-                from_pack_enforce_architecture: Some(CheckerSetting::True),
-                from_pack_dependencies: HashSet::from_iter(vec![String::from(
-                    "packs/bar",
-                )]),
-                to_pack_name: String::from("packs/bar"),
-                to_pack_layer: Some(String::from("product")),
-                layers: vec![
-                    String::from("product"),
-                    String::from("utilities"),
-                ],
-                expected_result: false,
-            }
-        }
-    }
-
     fn validate_layers(
         config_layers: Vec<String>,
         package_layer: Option<String>,
