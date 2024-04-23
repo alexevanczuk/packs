@@ -1,6 +1,6 @@
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::{CheckerSetting, Pack};
+use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
 use anyhow::{bail, Result};
 
@@ -39,7 +39,7 @@ impl Checker {
     fn validate_pack(&self, pack: &Pack) -> Option<String> {
         match &pack.layer {
             Some(layer) => {
-                if self.layers.layers.contains(&layer) {
+                if self.layers.layers.contains(layer) {
                     None
                 } else {
                     Some(format!(
@@ -81,31 +81,6 @@ impl ValidatorInterface for Checker {
             Some(error_messages)
         }
     }
-}
-
-fn dependency_permitted(
-    configuration: &Configuration,
-    from_pack: &Pack,
-    to_pack: &Pack,
-) -> Result<bool> {
-    if from_pack.enforce_architecture().is_false() {
-        return Ok(true);
-    }
-
-    let (from_pack_layer, to_pack_layer) = (&from_pack.layer, &to_pack.layer);
-
-    if from_pack_layer.is_none() || to_pack_layer.is_none() {
-        return Ok(true);
-    }
-
-    let (from_pack_layer, to_pack_layer) = (
-        from_pack_layer.as_ref().unwrap(),
-        to_pack_layer.as_ref().unwrap(),
-    );
-
-    configuration
-        .layers
-        .can_depend_on(from_pack_layer, to_pack_layer)
 }
 
 pub struct Checker {
@@ -369,90 +344,6 @@ mod tests {
                 expected_result: false,
             }
         }
-    }
-    fn package_yml_architecture_test(test_case: ArchitectureTestCase) {
-        let root_pack = Pack {
-            name: String::from("."),
-            ..Pack::default()
-        };
-
-        let from_pack = Pack {
-            name: test_case.from_pack_name,
-            layer: test_case.from_pack_layer,
-            enforce_architecture: test_case.from_pack_enforce_architecture,
-            dependencies: test_case.from_pack_dependencies,
-            ..Pack::default()
-        };
-        let to_pack = Pack {
-            name: test_case.to_pack_name,
-            layer: test_case.to_pack_layer,
-            ..Pack::default()
-        };
-
-        let configuration = Configuration {
-            pack_set: PackSet::build(
-                HashSet::from_iter(vec![
-                    root_pack,
-                    from_pack.clone(),
-                    to_pack.clone(),
-                ]),
-                HashMap::new(),
-            )
-            .unwrap(),
-            layers: Layers {
-                layers: test_case.layers,
-            },
-            ..Configuration::default()
-        };
-
-        let result = dependency_permitted(&configuration, &from_pack, &to_pack);
-        assert_eq!(result.unwrap(), test_case.expected_result);
-    }
-
-    #[test]
-    fn package_yml_dependency_not_permitted() {
-        let test_case = ArchitectureTestCase::default();
-        package_yml_architecture_test(test_case);
-    }
-
-    #[test]
-    fn package_yml_dependency_permitted_violation_not_enforced() {
-        let test_case = ArchitectureTestCase {
-            from_pack_enforce_architecture: Some(CheckerSetting::False),
-            expected_result: true,
-            ..ArchitectureTestCase::default()
-        };
-        package_yml_architecture_test(test_case);
-    }
-
-    #[test]
-    fn package_yml_dependency_permitted_violation_no_from_layer() {
-        let test_case = ArchitectureTestCase {
-            from_pack_layer: None,
-            expected_result: true,
-            ..ArchitectureTestCase::default()
-        };
-        package_yml_architecture_test(test_case);
-    }
-
-    #[test]
-    fn package_yml_dependency_permitted_violation_no_to_layer() {
-        let test_case = ArchitectureTestCase {
-            to_pack_layer: None,
-            expected_result: true,
-            ..ArchitectureTestCase::default()
-        };
-        package_yml_architecture_test(test_case);
-    }
-
-    #[test]
-    fn package_yml_dependency_permitted_violation_valid_layer() {
-        let test_case = ArchitectureTestCase {
-            expected_result: true,
-            layers: vec![String::from("utilities"), String::from("product")],
-            ..ArchitectureTestCase::default()
-        };
-        package_yml_architecture_test(test_case);
     }
 
     fn validate_layers(
