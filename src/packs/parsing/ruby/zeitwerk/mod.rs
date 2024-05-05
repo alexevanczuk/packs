@@ -18,6 +18,7 @@ use crate::packs::{
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
 };
+use crate::packs::pack::CheckerSetting;
 
 use self::constant_resolver::ZeitwerkConstantResolver;
 
@@ -62,10 +63,11 @@ fn inferred_constants_from_pack_set(
                 });
         });
 
-    inferred_constants_from_autoload_paths(configuration, full_autoload_roots)
+    inferred_constants_from_autoload_paths(pack_set, configuration, full_autoload_roots)
 }
 
 fn inferred_constants_from_autoload_paths(
+    pack_set: &PackSet,
     configuration: &ConstantResolverConfiguration,
     full_autoload_roots: HashMap<PathBuf, String>,
 ) -> Vec<ConstantDefinition> {
@@ -134,8 +136,25 @@ fn inferred_constants_from_autoload_paths(
                         .to_owned(),
                 }
             } else {
-                let default_namespace =
-                    full_autoload_roots.get(absolute_autoload_path).unwrap();
+                let pack = pack_set.for_file(absolute_path_of_definition).unwrap();
+                let automatic_namespace = match &pack.automatic_pack_namespace {
+                    Some(setting) => setting,
+                    None => &CheckerSetting::False,
+                };
+                let pack_namespace;
+                // TODO: Do we need to support both autoload_roots and automatic_namespace enabled at same time?
+                let default_namespace = if automatic_namespace.is_false() {
+                    full_autoload_roots.get(absolute_autoload_path).unwrap()
+                } else {
+                    let pack_name = &pack.name.clone();
+                    // TODO: the packs root eg "packs/" should come from configuration
+                    let pack_root_dir = &pack_name.strip_prefix("packs/").unwrap_or(pack_name).to_string();
+                    // TODO: not sure how best to return the value here, either get issues with type
+                    // or I get warnings about temp value lifetimes
+                    pack_namespace = inflector_shim::camelize(pack_root_dir, acronyms);
+                    &pack_namespace
+                };
+
                 inferred_constant_from_file(
                     absolute_path_of_definition,
                     absolute_autoload_path,
@@ -306,6 +325,22 @@ mod tests {
                 fully_qualified_name: "::Foo::Bar".to_string(),
                 absolute_path_of_definition: absolute_root
                     .join("packs/foo/app/services/foo/bar.rb")
+            }],
+            resolver.resolve("Bar", &["Foo"]).unwrap()
+        );
+
+        teardown();
+    }
+
+    #[test]
+    fn automatic_pack_namespace_constant() {
+        let absolute_root = get_absolute_root("tests/fixtures/automatic_pack_namespace_app");
+        let resolver = get_zeitwerk_constant_resolver_for_fixture("tests/fixtures/automatic_pack_namespace_app");
+        assert_eq!(
+            vec![ConstantDefinition {
+                fully_qualified_name: "::Foo::Bar".to_string(),
+                absolute_path_of_definition: absolute_root
+                    .join("packs/foo/app/services/bar.rb")
             }],
             resolver.resolve("Bar", &["Foo"]).unwrap()
         );

@@ -57,6 +57,7 @@ mod test_util {
                 enforce_visibility: Default::default(),
                 enforce_folder_visibility: Default::default(),
                 enforce_architecture: Default::default(),
+                automatic_pack_namespace: Default::default(),
                 client_keys: Default::default(),
                 owner: Default::default(),
             }
