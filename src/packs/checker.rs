@@ -1,5 +1,5 @@
 // Module declarations
-pub(crate) mod architecture;
+pub(crate) mod layer;
 mod dependency;
 
 mod common_test;
@@ -249,7 +249,7 @@ fn validate(configuration: &Configuration) -> Vec<String> {
     debug!("Running validators against packages");
     let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> = vec![
         Box::new(dependency::Checker {}),
-        Box::new(architecture::Checker {
+        Box::new(layer::Checker {
             layers: configuration.layers.clone(),
         }),
     ];
@@ -435,7 +435,7 @@ fn get_checkers(
         Box::new(dependency::Checker {}),
         Box::new(privacy::Checker {}),
         Box::new(visibility::Checker {}),
-        Box::new(architecture::Checker {
+        Box::new(layer::Checker {
             layers: configuration.layers.clone(),
         }),
         Box::new(folder_visibility::Checker {}),

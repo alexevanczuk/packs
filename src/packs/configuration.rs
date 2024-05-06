@@ -2,7 +2,7 @@ use super::caching::{
     cache::Cache, create_cache_dir_idempotently, noop_cache::NoopCache,
     per_file_cache::PerFileCache,
 };
-use super::checker::architecture::Layers;
+use super::checker::layer::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 
 use super::{
@@ -203,6 +203,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
@@ -223,6 +224,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
@@ -243,6 +245,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
@@ -265,6 +268,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
