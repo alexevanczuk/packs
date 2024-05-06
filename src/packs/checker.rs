@@ -114,7 +114,7 @@ struct CheckAllBuilder<'a> {
     configuration: &'a Configuration,
     found_violations: &'a FoundViolations,
 }
-
+#[derive(Debug)]
 struct FoundViolations {
     absolute_paths: HashSet<PathBuf>,
     violations: HashSet<Violation>,
@@ -209,11 +209,28 @@ impl<'a> CheckAllBuilder<'a> {
         let stale_violations = recorded_violations
             .par_iter()
             .filter(|v_identifier| {
-                relative_files.contains(&v_identifier.file.as_str())
-                    && !found_violation_identifiers.contains(v_identifier)
+                Self::is_stale_violation(
+                    &relative_files,
+                    &found_violation_identifiers,
+                    v_identifier,
+                )
             })
             .collect::<Vec<&ViolationIdentifier>>();
         Ok(stale_violations)
+    }
+
+    fn is_stale_violation(
+        relative_files: &HashSet<&str>,
+        found_violation_identifiers: &HashSet<&ViolationIdentifier>,
+        todo_violation_identifier: &ViolationIdentifier,
+    ) -> bool {
+        let violation_path_exists =
+            relative_files.contains(todo_violation_identifier.file.as_str());
+        if violation_path_exists {
+            !found_violation_identifiers.contains(todo_violation_identifier)
+        } else {
+            true // The todo violation references a file that no longer exists
+        }
     }
 
     fn build_strict_mode_violations(&self) -> Vec<&'a ViolationIdentifier> {
@@ -405,7 +422,6 @@ fn get_all_violations(
     checkers: &Vec<Box<dyn CheckerInterface + Send + Sync>>,
 ) -> anyhow::Result<HashSet<Violation>> {
     let references = get_all_references(configuration, absolute_paths)?;
-
     debug!("Running checkers on resolved references");
 
     let violations = checkers

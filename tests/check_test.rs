@@ -132,13 +132,30 @@ fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_check_with_stale_violations_when_file_no_longer_exists(
+) -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/contains_stale_violations_no_file")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "There were stale violations found, please run `packs update`",
+        ));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
 fn test_check_without_stale_violations() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")
         .unwrap()
         .arg("--project-root")
         .arg("tests/fixtures/contains_package_todo")
         .arg("check")
-        .arg("packs/foo/app/services/foo.rb")
         .assert()
         .success()
         .stdout(
