@@ -216,7 +216,7 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod tests {
                 "dependency".to_string(), false)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     #[test]
@@ -260,7 +260,7 @@ mod tests {
                 "dependency".to_string(), true)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     #[test]
@@ -284,7 +284,7 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     #[test]

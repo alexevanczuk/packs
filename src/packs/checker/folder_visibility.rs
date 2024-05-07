@@ -110,7 +110,7 @@ mod tests {
                 "folder_visibility".to_string(), false)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
     #[test]
     fn test_with_strict_violation() -> anyhow::Result<()> {
@@ -131,7 +131,7 @@ mod tests {
                 "folder_visibility".to_string(), true)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     #[test]
@@ -151,7 +151,7 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(&Checker {}, &mut test_checker, vec![])
     }
 
     fn assert_folder_visibility(

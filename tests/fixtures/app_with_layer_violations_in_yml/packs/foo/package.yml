@@ -1,0 +1,6 @@
+enforce_dependencies: true
+enforce_privacy: true
+enforce_layers: true
+layer: not_a_layer
+dependencies:
+- packs/bar

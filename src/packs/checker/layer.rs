@@ -4,7 +4,7 @@ use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use anyhow::{bail, Result};
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Layers {
     pub layers: Vec<String>,
     pub using_deprecated_keys: bool,
@@ -81,7 +81,7 @@ impl Checker {
                     ))
                 }
             }
-            None => match self.layers.pack_enforces_layers(&pack) {
+            None => match self.layers.pack_enforces_layers(pack) {
                 CheckerSetting::False => None,
                 _ => {
                     Some(format!(
@@ -222,14 +222,14 @@ mod tests {
 
     use super::*;
 
-    fn checker_with_layers() -> Checker {
+    fn checker_with_layers(deprecated: bool) -> Checker {
         Checker {
             layers: Layers {
                 layers: vec![
                     String::from("product"),
                     String::from("utilities"),
                 ],
-                using_deprecated_keys: true,
+                using_deprecated_keys: deprecated,
             },
         }
     }
@@ -251,11 +251,37 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&checker_with_layers(), &mut test_checker)
+        test_check(&checker_with_layers(true), &mut test_checker, vec![])
     }
 
     #[test]
     fn reference_is_an_architecture_violation() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+               layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_layers: Some(CheckerSetting::True),
+                layer: Some("utilities".to_string()),
+                ..default_referencing_pack()
+            },
+            expected_violation: Some(build_expected_violation(
+                "packs/foo/app/services/foo.rb:3:1\nLayer violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
+                "layer".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&checker_with_layers(false), &mut test_checker, vec![])
+    }
+
+    #[test]
+    fn reference_is_an_architecture_violation_with_deprecated_keys(
+    ) -> anyhow::Result<()> {
         let mut test_checker = TestChecker {
             reference: None,
             configuration: None,
@@ -276,7 +302,7 @@ mod tests {
                 "architecture".to_string(), false)),
             ..Default::default()
         };
-        test_check(&checker_with_layers(), &mut test_checker)
+        test_check(&checker_with_layers(true), &mut test_checker, vec![])
     }
 
     #[test]
@@ -292,16 +318,16 @@ mod tests {
             }),
             referencing_pack: Pack {
                 name: "packs/foo".to_owned(),
-                enforce_architecture: Some(CheckerSetting::Strict),
+                enforce_layers: Some(CheckerSetting::Strict),
                 layer: Some("utilities".to_string()),
                 ..default_referencing_pack()
             },
             expected_violation: Some(build_expected_violation(
-                "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
-                "architecture".to_string(), true)),
+                "packs/foo/app/services/foo.rb:3:1\nLayer violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
+                "layer".to_string(), true)),
             ..Default::default()
         };
-        test_check(&checker_with_layers(), &mut test_checker)
+        test_check(&checker_with_layers(false), &mut test_checker, vec![])
     }
 
     #[test]
@@ -318,13 +344,13 @@ mod tests {
             }),
             referencing_pack: Pack {
                 name: "packs/foo".to_owned(),
-                enforce_architecture: Some(CheckerSetting::False),
+                enforce_layers: Some(CheckerSetting::False),
                 layer: Some("utilities".to_string()),
                 ..default_referencing_pack()
             },
             ..Default::default()
         };
-        test_check(&checker_with_layers(), &mut test_checker)
+        test_check(&checker_with_layers(false), &mut test_checker, vec![])
     }
 
     #[test]
@@ -340,17 +366,18 @@ mod tests {
             }),
             referencing_pack: Pack {
                 name: "packs/foo".to_owned(),
-                enforce_architecture: Some(CheckerSetting::False),
+                enforce_layers: Some(CheckerSetting::False),
                 layer: Some("product".to_string()),
                 ..default_referencing_pack()
             },
             ..Default::default()
         };
-        test_check(&checker_with_layers(), &mut test_checker)
+        test_check(&checker_with_layers(false), &mut test_checker, vec![])
     }
 
     fn validate_layers(
         config_layers: Vec<String>,
+        deprecated_layers_option: bool,
         package_layer: Option<String>,
         package_enforce_layer: Option<CheckerSetting>,
     ) -> Option<Vec<String>> {
@@ -359,13 +386,17 @@ mod tests {
             layer: None,
             ..Pack::default()
         };
-        let test_pack = Pack {
+        let mut test_pack = Pack {
             name: String::from("packs/foo"),
             relative_path: PathBuf::from("packs/foo/package.yml"),
             layer: package_layer,
-            enforce_architecture: package_enforce_layer,
             ..Pack::default()
         };
+        if deprecated_layers_option {
+            test_pack.enforce_architecture = package_enforce_layer;
+        } else {
+            test_pack.enforce_layers = package_enforce_layer;
+        }
         let configuration = Configuration {
             pack_set: PackSet::build(
                 HashSet::from_iter(vec![root_pack, test_pack]),
@@ -377,7 +408,7 @@ mod tests {
         let checker = Checker {
             layers: Layers {
                 layers: config_layers,
-                using_deprecated_keys: true,
+                using_deprecated_keys: deprecated_layers_option,
             },
         };
         checker.validate(&configuration)
@@ -387,6 +418,7 @@ mod tests {
     fn validate_layers_strict_true() {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("product")),
             Some(CheckerSetting::Strict),
         );
@@ -394,6 +426,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("product")),
             Some(CheckerSetting::True),
         );
@@ -404,6 +437,7 @@ mod tests {
     fn validate_layers_false_none() {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             None,
             Some(CheckerSetting::False),
         );
@@ -411,6 +445,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             None,
             None,
         );
@@ -421,6 +456,7 @@ mod tests {
     fn validate_layers_false_none_but_layer_specified() {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("product")),
             Some(CheckerSetting::False),
         );
@@ -428,6 +464,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("product")),
             None,
         );
@@ -438,17 +475,19 @@ mod tests {
     fn validate_layers_true_strict_with_no_layer() {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             None,
             Some(CheckerSetting::True),
         );
-        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_architecture` is true or strict.")]));
+        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_layers` is true or strict.")]));
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             None,
             Some(CheckerSetting::Strict),
         );
-        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_architecture` is true or strict.")]));
+        assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_layers` is true or strict.")]));
     }
 
     #[test]
@@ -457,6 +496,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("not defined")),
             Some(CheckerSetting::True),
         );
@@ -464,6 +504,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("not defined")),
             Some(CheckerSetting::Strict),
         );
@@ -471,6 +512,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("not defined")),
             Some(CheckerSetting::False),
         );
@@ -478,12 +520,44 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             Some(String::from("not defined")),
             None,
         );
         assert_eq!(result, expected_error);
     }
 
+    #[test]
+    fn test_validate_with_layer_violations() {
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_layer_violations_in_yml")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+        )
+        .unwrap();
+        let checker = Checker {
+            layers: Layers {
+                layers: vec![
+                    String::from("product"),
+                    String::from("utilities"),
+                ],
+                using_deprecated_keys: false,
+            },
+        };
+
+        let error = checker.validate(&configuration);
+        assert!(error.is_some());
+        let mut errors = error.unwrap();
+        errors.sort();
+
+        let expected_errors = vec![
+            "'layer' must be specified in 'packs/baz/package.yml' because `enforce_layers` is true or strict.".to_string(), 
+            "Invalid 'layer' option in 'packs/bar/package.yml'. `layer` must be one of the layers defined in `packwerk.yml`".to_string(), 
+            "Invalid 'layer' option in 'packs/foo/package.yml'. `layer` must be one of the layers defined in `packwerk.yml`".to_string()
+        ];
+        assert_eq!(errors, expected_errors);
+    }
     #[test]
     fn test_validate_with_architecture_violations() {
         let configuration = configuration::get(
