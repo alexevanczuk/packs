@@ -58,6 +58,14 @@ pub struct Pack {
     )]
     pub enforce_architecture: Option<CheckerSetting>,
 
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_checker_setting",
+        deserialize_with = "deserialize_checker_setting"
+    )]
+    pub enforce_layers: Option<CheckerSetting>,
+
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
 
@@ -277,13 +285,6 @@ impl Pack {
 
     pub fn relative_yml(&self) -> PathBuf {
         self.relative_path.join("package.yml")
-    }
-
-    pub(crate) fn enforce_architecture(&self) -> &CheckerSetting {
-        match &self.enforce_architecture {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
     }
 
     pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {

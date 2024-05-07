@@ -2,7 +2,7 @@ use super::caching::{
     cache::Cache, create_cache_dir_idempotently, noop_cache::NoopCache,
     per_file_cache::PerFileCache,
 };
-use super::checker::architecture::Layers;
+use super::checker::layer::Layers;
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 
 use super::{
@@ -116,8 +116,16 @@ pub(crate) fn from_raw(
     let cache_enabled = raw_config.cache;
     let experimental_parser = raw_config.experimental_parser;
 
-    let layers = Layers {
-        layers: raw_config.architecture_layers,
+    let layers = if raw_config.architecture_layers.is_empty() {
+        Layers {
+            layers: raw_config.layers,
+            using_deprecated_keys: false,
+        }
+    } else {
+        Layers {
+            layers: raw_config.architecture_layers,
+            using_deprecated_keys: true,
+        }
     };
 
     let ignored_definitions = raw_config.ignored_definitions;
@@ -203,6 +211,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/bar/package.yml"),
                 name: String::from("packs/bar"),
@@ -223,6 +232,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/baz/package.yml"),
                 name: String::from("packs/baz"),
@@ -243,6 +253,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/foo/package.yml"),
                 name: String::from("packs/foo"),
@@ -265,6 +276,7 @@ mod tests {
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
                 enforce_architecture: None,
+                enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("package.yml"),
                 name: String::from("."),
