@@ -46,6 +46,19 @@ impl Layers {
         }
     }
 
+    fn inconsistent_enforce_key_error(&self, pack: &Pack) -> Option<String> {
+        if self.using_deprecated_keys && pack.enforce_layers.is_some() {
+            return Some(format!("Unknown 'enforce_layers' specified in '{}'. Did you mean 'enforce_architecture'?", 
+            &pack.relative_yml().to_string_lossy()));
+        } else if !self.using_deprecated_keys
+            && pack.enforce_architecture.is_some()
+        {
+            return Some(format!("Unknown 'enforce_architecture' specified in '{}'. Did you mean 'enforce_layers'?",
+            &pack.relative_yml().to_string_lossy()));
+        }
+        None
+    }
+
     fn enforce_key(&self) -> String {
         match self.using_deprecated_keys {
             true => "enforce_architecture".to_string(),
@@ -70,6 +83,11 @@ impl Layers {
 
 impl Checker {
     fn validate_pack(&self, pack: &Pack) -> Option<String> {
+        if let Some(error_message) =
+            self.layers.inconsistent_enforce_key_error(pack)
+        {
+            return Some(error_message);
+        }
         match &pack.layer {
             Some(layer) => {
                 if self.layers.layers.contains(layer) {
@@ -251,7 +269,7 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&checker_with_layers(true), &mut test_checker, vec![])
+        test_check(&checker_with_layers(true), &mut test_checker)
     }
 
     #[test]
@@ -276,7 +294,7 @@ mod tests {
                 "layer".to_string(), false)),
             ..Default::default()
         };
-        test_check(&checker_with_layers(false), &mut test_checker, vec![])
+        test_check(&checker_with_layers(false), &mut test_checker)
     }
 
     #[test]
@@ -302,7 +320,7 @@ mod tests {
                 "architecture".to_string(), false)),
             ..Default::default()
         };
-        test_check(&checker_with_layers(true), &mut test_checker, vec![])
+        test_check(&checker_with_layers(true), &mut test_checker)
     }
 
     #[test]
@@ -327,7 +345,7 @@ mod tests {
                 "layer".to_string(), true)),
             ..Default::default()
         };
-        test_check(&checker_with_layers(false), &mut test_checker, vec![])
+        test_check(&checker_with_layers(false), &mut test_checker)
     }
 
     #[test]
@@ -350,7 +368,7 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&checker_with_layers(false), &mut test_checker, vec![])
+        test_check(&checker_with_layers(false), &mut test_checker)
     }
 
     #[test]
@@ -372,12 +390,13 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&checker_with_layers(false), &mut test_checker, vec![])
+        test_check(&checker_with_layers(false), &mut test_checker)
     }
 
     fn validate_layers(
         config_layers: Vec<String>,
-        deprecated_layers_option: bool,
+        using_deprecated_keys: bool,
+        deprecated_enforcement: bool,
         package_layer: Option<String>,
         package_enforce_layer: Option<CheckerSetting>,
     ) -> Option<Vec<String>> {
@@ -392,7 +411,7 @@ mod tests {
             layer: package_layer,
             ..Pack::default()
         };
-        if deprecated_layers_option {
+        if deprecated_enforcement {
             test_pack.enforce_architecture = package_enforce_layer;
         } else {
             test_pack.enforce_layers = package_enforce_layer;
@@ -408,7 +427,7 @@ mod tests {
         let checker = Checker {
             layers: Layers {
                 layers: config_layers,
-                using_deprecated_keys: deprecated_layers_option,
+                using_deprecated_keys,
             },
         };
         checker.validate(&configuration)
@@ -419,6 +438,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             Some(String::from("product")),
             Some(CheckerSetting::Strict),
         );
@@ -426,6 +446,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             false,
             Some(String::from("product")),
             Some(CheckerSetting::True),
@@ -438,6 +459,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             None,
             Some(CheckerSetting::False),
         );
@@ -445,6 +467,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             false,
             None,
             None,
@@ -457,6 +480,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             Some(String::from("product")),
             Some(CheckerSetting::False),
         );
@@ -464,6 +488,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             false,
             Some(String::from("product")),
             None,
@@ -476,6 +501,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             None,
             Some(CheckerSetting::True),
         );
@@ -484,10 +510,32 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             None,
             Some(CheckerSetting::Strict),
         );
         assert_eq!(result, Some(vec![String::from("'layer' must be specified in 'packs/foo/package.yml/package.yml' because `enforce_layers` is true or strict.")]));
+    }
+
+    #[test]
+    fn validate_layers_when_inconsistent_enforce_key() {
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            false,
+            true,
+            Some(String::from("product")),
+            Some(CheckerSetting::True),
+        );
+        assert_eq!(result, Some(vec![String::from("Unknown 'enforce_architecture' specified in 'packs/foo/package.yml/package.yml'. Did you mean 'enforce_layers'?")]));
+
+        let result = validate_layers(
+            vec![String::from("product"), String::from("utilities")],
+            true,
+            false,
+            Some(String::from("product")),
+            Some(CheckerSetting::True),
+        );
+        assert_eq!(result, Some(vec![String::from("Unknown 'enforce_layers' specified in 'packs/foo/package.yml/package.yml'. Did you mean 'enforce_architecture'?")]));
     }
 
     #[test]
@@ -497,6 +545,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             Some(String::from("not defined")),
             Some(CheckerSetting::True),
         );
@@ -504,6 +553,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             false,
             Some(String::from("not defined")),
             Some(CheckerSetting::Strict),
@@ -513,6 +563,7 @@ mod tests {
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
             false,
+            false,
             Some(String::from("not defined")),
             Some(CheckerSetting::False),
         );
@@ -520,6 +571,7 @@ mod tests {
 
         let result = validate_layers(
             vec![String::from("product"), String::from("utilities")],
+            false,
             false,
             Some(String::from("not defined")),
             None,
@@ -558,6 +610,7 @@ mod tests {
         ];
         assert_eq!(errors, expected_errors);
     }
+
     #[test]
     fn test_validate_with_architecture_violations() {
         let configuration = configuration::get(

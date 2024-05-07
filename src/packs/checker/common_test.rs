@@ -5,8 +5,7 @@ pub mod tests {
 
     use crate::packs::{
         checker::{
-            layer::Layers, reference::Reference, CheckerInterface,
-            ViolationIdentifier,
+            reference::Reference, CheckerInterface, ViolationIdentifier,
         },
         pack::Pack,
         Configuration, PackSet, SourceLocation, Violation,
@@ -88,7 +87,6 @@ pub mod tests {
     pub fn test_check(
         checker: &impl CheckerInterface,
         test_checker: &mut TestChecker,
-        layers: Vec<String>,
     ) -> anyhow::Result<()> {
         let constant_name = match test_checker.referenced_constant_name.take() {
             Some(name) => name.clone(),
@@ -127,19 +125,14 @@ pub mod tests {
 
         let configuration =
             test_checker.configuration.take().unwrap_or_else(|| {
-                let mut config = Configuration {
+                Configuration {
                     pack_set: PackSet::build(
                         HashSet::from_iter(packs),
                         HashMap::new(),
                     )
                     .unwrap(),
                     ..Configuration::default()
-                };
-                config.layers = Layers {
-                    layers,
-                    using_deprecated_keys: false,
-                };
-                config
+                }
             });
 
         let result = checker.check(&reference, &configuration)?;

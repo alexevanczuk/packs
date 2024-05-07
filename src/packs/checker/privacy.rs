@@ -153,7 +153,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -195,7 +195,7 @@ mod tests {
             )),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
             )),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -237,7 +237,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -323,7 +323,7 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -356,7 +356,7 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -393,7 +393,7 @@ mod tests {
             )),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -425,7 +425,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -458,7 +458,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -491,7 +491,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -514,7 +514,7 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        let result = test_check(&Checker {}, &mut test_checker, vec![]);
+        let result = test_check(&Checker {}, &mut test_checker);
         assert!(result.is_err());
         Ok(())
     }

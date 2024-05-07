@@ -115,7 +115,7 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -137,7 +137,7 @@ mod tests {
                 "visibility".to_string(), false)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -159,7 +159,7 @@ mod tests {
                 "visibility".to_string(), true)),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 
     #[test]
@@ -183,6 +183,6 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker, vec![])
+        test_check(&Checker {}, &mut test_checker)
     }
 }
