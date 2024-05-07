@@ -1,12 +1,13 @@
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
-use crate::packs::pack::Pack;
+use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use anyhow::{bail, Result};
 
 #[derive(Default, Clone)]
 pub struct Layers {
     pub layers: Vec<String>,
+    pub using_deprecated_keys: bool,
 }
 
 impl Layers {
@@ -33,6 +34,38 @@ impl Layers {
             }
         }
     }
+
+    fn pack_enforces_layers<'a>(&self, pack: &'a Pack) -> &'a CheckerSetting {
+        let checker_setting = match self.using_deprecated_keys {
+            true => &pack.enforce_architecture,
+            false => &pack.enforce_layers,
+        };
+        match checker_setting {
+            Some(setting) => setting,
+            None => &CheckerSetting::False,
+        }
+    }
+
+    fn enforce_key(&self) -> String {
+        match self.using_deprecated_keys {
+            true => "enforce_architecture".to_string(),
+            false => "enforce_layers".to_string(),
+        }
+    }
+
+    fn violation_type(&self) -> String {
+        match self.using_deprecated_keys {
+            true => "architecture".to_string(),
+            false => "layer".to_string(),
+        }
+    }
+
+    fn violation_name(&self) -> String {
+        match self.using_deprecated_keys {
+            true => "Architecture".to_string(),
+            false => "Layer".to_string(),
+        }
+    }
 }
 
 impl Checker {
@@ -48,18 +81,15 @@ impl Checker {
                     ))
                 }
             }
-            None => match &pack.enforce_architecture {
-                Some(setting) => {
-                    if setting.is_false() {
-                        None
-                    } else {
-                        Some(format!(
-                                "'layer' must be specified in '{}' because `enforce_architecture` is true or strict.",
-                                pack.relative_yml().to_string_lossy()
-                            ))
-                    }
+            None => match self.layers.pack_enforces_layers(&pack) {
+                CheckerSetting::False => None,
+                _ => {
+                    Some(format!(
+                        "'layer' must be specified in '{}' because `{}` is true or strict.",
+                        pack.relative_yml().to_string_lossy(),
+                        self.layers.enforce_key(),
+                    ))
                 }
-                None => None,
             },
         }
     }
@@ -106,7 +136,11 @@ impl CheckerInterface for Checker {
         }
         let defining_pack = defining_pack.unwrap();
 
-        if referencing_pack.enforce_architecture().is_false() {
+        if self
+            .layers
+            .pack_enforces_layers(referencing_pack)
+            .is_false()
+        {
             return Ok(None);
         }
 
@@ -130,10 +164,11 @@ impl CheckerInterface for Checker {
                 }
 
                 let message = format!(
-                    "{}:{}:{}\nArchitecture violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
+                    "{}:{}:{}\n{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
                     reference.relative_referencing_file,
                     reference.source_location.line,
                     reference.source_location.column,
+                    self.layers.violation_name(),
                     reference.constant_name,
                     defining_pack_name,
                     defining_layer,
@@ -141,11 +176,14 @@ impl CheckerInterface for Checker {
                     referencing_layer,
                 );
 
-                let violation_type = String::from("architecture");
+                let violation_type = self.layers.violation_type();
                 let file = reference.relative_referencing_file.clone();
                 let identifier = ViolationIdentifier {
                     violation_type,
-                    strict: referencing_pack.enforce_architecture().is_strict(),
+                    strict: self
+                        .layers
+                        .pack_enforces_layers(referencing_pack)
+                        .is_strict(),
                     file,
                     constant_name: reference.constant_name.clone(),
                     referencing_pack_name: referencing_pack_name.clone(),
@@ -162,7 +200,7 @@ impl CheckerInterface for Checker {
     }
 
     fn violation_type(&self) -> String {
-        "architecture".to_owned()
+        self.layers.violation_type()
     }
 }
 
@@ -191,30 +229,26 @@ mod tests {
                     String::from("product"),
                     String::from("utilities"),
                 ],
+                using_deprecated_keys: true,
             },
         }
     }
 
     #[test]
     fn referencing_and_defining_pack_are_identical() -> anyhow::Result<()> {
+        let pack = Pack {
+            name: "packs/foo".to_owned(),
+            enforce_architecture: Some(CheckerSetting::True),
+            layer: Some("utilities".to_string()),
+            ..default_referencing_pack()
+        };
         let mut test_checker = TestChecker {
             reference: None,
             configuration: None,
             referenced_constant_name: Some(String::from("::Bar")),
-            defining_pack: Some(Pack {
-                name: "packs/bar".to_owned(),
-               layer: Some("product".to_string()),
-                ..default_defining_pack()
-            }),
-            referencing_pack: Pack {
-                name: "packs/foo".to_owned(),
-                enforce_architecture: Some(CheckerSetting::True),
-                layer: Some("utilities".to_string()),
-                ..default_referencing_pack()
-            },
-            expected_violation: Some(build_expected_violation(
-                "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
-                "architecture".to_string(), false)),
+            defining_pack: Some(pack.clone()),
+            referencing_pack: pack,
+            expected_violation: None,
             ..Default::default()
         };
         test_check(&checker_with_layers(), &mut test_checker)
@@ -343,6 +377,7 @@ mod tests {
         let checker = Checker {
             layers: Layers {
                 layers: config_layers,
+                using_deprecated_keys: true,
             },
         };
         checker.validate(&configuration)
@@ -466,6 +501,7 @@ mod tests {
                     String::from("product"),
                     String::from("utilities"),
                 ],
+                using_deprecated_keys: true,
             },
         };
 

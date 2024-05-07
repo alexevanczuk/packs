@@ -116,8 +116,16 @@ pub(crate) fn from_raw(
     let cache_enabled = raw_config.cache;
     let experimental_parser = raw_config.experimental_parser;
 
-    let layers = Layers {
-        layers: raw_config.architecture_layers,
+    let layers = if raw_config.architecture_layers.is_empty() {
+        Layers {
+            layers: raw_config.layers,
+            using_deprecated_keys: false,
+        }
+    } else {
+        Layers {
+            layers: raw_config.architecture_layers,
+            using_deprecated_keys: true,
+        }
     };
 
     let ignored_definitions = raw_config.ignored_definitions;

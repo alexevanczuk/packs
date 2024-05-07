@@ -1,6 +1,6 @@
 // Module declarations
-pub(crate) mod layer;
 mod dependency;
+pub(crate) mod layer;
 
 mod common_test;
 mod folder_visibility;

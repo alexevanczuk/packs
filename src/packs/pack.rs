@@ -287,13 +287,6 @@ impl Pack {
         self.relative_path.join("package.yml")
     }
 
-    pub(crate) fn enforce_architecture(&self) -> &CheckerSetting {
-        match &self.enforce_architecture {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
     pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
         match &self.enforce_dependencies {
             Some(setting) => setting,
