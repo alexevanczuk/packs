@@ -8,6 +8,7 @@ pub(crate) mod checker;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
 pub(crate) mod dependencies;
+pub(crate) mod ignored;
 pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;

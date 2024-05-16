@@ -100,6 +100,45 @@ There are still some known behavioral differences between `packs` and `packwerk`
 - `package_paths` must not end in a slash, e.g. `packs/*/` is not supported, but `packs/*` is.
 - A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `packs/**` is supported and will match `packs/*/*/package.yml`, but will not match `packs/*/package.yml`. `packs/*` must be used to match that.
 
+
+## Enforcement Globs Ignore
+`enforcement_globs_ignore` can be used to specify gitignore-style rules for not enforcing violations.
+
+### Examples
+
+```yml
+# packs/product_services/serv1/foo/package.yml
+enforce_privacy: true
+enforce_visibility: true
+
+enforcement_globs_ignore:
+- enforcements:
+  - privacy
+  - visiblity
+  ignores:
+  - "**/*"
+  # Enforce incoming privacy and visibility violation references _only_ in `packs/product_services/serv1/**/*`
+  - "!packs/product_services/serv1/**/*"
+```
+
+```yml
+# packs/pack2/package.yml
+enforce_dependency: true
+dependencies:
+# not required because of the below enforcement_globs_ignore
+# - packs/pack1 
+# required because of the enforcement_globs_ignore exception line 
+  - packs/pack3 
+
+enforcement_globs_ignore:
+- enforcements:
+  - dependency
+  ignores:
+  - "**/*"
+  # Enforce outgoing dependency violation references _only_ to `packs/pack3/**/*`
+  - "!packs/pack3/**/*"
+```
+
 # Benchmarks
 See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
 

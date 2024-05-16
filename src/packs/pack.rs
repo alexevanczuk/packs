@@ -12,7 +12,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Value;
 
 use super::{
-    checker::ViolationIdentifier, file_utils::expand_glob, PackageTodo,
+    checker::ViolationIdentifier, file_utils::expand_glob, ignored, PackageTodo,
 };
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
@@ -347,6 +347,29 @@ impl Pack {
         new_pack.dependencies.insert(to_pack.name.clone());
         new_pack
     }
+
+    pub(crate) fn ignores_for_enforcement(
+        &self,
+        enforcement: &str,
+    ) -> Option<&HashSet<String>> {
+        self.enforcement_globs_ignore.as_ref().and_then(|ignores| {
+            ignores
+                .iter()
+                .find(|ignore| ignore.enforcements.contains(enforcement))
+                .map(|ignore| &ignore.ignores)
+        })
+    }
+
+    pub(crate) fn is_ignored(
+        &self,
+        file_path: &str,
+        enforcement: &str,
+    ) -> anyhow::Result<bool> {
+        if let Some(ignore_rules) = self.ignores_for_enforcement(enforcement) {
+            return ignored::is_ignored(ignore_rules, file_path);
+        }
+        Ok(false)
+    }
 }
 
 fn serialize_sorted_hashset_of_strings<S>(
@@ -669,6 +692,17 @@ enforcement_globs_ignore:
         let re_pack: Result<Pack, _> = serde_yaml::from_str(&reserialized);
         let re_pack = re_pack.unwrap();
         assert_eq!(pack, re_pack);
+
+        assert_eq!(
+            pack.ignores_for_enforcement("privacy"),
+            Some(&{
+                ["**/*", "!packs/foo"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+        );
+        assert_eq!(pack.ignores_for_enforcement("nope"), None);
     }
 
     #[test]

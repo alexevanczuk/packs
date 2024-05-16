@@ -2,7 +2,6 @@ use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::reference::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
-use anyhow::Result;
 
 pub struct Checker {}
 
@@ -23,7 +22,15 @@ impl CheckerInterface for Checker {
             return Ok(None);
         }
         let defining_pack = defining_pack.unwrap();
-        if !folder_visible(referencing_pack, defining_pack).unwrap() {
+
+        if defining_pack.is_ignored(
+            &reference.relative_referencing_file,
+            &self.violation_type(),
+        )? {
+            return Ok(None);
+        }
+
+        if !folder_visible(referencing_pack, defining_pack) {
             let message = format!(
                 "{}:{}:{}\nFolder Visibility violation: `{}` belongs to `{}`, which is not visible to `{}` as it is not a sibling pack or parent pack.",
                 reference.relative_referencing_file,
@@ -55,28 +62,28 @@ impl CheckerInterface for Checker {
     }
 }
 
-fn folder_visible(from_pack: &Pack, to_pack: &Pack) -> Result<bool> {
-    if to_pack.enforce_folder_visibility().is_false() {
-        return Ok(true);
+fn folder_visible(referencing_pack: &Pack, defining_pack: &Pack) -> bool {
+    if defining_pack.enforce_folder_visibility().is_false() {
+        return true;
     }
 
-    if from_pack.relative_path.to_string_lossy() == "." {
-        return Ok(true); // root pack is visible to all
+    if referencing_pack.relative_path.to_string_lossy() == "." {
+        return true; // root pack is visible to all
     }
 
     if let (Some(from_pack_parent_path), Some(to_pack_parent_path)) = (
-        from_pack.relative_path.parent(),
-        to_pack.relative_path.parent(),
+        referencing_pack.relative_path.parent(),
+        defining_pack.relative_path.parent(),
     ) {
         if from_pack_parent_path == to_pack_parent_path {
-            return Ok(true); // siblings are visible to each other
+            return true; // siblings are visible to each other
         }
     }
-    // visible if "to" is a descendant of "from"
-    Ok(to_pack
+
+    defining_pack
         .relative_path
         .to_string_lossy()
-        .starts_with(from_pack.relative_path.to_string_lossy().as_ref()))
+        .starts_with(referencing_pack.relative_path.to_string_lossy().as_ref())
 }
 
 #[cfg(test)]
@@ -87,7 +94,7 @@ mod tests {
             build_expected_violation, default_defining_pack,
             default_referencing_pack, test_check, TestChecker,
         },
-        pack::CheckerSetting,
+        pack::{CheckerSetting, EnforcementGlobsIgnore},
     };
     use std::path::PathBuf;
 
@@ -108,6 +115,36 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
                 "folder_visibility".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_enforcement_globs_ignore() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_folder_visibility: Some(CheckerSetting::True),
+                enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
+                    enforcements: ["folder_visibility"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/foo/**"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                }]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()
+            },
             ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
@@ -166,10 +203,7 @@ mod tests {
             ..Pack::default()
         };
         if from_pack_path == to_pack_path {
-            assert_eq!(
-                expected,
-                folder_visible(&from_pack, &from_pack).unwrap()
-            );
+            assert_eq!(expected, folder_visible(&from_pack, &from_pack));
             return;
         }
         let to_pack = Pack {
@@ -179,7 +213,7 @@ mod tests {
             ..Pack::default()
         };
 
-        assert_eq!(expected, folder_visible(&from_pack, &to_pack).unwrap());
+        assert_eq!(expected, folder_visible(&from_pack, &to_pack));
     }
 
     #[test]

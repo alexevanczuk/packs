@@ -1,0 +1,13 @@
+enforce_dependencies: true
+enforce_privacy: true
+dependencies:
+- packs/baz
+
+
+enforcement_globs_ignore:
+- enforcements:
+  - dependency
+  ignores:
+  - "**/*"
+  - !packs/product_services/zoo_prod/**/*
+
