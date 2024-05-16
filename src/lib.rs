@@ -60,6 +60,7 @@ mod test_util {
                 enforce_layers: Default::default(),
                 client_keys: Default::default(),
                 owner: Default::default(),
+                enforcement_globs_ignore: Default::default(),
             }
         }
     }

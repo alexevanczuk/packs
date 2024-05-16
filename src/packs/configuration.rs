@@ -225,6 +225,7 @@ mod tests {
                 public_folder: None,
                 layer: None,
                 client_keys: HashMap::new(),
+                enforcement_globs_ignore: None,
             },
             Pack {
                 enforce_dependencies: None,
@@ -246,6 +247,7 @@ mod tests {
                 public_folder: None,
                 layer: None,
                 client_keys: HashMap::new(),
+                enforcement_globs_ignore: None,
             },
             Pack {
                 enforce_dependencies: Some(CheckerSetting::True),
@@ -269,6 +271,7 @@ mod tests {
                 public_folder: None,
                 layer: None,
                 client_keys: HashMap::new(),
+                enforcement_globs_ignore: None,
             },
             Pack {
                 enforce_dependencies: None,
@@ -290,6 +293,7 @@ mod tests {
                 public_folder: None,
                 layer: None,
                 client_keys: HashMap::new(),
+                enforcement_globs_ignore: None,
             },
         ];
 

@@ -123,12 +123,32 @@ pub struct Pack {
 
     #[serde(flatten)]
     pub client_keys: HashMap<String, Value>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enforcement_globs_ignore: Option<Vec<EnforcementGlobsIgnore>>,
 }
 
 impl Hash for Pack {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
     }
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
+pub struct EnforcementGlobsIgnore {
+    #[serde(
+        default,
+        serialize_with = "serialize_sorted_hashset_of_strings",
+        skip_serializing_if = "HashSet::is_empty"
+    )]
+    pub enforcements: HashSet<String>,
+
+    #[serde(
+        default,
+        serialize_with = "serialize_sorted_hashset_of_strings",
+        skip_serializing_if = "HashSet::is_empty"
+    )]
+    pub ignores: HashSet<String>,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
@@ -364,11 +384,10 @@ fn is_default_public_folder(value: &Option<PathBuf>) -> bool {
 
 pub fn serialize_pack(pack: &Pack) -> String {
     let serialized_pack = serde_yaml::to_string(&pack).unwrap();
-    // Indent dependencies by 2 spaces
     if serialized_pack == "{}\n" {
         "".to_owned()
     } else {
-        serialized_pack.replace("\n-", "\n  -")
+        serialized_pack
     }
 }
 
@@ -456,9 +475,9 @@ dependencies:
 
         let expected = r#"
 dependencies:
-  - packs/a
-  - packs/b
-  - packs/c
+- packs/a
+- packs/b
+- packs/c
 "#
         .trim_start();
 
@@ -484,9 +503,9 @@ foobar: true
 enforce_dependencies: strict
 enforce_privacy: true
 dependencies:
-  - packs/a
-  - packs/b
-  - packs/c
+- packs/a
+- packs/b
+- packs/c
 foobar: true
 "#
         .trim_start();
@@ -509,9 +528,9 @@ foobar: true
 
         let expected = r#"
 dependencies:
-  - packs/a
-  - packs/b
-  - packs/c
+- packs/a
+- packs/b
+- packs/c
 foobar: true
 "#
         .trim_start();
@@ -534,8 +553,8 @@ dependencies:
 
         let expected = r#"
 dependencies:
-  - packs/a
-  - packs/b
+- packs/a
+- packs/b
 "#
         .trim_start();
 
@@ -555,9 +574,9 @@ visible_to:
 
         let expected = r#"
 visible_to:
-  - packs/a
-  - packs/b
-  - packs/c
+- packs/a
+- packs/b
+- packs/c
 "#
         .trim_start();
 
@@ -600,6 +619,56 @@ owner: Foobar
         .trim_start();
 
         assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_enforcement_globs() {
+        let pack_yml = r#"
+enforcement_globs_ignore:
+  - enforcements:
+      - privacy
+    ignores:
+      - "**/*"
+      - "!packs/foo"
+  - enforcements:
+      - layer
+    ignores:
+      - packs/bar
+        "#
+        .trim_start();
+
+        let pack: Result<Pack, _> = serde_yaml::from_str(pack_yml);
+        let pack = pack.unwrap();
+        assert_eq!(
+            pack.clone().enforcement_globs_ignore.unwrap(),
+            vec![
+                EnforcementGlobsIgnore {
+                    enforcements: ["privacy"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["**/*", "!packs/foo"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                },
+                EnforcementGlobsIgnore {
+                    enforcements: ["layer"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/bar"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                },
+            ]
+        );
+
+        let reserialized = reserialize_pack(pack_yml);
+        let re_pack: Result<Pack, _> = serde_yaml::from_str(&reserialized);
+        let re_pack = re_pack.unwrap();
+        assert_eq!(pack, re_pack);
     }
 
     #[test]
@@ -657,7 +726,9 @@ owner: Foobar
                 defining_pack_name: "packs/bar".to_string(),
             },
         ];
+
         assert_eq!(expected, actual);
+
         Ok(())
     }
 }
