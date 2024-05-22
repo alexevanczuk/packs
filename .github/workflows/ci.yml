@@ -124,12 +124,16 @@ jobs:
       - name: Update local toolchain
         run: |
           cargo install cross
-      - name: Build
-        run: cross build --release --target x86_64-unknown-linux-gnu
-      - name: Upload linux binary
+      - name: Build linux binaries
         run: |
-          tar -czf target/packs-linux-unknown.tar.gz -C target/x86_64-unknown-linux-gnu/release pks packs
-          gh release upload v$NEW_VERSION target/packs-linux-unknown.tar.gz
+          cross build --release --target x86_64-unknown-linux-gnu
+          cross build --release --target aarch64-unknown-linux-gnu
+      - name: Upload linux binaries
+        run: |
+          tar -czf target/x86_64-linux-unknown.tar.gz -C target/x86_64-unknown-linux-gnu/release pks packs
+          tar -czf target/aarch64-linux-unknown.tar.gz -C target/aarch64-unknown-linux-gnu/release pks packs
+          gh release upload v$NEW_VERSION target/x86_64-linux-unknown.tar.gz
+          gh release upload v$NEW_VERSION target/aarch64-linux-unknown.tar.gz 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ needs.release.outputs.new_version }}
