@@ -164,9 +164,10 @@ impl CheckerInterface for Checker {
 
         let defining_pack_name = &defining_pack.name;
 
-        if relative_defining_file.is_none() {
-            return Ok(None);
-        }
+        let relative_defining_file = match relative_defining_file {
+            Some(file) => file,
+            None => return Ok(None),
+        };
 
         if referencing_pack_name == defining_pack_name {
             return Ok(None);
@@ -178,6 +179,13 @@ impl CheckerInterface for Checker {
                     .layers
                     .can_depend_on(referencing_layer, defining_layer)?
                 {
+                    return Ok(None);
+                }
+
+                if referencing_pack.is_ignored(
+                    relative_defining_file,
+                    &self.violation_type(),
+                )? {
                     return Ok(None);
                 }
 
@@ -232,6 +240,7 @@ mod tests {
         build_expected_violation, default_defining_pack,
         default_referencing_pack, test_check, TestChecker,
     };
+    use crate::packs::pack::EnforcementGlobsIgnore;
     use crate::packs::{
         configuration,
         pack::{CheckerSetting, Pack},
@@ -386,6 +395,38 @@ mod tests {
                 name: "packs/foo".to_owned(),
                 enforce_layers: Some(CheckerSetting::False),
                 layer: Some("product".to_string()),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
+        };
+        test_check(&checker_with_layers(false), &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_enforcement_globs_ignore() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                layer: Some("product".to_string()),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                name: "packs/foo".to_owned(),
+                enforce_layers: Some(CheckerSetting::True),
+                layer: Some("utilities".to_string()),
+                enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
+                    enforcements: ["layer"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/bar/**"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                }]),
                 ..default_referencing_pack()
             },
             ..Default::default()

@@ -40,7 +40,7 @@ fn test_auto_correct_unnecessary_dependencies() -> Result<(), Box<dyn Error>> {
         "enforce_privacy: true",
         "layer: technical_services",
         "dependencies:",
-        "  - packs/bar\n",
+        "- packs/bar\n",
     ]
     .join("\n");
     let after_autocorrect = fs::read_to_string("tests/fixtures/app_with_unnecessary_dependencies/packs/foo/package.yml").unwrap();

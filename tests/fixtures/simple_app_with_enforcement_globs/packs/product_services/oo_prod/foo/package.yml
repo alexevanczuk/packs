@@ -1,0 +1,15 @@
+enforce_dependencies: true
+enforce_privacy: true
+dependencies:
+- packs/product_services/ar_prod/baz
+
+enforcement_globs_ignore:
+- enforcements:
+  - privacy
+  ignores:
+  - "**/*"
+  - !packs/product_services/oo_prod/**/*
+- enforcements:
+  - dependency
+  ignores:
+  - packs/product_services/ar_prod/bar/**

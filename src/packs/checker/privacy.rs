@@ -79,6 +79,13 @@ impl CheckerInterface for Checker {
             }
         }
 
+        if defining_pack.is_ignored(
+            &reference.relative_referencing_file,
+            &self.violation_type(),
+        )? {
+            return Ok(None);
+        }
+
         // START: Original packwerk message
         // path/to/file.rb:36:0
         // Privacy violation: '::Constant' is private to 'packs/defining_pack' but referenced from 'packs/referencing_pack'.
@@ -98,7 +105,7 @@ impl CheckerInterface for Checker {
             referencing_pack_name,
         );
 
-        let violation_type = String::from("privacy");
+        let violation_type = self.violation_type();
         let file = reference.relative_referencing_file.clone();
         let identifier = ViolationIdentifier {
             violation_type,
@@ -124,10 +131,13 @@ impl CheckerInterface for Checker {
 mod tests {
     use std::collections::HashSet;
 
-    use self::packs::checker::common_test::tests::{
-        build_expected_violation, build_expected_violation_with_constant,
-        default_defining_pack, default_referencing_pack, test_check,
-        TestChecker,
+    use self::packs::{
+        checker::common_test::tests::{
+            build_expected_violation, build_expected_violation_with_constant,
+            default_defining_pack, default_referencing_pack, test_check,
+            TestChecker,
+        },
+        pack::EnforcementGlobsIgnore,
     };
 
     use super::*;
@@ -232,6 +242,36 @@ mod tests {
                 ignored_private_constants: HashSet::from([String::from(
                     "::Taco",
                 )]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: default_referencing_pack(),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_enforcement_globs_ignore() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_privacy: Some(CheckerSetting::True),
+                ignored_private_constants: HashSet::from([String::from(
+                    "::Taco",
+                )]),
+                enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
+                    enforcements: ["privacy"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/foo/**"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                }]),
                 ..default_defining_pack()
             }),
             referencing_pack: default_referencing_pack(),

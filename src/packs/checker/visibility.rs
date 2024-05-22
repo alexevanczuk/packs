@@ -50,6 +50,13 @@ impl CheckerInterface for Checker {
             return Ok(None);
         }
 
+        if defining_pack.is_ignored(
+            &reference.relative_referencing_file,
+            &self.violation_type(),
+        )? {
+            return Ok(None);
+        }
+
         let message = format!(
             "{}:{}:{}\nVisibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
             reference.relative_referencing_file,
@@ -86,9 +93,12 @@ impl CheckerInterface for Checker {
 mod tests {
     use std::collections::HashSet;
 
-    use self::packs::checker::common_test::tests::{
-        build_expected_violation, default_defining_pack,
-        default_referencing_pack, test_check, TestChecker,
+    use self::packs::{
+        checker::common_test::tests::{
+            build_expected_violation, default_defining_pack,
+            default_referencing_pack, test_check, TestChecker,
+        },
+        pack::EnforcementGlobsIgnore,
     };
 
     use super::*;
@@ -135,6 +145,36 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
                 "visibility".to_string(), false)),
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_enforcement_globs_ignore() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                enforce_visibility: Some(CheckerSetting::True),
+                enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
+                    enforcements: ["visibility"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/foo/**"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                }]),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                relative_path: PathBuf::from("packs/foo"),
+                ..default_referencing_pack()
+            },
             ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)

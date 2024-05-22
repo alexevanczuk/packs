@@ -4,6 +4,7 @@ use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
+use anyhow::Context;
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
 
@@ -134,20 +135,36 @@ impl CheckerInterface for Checker {
         let ignored_dependency = referencing_pack
             .ignored_dependencies
             .contains(defining_pack_name);
-        if !referencing_pack_dependencies.contains(defining_pack_name)
-            && !ignored_dependency
+
+        if referencing_pack_dependencies.contains(defining_pack_name)
+            || ignored_dependency
         {
-            // START: Original packwerk message
-            // path/to/file.rb:36:0
-            // Dependency violation: ::Constant belongs to 'packs/defining_pack', but 'packs/referencing_pack/package.yml' does not specify a dependency on 'packs/defining_pack'.
-            // Are we missing an abstraction?
-            // Is the code making the reference, and the referenced constant, in the right packages?
+            return Ok(None);
+        }
 
-            // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
-            // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
-            // END: Original packwerk message
+        let relative_defining_file =
+            reference.relative_defining_file.as_ref().context(format!(
+                "expected a relative defining file for defining pack: {}",
+                defining_pack_name
+            ))?;
 
-            let message = format!(
+        if referencing_pack
+            .is_ignored(relative_defining_file, &self.violation_type())?
+        {
+            return Ok(None);
+        }
+
+        // START: Original packwerk message
+        // path/to/file.rb:36:0
+        // Dependency violation: ::Constant belongs to 'packs/defining_pack', but 'packs/referencing_pack/package.yml' does not specify a dependency on 'packs/defining_pack'.
+        // Are we missing an abstraction?
+        // Is the code making the reference, and the referenced constant, in the right packages?
+
+        // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
+        // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
+        // END: Original packwerk message
+
+        let message = format!(
                 "{}:{}:{}\nDependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
                 reference.relative_referencing_file,
                 reference.source_location.line,
@@ -158,24 +175,21 @@ impl CheckerInterface for Checker {
                 defining_pack_name,
             );
 
-            let violation_type = String::from("dependency");
-            let file = reference.relative_referencing_file.clone();
-            let identifier = ViolationIdentifier {
-                violation_type,
-                strict: referencing_pack.enforce_dependencies().is_strict(),
-                file,
-                constant_name: reference.constant_name.clone(),
-                referencing_pack_name: referencing_pack_name.clone(),
-                defining_pack_name: defining_pack_name.clone(),
-            };
+        let violation_type = String::from("dependency");
+        let file = reference.relative_referencing_file.clone();
+        let identifier = ViolationIdentifier {
+            violation_type,
+            strict: referencing_pack.enforce_dependencies().is_strict(),
+            file,
+            constant_name: reference.constant_name.clone(),
+            referencing_pack_name: referencing_pack_name.clone(),
+            defining_pack_name: defining_pack_name.clone(),
+        };
 
-            return Ok(Some(Violation {
-                message,
-                identifier,
-            }));
-        }
-
-        Ok(None)
+        Ok(Some(Violation {
+            message,
+            identifier,
+        }))
     }
 
     fn violation_type(&self) -> String {
@@ -190,7 +204,7 @@ mod tests {
             build_expected_violation, default_defining_pack,
             default_referencing_pack, test_check, TestChecker,
         },
-        pack::CheckerSetting,
+        pack::{CheckerSetting, EnforcementGlobsIgnore},
     };
 
     use super::*;
@@ -280,6 +294,36 @@ mod tests {
                 relative_path: PathBuf::from("packs/foo"),
                 ignored_dependencies: ignored_dependencies,
                 enforce_dependencies: Some(CheckerSetting::True),
+                ..default_referencing_pack()
+            },
+            ..Default::default()
+        };
+        test_check(&Checker {}, &mut test_checker)
+    }
+
+    #[test]
+    fn test_with_enforcement_globs_ignore() -> anyhow::Result<()> {
+        let mut test_checker = TestChecker {
+            reference: None,
+            configuration: None,
+            referenced_constant_name: Some(String::from("::Bar")),
+            defining_pack: Some(Pack {
+                name: "packs/bar".to_owned(),
+                ..default_defining_pack()
+            }),
+            referencing_pack: Pack {
+                relative_path: PathBuf::from("packs/foo"),
+                enforce_dependencies: Some(CheckerSetting::True),
+                enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
+                    enforcements: ["dependency"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    ignores: ["packs/bar/**"]
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                }]),
                 ..default_referencing_pack()
             },
             ..Default::default()
