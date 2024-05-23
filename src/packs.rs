@@ -13,6 +13,7 @@ pub(crate) mod monkey_patch_detection;
 pub(crate) mod pack;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
+pub(crate) mod reports;
 pub(crate) mod walk_directory;
 
 mod constant_dependencies;

@@ -20,6 +20,7 @@ use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use reference::Reference;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
@@ -29,7 +30,7 @@ use tracing::debug;
 
 use super::reference_extractor::get_all_references;
 
-#[derive(PartialEq, Clone, Eq, Hash, Debug)]
+#[derive(PartialEq, Clone, Eq, Hash, Debug, Serialize)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
     pub strict: bool,

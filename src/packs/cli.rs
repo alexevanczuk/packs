@@ -3,10 +3,13 @@ use crate::packs;
 use crate::packs::file_utils::get_absolute_path;
 use clap::{Parser, Subcommand};
 use clap_derive::Args;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 use tracing::debug;
 
-use super::logger::install_logger;
+use super::{
+    logger::install_logger,
+    reports::{recorded_violations, ReportFormat},
+};
 
 /// A CLI to interact with packs
 #[derive(Parser, Debug)]
@@ -128,6 +131,12 @@ enum Command {
         about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
     ListDefinitions(ListDefinitionsArgs),
+
+    #[clap(about = "Report all Todo violations (for reporting purposes)")]
+    ReportTodoViolations {
+        #[arg(short, long)]
+        format: ReportFormat,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -193,6 +202,9 @@ pub fn run() -> anyhow::Result<()> {
         }
         Command::ListPackDependencies { pack } => {
             packs::list_dependencies(&configuration, pack)
+        }
+        Command::ReportTodoViolations { format } => {
+            recorded_violations(&configuration, format, &mut io::stdout())
         }
         Command::AddDependency { from, to } => {
             packs::add_dependency(&configuration, from, to)
