@@ -1,3 +1,4 @@
+use super::output_helper::print_reference_location;
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::{CheckerSetting, Pack};
@@ -189,11 +190,11 @@ impl CheckerInterface for Checker {
                     return Ok(None);
                 }
 
+                let loc = print_reference_location(reference);
+
                 let message = format!(
-                    "\x1b[34m{}\x1b[0m:{}:{}\n{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
-                    reference.relative_referencing_file,
-                    reference.source_location.line,
-                    reference.source_location.column,
+                    "{}{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
+                    loc,
                     self.layers.violation_name(),
                     reference.constant_name,
                     defining_pack_name,

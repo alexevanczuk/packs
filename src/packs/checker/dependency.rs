@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use super::output_helper::print_reference_location;
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
@@ -164,11 +165,10 @@ impl CheckerInterface for Checker {
         // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
         // END: Original packwerk message
 
+        let loc = print_reference_location(reference);
         let message = format!(
-                "\x1b[34m{}\x1b[0m:{}:{}\nDependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
-                reference.relative_referencing_file,
-                reference.source_location.line,
-                reference.source_location.column,
+                "{}Dependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
+                loc,
                 reference.constant_name,
                 defining_pack_name,
                 referencing_pack.relative_yml().to_string_lossy(),
