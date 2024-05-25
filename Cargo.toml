@@ -50,6 +50,7 @@ line-col = "0.2.1" # for creating source maps of violations
 ruby_inflector = '0.0.8' # for inflecting strings, e.g. turning `has_many :companies` into `Company`
 petgraph = "0.6.3" # for running graph algorithms (e.g. does the dependency graph contain a cycle?)
 fnmatch-regex2 = "0.3.0"
+strip-ansi-escapes = "0.2.0"
 
 [dev-dependencies]
 assert_cmd = "2.0.10" # testing CLI
