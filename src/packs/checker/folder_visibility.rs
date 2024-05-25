@@ -1,3 +1,4 @@
+use super::output_helper::print_reference_location;
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::reference::Reference;
 use crate::packs::pack::Pack;
@@ -31,11 +32,11 @@ impl CheckerInterface for Checker {
         }
 
         if !folder_visible(referencing_pack, defining_pack) {
+            let loc = print_reference_location(reference);
+
             let message = format!(
-                "{}:{}:{}\nFolder Visibility violation: `{}` belongs to `{}`, which is not visible to `{}` as it is not a sibling pack or parent pack.",
-                reference.relative_referencing_file,
-                reference.source_location.line,
-                reference.source_location.column,
+                "{}Folder Visibility violation: `{}` belongs to `{}`, which is not visible to `{}` as it is not a sibling pack or parent pack.",
+                loc,
                 reference.constant_name,
                 defining_pack.name,
                 referencing_pack.name,

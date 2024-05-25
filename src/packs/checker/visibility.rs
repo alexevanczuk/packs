@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use super::output_helper::print_reference_location;
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
@@ -56,12 +57,11 @@ impl CheckerInterface for Checker {
         )? {
             return Ok(None);
         }
+        let loc = print_reference_location(reference);
 
         let message = format!(
-            "{}:{}:{}\nVisibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
-            reference.relative_referencing_file,
-            reference.source_location.line,
-            reference.source_location.column,
+            "{}Visibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
+            loc,
             reference.constant_name,
             defining_pack_name,
             referencing_pack_name,

@@ -136,7 +136,22 @@ pub mod tests {
             });
 
         let result = checker.check(&reference, &configuration)?;
-        assert_eq!(result, test_checker.expected_violation);
+
+        let stripped_result = match result {
+            Some(violation) => {
+                let stripped_message =
+                    strip_ansi_escapes::strip(violation.message);
+
+                Some(Violation {
+                    message: String::from_utf8_lossy(&stripped_message)
+                        .to_string(),
+                    ..violation
+                })
+            }
+            None => None,
+        };
+
+        assert_eq!(stripped_result, test_checker.expected_violation);
 
         Ok(())
     }
