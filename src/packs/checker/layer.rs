@@ -276,7 +276,6 @@ mod tests {
             defining_pack: Some(pack.clone()),
             referencing_pack: pack,
             expected_violation: None,
-            ..Default::default()
         };
         test_check(&checker_with_layers(true), &mut test_checker)
     }
@@ -301,7 +300,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nLayer violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
                 "layer".to_string(), false)),
-            ..Default::default()
         };
         test_check(&checker_with_layers(false), &mut test_checker)
     }
@@ -327,7 +325,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nArchitecture violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
                 "architecture".to_string(), false)),
-            ..Default::default()
         };
         test_check(&checker_with_layers(true), &mut test_checker)
     }
@@ -352,7 +349,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nLayer violation: `::Bar` belongs to `packs/bar` (whose layer is `product`) cannot be accessed from `packs/foo` (whose layer is `utilities`)".to_string(), 
                 "layer".to_string(), true)),
-            ..Default::default()
         };
         test_check(&checker_with_layers(false), &mut test_checker)
     }

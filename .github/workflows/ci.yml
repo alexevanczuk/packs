@@ -41,6 +41,8 @@ jobs:
   lints:
     name: Lints
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-Dwarnings"
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -49,7 +51,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets --all-features
 
   release:
     runs-on: macos-latest

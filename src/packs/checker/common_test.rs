@@ -92,10 +92,10 @@ pub mod tests {
             Some(name) => name.clone(),
             None => String::from("::TheConstant"),
         };
-        let defing_pack_name = match test_checker.defining_pack {
-            Some(ref pack) => Some(pack.name.clone()),
-            None => None,
-        };
+        let defing_pack_name = test_checker
+            .defining_pack
+            .as_ref()
+            .map(|pack| pack.name.clone());
         let reference = test_checker.reference.take();
         let reference = reference.unwrap_or_else(|| Reference {
             constant_name: constant_name.clone(),
