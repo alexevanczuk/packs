@@ -4,18 +4,28 @@ use std::{error::Error, fs};
 
 mod common;
 
+pub fn stripped_output(output: Vec<u8>) -> String {
+    String::from_utf8_lossy(&strip_ansi_escapes::strip(output)).to_string()
+}
+
 #[test]
 fn test_check() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
         .arg("check")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
@@ -23,7 +33,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_check_with_single_file() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
@@ -31,9 +41,15 @@ fn test_check_with_single_file() -> Result<(), Box<dyn Error>> {
         .arg("packs/foo/app/services/foo.rb")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
@@ -42,7 +58,7 @@ fn test_check_with_single_file() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_check_with_single_file_experimental_parser(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
@@ -51,9 +67,15 @@ fn test_check_with_single_file_experimental_parser(
         .arg("packs/foo/app/services/foo.rb")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
@@ -78,7 +100,7 @@ fn test_check_with_package_todo_file() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_check_with_package_todo_file_ignoring_recorded_violations(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/contains_package_todo")
         .arg("--debug")
@@ -86,9 +108,14 @@ fn test_check_with_package_todo_file_ignoring_recorded_violations(
         .arg("--ignore-recorded-violations")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/other_foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/other_foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
 
     common::teardown();
 
@@ -97,7 +124,7 @@ fn test_check_with_package_todo_file_ignoring_recorded_violations(
 
 #[test]
 fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
+    let output = Command::cargo_bin("packs")
         .unwrap()
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
@@ -106,9 +133,15 @@ fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
         .arg("check")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
@@ -196,7 +229,7 @@ fn test_check_contents() -> Result<(), Box<dyn Error>> {
     let foo_rb_contents =
         fs::read_to_string(format!("{}/{}", project_root, relative_path))?;
 
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg(project_root)
         .arg("--debug")
@@ -205,9 +238,15 @@ fn test_check_contents() -> Result<(), Box<dyn Error>> {
         .write_stdin(format!("\n\n\n{}", foo_rb_contents))
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:6:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:6:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("2 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:6:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:6:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
 
     common::teardown();
     Ok(())
@@ -221,7 +260,7 @@ fn test_check_contents_ignoring_recorded_violations(
     let foo_rb_contents =
         fs::read_to_string(format!("{}/{}", project_root, relative_path))?;
 
-    Command::cargo_bin("packs")?
+    let output = Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg(project_root)
         .arg("--debug")
@@ -231,8 +270,13 @@ fn test_check_contents_ignoring_recorded_violations(
         .write_stdin(format!("\n\n\n{}", foo_rb_contents))
         .assert()
         .failure()
-        .stdout(predicate::str::contains("1 violation(s) detected:"))
-        .stdout(predicate::str::contains("packs/foo/app/services/foo.rb:6:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+    assert!(stripped_output.contains("1 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:6:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
 
     common::teardown();
     Ok(())
