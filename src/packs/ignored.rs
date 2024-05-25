@@ -74,16 +74,10 @@ mod tests {
 
     #[test]
     fn test_is_match() {
-        assert_eq!(is_match("foo", "foo"), true);
-        assert_eq!(is_match("foo", "bar"), false);
-        assert_eq!(is_match("foo*", "foobar"), true);
-        assert_eq!(
-            is_match("packs/foo/**", "packs/foo/app/services/my.rb"),
-            true
-        );
-        assert_eq!(
-            is_match("packs/foo/**/*", "packs/foo/app/services/my.rb"),
-            true
-        );
+        assert!(is_match("foo", "foo"));
+        assert!(!is_match("foo", "bar"));
+        assert!(is_match("foo*", "foobar"));
+        assert!(is_match("packs/foo/**", "packs/foo/app/services/my.rb"));
+        assert!(is_match("packs/foo/**/*", "packs/foo/app/services/my.rb"));
     }
 }

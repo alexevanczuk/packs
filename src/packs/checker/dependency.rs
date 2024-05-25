@@ -250,7 +250,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
                 "dependency".to_string(), false)),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -272,7 +271,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
                 "dependency".to_string(), true)),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -292,7 +290,7 @@ mod tests {
             }),
             referencing_pack: Pack {
                 relative_path: PathBuf::from("packs/foo"),
-                ignored_dependencies: ignored_dependencies,
+                ignored_dependencies,
                 enforce_dependencies: Some(CheckerSetting::True),
                 ..default_referencing_pack()
             },

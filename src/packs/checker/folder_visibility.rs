@@ -115,7 +115,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
                 "folder_visibility".to_string(), false)),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -166,7 +165,6 @@ mod tests {
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
                 "folder_visibility".to_string(), true)),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }

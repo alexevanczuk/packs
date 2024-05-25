@@ -203,7 +203,6 @@ mod tests {
                 String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
                 String::from("privacy"), false,
             )),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -225,7 +224,6 @@ mod tests {
                 String::from("packs/foo/app/services/foo.rb:3:1\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"),
                 String::from("privacy"), true,
             )),
-            ..Default::default()
         };
         test_check(&Checker {}, &mut test_checker)
     }
