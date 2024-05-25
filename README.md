@@ -92,7 +92,6 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 # Not yet supported
 - custom inflections
 - custom load paths
-- zeitwerk default namespaces
 - extensible plugin system
 
 # Behavioral differences
@@ -100,6 +99,19 @@ There are still some known behavioral differences between `packs` and `packwerk`
 - `package_paths` must not end in a slash, e.g. `packs/*/` is not supported, but `packs/*` is.
 - A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `packs/**` is supported and will match `packs/*/*/package.yml`, but will not match `packs/*/package.yml`. `packs/*` must be used to match that.
 
+## Default Namespaces
+`packs` supports Zeitwerk default namespaces. However, since it doesn't have access to the Rails runtime, you need to explicitly specify the namespaces in `packwerk.yml`.
+
+For example, if you're using [`packs-rails`](https://github.com/rubyatscale/packs-rails) and [`automatic_namespaces`](https://github.com/gap777/automatic_namespaces) to configure your default namespaces, and you have
+- `packs/foo/app/models/bar.rb` which is configured to define `Foo::Bar`
+- `packs/foo/app/domain/baz.rb` which is configured to define `Foo::Baz`
+
+You'll need to specify the default namespaces in `packwerk.yml` like so:
+```yml
+autoload_roots:
+  packs/foo/app/models: "::Foo"
+  packs/foo/app/domain: "::Foo"
+```
 
 ## Enforcement Globs Ignore
 `enforcement_globs_ignore` can be used to specify gitignore-style rules for not enforcing violations.
