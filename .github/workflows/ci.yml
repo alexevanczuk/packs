@@ -38,6 +38,7 @@ jobs:
         run: cargo test -- --nocapture
         env:
           RUST_BACKTRACE: 1
+          RUSTFLAGS: "-Dwarnings"
   lints:
     name: Lints
     runs-on: ubuntu-latest
