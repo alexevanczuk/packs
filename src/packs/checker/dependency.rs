@@ -165,7 +165,7 @@ impl CheckerInterface for Checker {
         // END: Original packwerk message
 
         let message = format!(
-                "{}:{}:{}\nDependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
+                "\x1b[34m{}\x1b[0m:{}:{}\nDependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
                 reference.relative_referencing_file,
                 reference.source_location.line,
                 reference.source_location.column,

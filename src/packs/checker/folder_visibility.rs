@@ -32,7 +32,7 @@ impl CheckerInterface for Checker {
 
         if !folder_visible(referencing_pack, defining_pack) {
             let message = format!(
-                "{}:{}:{}\nFolder Visibility violation: `{}` belongs to `{}`, which is not visible to `{}` as it is not a sibling pack or parent pack.",
+                "\x1b[34m{}\x1b[0m:{}:{}\nFolder Visibility violation: `{}` belongs to `{}`, which is not visible to `{}` as it is not a sibling pack or parent pack.",
                 reference.relative_referencing_file,
                 reference.source_location.line,
                 reference.source_location.column,

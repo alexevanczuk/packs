@@ -190,7 +190,7 @@ impl CheckerInterface for Checker {
                 }
 
                 let message = format!(
-                    "{}:{}:{}\n{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
+                    "\x1b[34m{}\x1b[0m:{}:{}\n{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
                     reference.relative_referencing_file,
                     reference.source_location.line,
                     reference.source_location.column,

@@ -58,7 +58,7 @@ impl CheckerInterface for Checker {
         }
 
         let message = format!(
-            "{}:{}:{}\nVisibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
+            "\x1b[34m{}\x1b[0m:{}:{}\nVisibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
             reference.relative_referencing_file,
             reference.source_location.line,
             reference.source_location.column,
