@@ -3,7 +3,7 @@ mod dependency;
 pub(crate) mod layer;
 
 mod common_test;
-mod folder_visibility;
+mod folder_privacy;
 mod output_helper;
 mod privacy;
 pub(crate) mod reference;
@@ -456,7 +456,7 @@ fn get_checkers(
         Box::new(layer::Checker {
             layers: configuration.layers.clone(),
         }),
-        Box::new(folder_visibility::Checker {}),
+        Box::new(folder_privacy::Checker {}),
     ]
 }
 

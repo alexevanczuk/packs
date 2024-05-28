@@ -43,7 +43,7 @@ impl CheckerInterface for Checker {
             );
             let identifier = ViolationIdentifier {
                 violation_type: self.violation_type(),
-                strict: defining_pack.enforce_folder_visibility().is_strict(),
+                strict: defining_pack.enforce_folder_privacy().is_strict(),
                 file: reference.relative_referencing_file.clone(),
                 constant_name: reference.constant_name.clone(),
                 referencing_pack_name: referencing_pack.name.clone(),
@@ -59,12 +59,12 @@ impl CheckerInterface for Checker {
     }
 
     fn violation_type(&self) -> String {
-        "folder_visibility".to_owned()
+        "folder_privacy".to_owned()
     }
 }
 
 fn folder_visible(referencing_pack: &Pack, defining_pack: &Pack) -> bool {
-    if defining_pack.enforce_folder_visibility().is_false() {
+    if defining_pack.enforce_folder_privacy().is_false() {
         return true;
     }
 
@@ -107,7 +107,7 @@ mod tests {
             referenced_constant_name: Some(String::from("::Bar")),
             defining_pack: Some(Pack {
                 name: "packs/bar".to_owned(),
-                enforce_folder_visibility: Some(CheckerSetting::True),
+                enforce_folder_privacy: Some(CheckerSetting::True),
                 ..default_defining_pack()
             }),
             referencing_pack: Pack{
@@ -115,7 +115,7 @@ mod tests {
                 ..default_referencing_pack()},
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
-                "folder_visibility".to_string(), false)),
+                "folder_privacy".to_string(), false)),
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -128,9 +128,9 @@ mod tests {
             referenced_constant_name: Some(String::from("::Bar")),
             defining_pack: Some(Pack {
                 name: "packs/bar".to_owned(),
-                enforce_folder_visibility: Some(CheckerSetting::True),
+                enforce_folder_privacy: Some(CheckerSetting::True),
                 enforcement_globs_ignore: Some(vec![EnforcementGlobsIgnore {
-                    enforcements: ["folder_visibility"]
+                    enforcements: ["folder_privacy"]
                         .iter()
                         .map(|s| s.to_string())
                         .collect(),
@@ -157,7 +157,7 @@ mod tests {
             referenced_constant_name: Some(String::from("::Bar")),
             defining_pack: Some(Pack {
                 name: "packs/bar".to_owned(),
-                enforce_folder_visibility: Some(CheckerSetting::Strict),
+                enforce_folder_privacy: Some(CheckerSetting::Strict),
                 ..default_defining_pack()
             }),
             referencing_pack: Pack{
@@ -165,7 +165,7 @@ mod tests {
                 ..default_referencing_pack()},
             expected_violation: Some(build_expected_violation(
                 "packs/foo/app/services/foo.rb:3:1\nFolder Visibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
-                "folder_visibility".to_string(), true)),
+                "folder_privacy".to_string(), true)),
         };
         test_check(&Checker {}, &mut test_checker)
     }
@@ -178,7 +178,7 @@ mod tests {
             referenced_constant_name: Some(String::from("::Bar")),
             defining_pack: Some(Pack {
                 name: "packs/bar".to_owned(),
-                enforce_folder_visibility: Some(CheckerSetting::False),
+                enforce_folder_privacy: Some(CheckerSetting::False),
                 ..default_defining_pack()
             }),
             referencing_pack: Pack {
@@ -190,10 +190,10 @@ mod tests {
         test_check(&Checker {}, &mut test_checker)
     }
 
-    fn assert_folder_visibility(
+    fn assert_folder_privacy(
         from_pack_path: &str,
         to_pack_path: &str,
-        to_pack_enforce_folder_visibility: Option<CheckerSetting>,
+        to_pack_enforce_folder_privacy: Option<CheckerSetting>,
         expected: bool,
     ) {
         let from_pack = Pack {
@@ -208,7 +208,7 @@ mod tests {
         let to_pack = Pack {
             name: to_pack_path.to_string(),
             relative_path: PathBuf::from(&to_pack_path),
-            enforce_folder_visibility: to_pack_enforce_folder_visibility,
+            enforce_folder_privacy: to_pack_enforce_folder_privacy,
             ..Pack::default()
         };
 
@@ -216,8 +216,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_different_parent_invisible() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_different_parent_invisible() {
+        assert_folder_privacy(
             "packs/bars/bar",
             "packs/foos/foo",
             Some(CheckerSetting::True),
@@ -226,8 +226,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_not_enforced() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_not_enforced() {
+        assert_folder_privacy(
             "packs/bar",
             "packs/foos/zoo",
             Some(CheckerSetting::False),
@@ -236,8 +236,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_siblings() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_siblings() {
+        assert_folder_privacy(
             "packs/bar",
             "packs/foos",
             Some(CheckerSetting::True),
@@ -246,8 +246,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_same() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_same() {
+        assert_folder_privacy(
             "packs/bar",
             "packs/bar",
             Some(CheckerSetting::True),
@@ -256,8 +256,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_descendant() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_descendant() {
+        assert_folder_privacy(
             "packs/foo",
             "packs/foo/bar",
             Some(CheckerSetting::True),
@@ -266,8 +266,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_parent_invisible() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_parent_invisible() {
+        assert_folder_privacy(
             "packs/foo/bar",
             "packs/foo",
             Some(CheckerSetting::True),
@@ -276,8 +276,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_invisible() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_invisible() {
+        assert_folder_privacy(
             "packs/baz",
             "packs/foos/foo",
             Some(CheckerSetting::True),
@@ -286,8 +286,8 @@ mod tests {
     }
 
     #[test]
-    fn test_folder_visibility_when_from_is_root() {
-        assert_folder_visibility(
+    fn test_folder_privacy_when_from_is_root() {
+        assert_folder_privacy(
             ".",
             "packs/foos/foo",
             Some(CheckerSetting::True),

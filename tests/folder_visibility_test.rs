@@ -7,7 +7,7 @@ mod common;
 fn test_invisible_pack_violation() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
-        .arg("tests/fixtures/folder_visibility_violations")
+        .arg("tests/fixtures/folder_privacy_violations")
         .arg("--debug")
         .arg("check")
         .assert()

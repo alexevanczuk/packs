@@ -108,7 +108,7 @@ pub struct Pack {
         serialize_with = "serialize_checker_setting",
         deserialize_with = "deserialize_checker_setting"
     )]
-    pub enforce_folder_visibility: Option<CheckerSetting>,
+    pub enforce_folder_privacy: Option<CheckerSetting>,
 
     #[serde(skip_serializing_if = "is_default_public_folder")]
     pub public_folder: Option<PathBuf>,
@@ -306,8 +306,8 @@ impl Pack {
         }
     }
 
-    pub(crate) fn enforce_folder_visibility(&self) -> &CheckerSetting {
-        match &self.enforce_folder_visibility {
+    pub(crate) fn enforce_folder_privacy(&self) -> &CheckerSetting {
+        match &self.enforce_folder_privacy {
             Some(setting) => setting,
             None => &CheckerSetting::False,
         }

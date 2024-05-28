@@ -55,7 +55,7 @@ mod test_util {
                 enforce_dependencies: Default::default(),
                 enforce_privacy: Default::default(),
                 enforce_visibility: Default::default(),
-                enforce_folder_visibility: Default::default(),
+                enforce_folder_privacy: Default::default(),
                 enforce_layers: Default::default(),
                 client_keys: Default::default(),
                 owner: Default::default(),
