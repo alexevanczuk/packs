@@ -116,16 +116,8 @@ pub(crate) fn from_raw(
     let cache_enabled = raw_config.cache;
     let experimental_parser = raw_config.experimental_parser;
 
-    let layers = if raw_config.architecture_layers.is_empty() {
-        Layers {
-            layers: raw_config.layers,
-            using_deprecated_keys: false,
-        }
-    } else {
-        Layers {
-            layers: raw_config.architecture_layers,
-            using_deprecated_keys: true,
-        }
+    let layers = Layers {
+        layers: raw_config.layers,
     };
 
     let ignored_definitions = raw_config.ignored_definitions;
@@ -210,7 +202,6 @@ mod tests {
                 enforce_privacy: Some(CheckerSetting::True),
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
-                enforce_architecture: None,
                 enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/bar/package.yml"),
@@ -232,7 +223,6 @@ mod tests {
                 enforce_privacy: None,
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
-                enforce_architecture: None,
                 enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/baz/package.yml"),
@@ -254,7 +244,6 @@ mod tests {
                 enforce_privacy: Some(CheckerSetting::True),
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
-                enforce_architecture: None,
                 enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("packs/foo/package.yml"),
@@ -278,7 +267,6 @@ mod tests {
                 enforce_privacy: None,
                 enforce_visibility: None,
                 enforce_folder_visibility: None,
-                enforce_architecture: None,
                 enforce_layers: None,
                 owner: None,
                 yml: absolute_root.join("package.yml"),

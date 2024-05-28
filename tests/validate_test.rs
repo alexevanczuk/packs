@@ -33,9 +33,9 @@ packs/foo, packs/bar",
 }
 
 #[test]
-fn test_validate_architecture() -> Result<(), Box<dyn Error>> {
+fn test_validate_layer() -> Result<(), Box<dyn Error>> {
     let expected_message_1 = String::from(
-        "\'layer\' must be specified in \'packs/baz/package.yml\' because `enforce_architecture` is true or strict.",
+        "\'layer\' must be specified in \'packs/baz/package.yml\' because `enforce_layers` is true or strict.",
     );
     let expected_message_2 = String::from(
         "Invalid \'layer\' option in \'packs/foo/package.yml\'. `layer` must be one of the layers defined in `packwerk.yml`"
@@ -44,7 +44,7 @@ fn test_validate_architecture() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")
         .unwrap()
         .arg("--project-root")
-        .arg("tests/fixtures/app_with_architecture_violations_in_yml")
+        .arg("tests/fixtures/app_with_layer_violations_in_yml")
         .arg("validate")
         .assert()
         .failure()

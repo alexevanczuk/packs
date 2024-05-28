@@ -50,10 +50,6 @@ pub(crate) struct RawConfiguration {
 
     // Architecture layers
     #[serde(default)]
-    pub architecture_layers: Vec<String>,
-
-    // Architecture layers
-    #[serde(default)]
     pub layers: Vec<String>,
 
     // Experimental parser

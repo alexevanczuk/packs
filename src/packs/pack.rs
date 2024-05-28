@@ -56,14 +56,6 @@ pub struct Pack {
         serialize_with = "serialize_checker_setting",
         deserialize_with = "deserialize_checker_setting"
     )]
-    pub enforce_architecture: Option<CheckerSetting>,
-
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        serialize_with = "serialize_checker_setting",
-        deserialize_with = "deserialize_checker_setting"
-    )]
     pub enforce_layers: Option<CheckerSetting>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
