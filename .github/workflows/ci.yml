@@ -128,7 +128,6 @@ jobs:
           # This tarball is a binary that is executable
           gh release upload $NEW_VERSION target/packs-mac.tar.gz
 
-          #cargo publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ needs.release.outputs.new_version }}
