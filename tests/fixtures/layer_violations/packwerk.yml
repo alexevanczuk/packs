@@ -22,8 +22,8 @@ cache: false
 # Where you want the cache to be stored (default below)
 # cache_directory: 'tmp/cache/packwerk'
 
-architecture_layers:
-  - admin
+layers:
+  - tooling
+  - deprecated
   - product
-  - technical_services
   - utilities
