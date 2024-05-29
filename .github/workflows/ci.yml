@@ -87,7 +87,7 @@ jobs:
           if [[ -n $VERSION_CHANGES ]]; then
             NEW_VERSION=$(echo $VERSION_CHANGES | awk -F'"' '{print $2}')
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "new_version=v$NEW_VERSION" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
@@ -95,19 +95,7 @@ jobs:
       - name: cargo publish and create GitHub Release if current commit has updated the version in Cargo.toml
         if: steps.check_for_version_changes.outputs.changed == 'true'
         run: |
-          # This combines the intel and m1 binaries into a single binary
-          lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
-
-          # Creates artifact for homebrew. -C means run from `target` directory
-          tar -czf target/packs-mac.tar.gz -C target packs
-
-          gh release create v${{steps.check_for_version_changes.outputs.new_version}} --target "${{ github.sha }}" --generate-notes
-
-          # This uploads the raw binary
-          gh release upload v${{steps.check_for_version_changes.outputs.new_version}} target/packs
-
-          # This tarball is a binary that is executable
-          gh release upload v${{steps.check_for_version_changes.outputs.new_version}} target/packs-mac.tar.gz
+          gh release create ${{steps.check_for_version_changes.outputs.new_version}} --target "${{ github.sha }}" --generate-notes
 
           cargo publish
         env:
@@ -117,6 +105,33 @@ jobs:
         if: steps.check_for_version_changes.outputs.changed == 'false'
         run: |
           echo "No diff to the version found in Cargo.toml. Skipping publishing."
+  upload-mac-universal-bin:
+    needs: release
+    runs-on: macos-latest
+    if: github.ref == 'refs/heads/main' && ${{needs.release.outputs.changed}} == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release --target aarch64-apple-darwin --target x86_64-apple-darwin
+
+      - name: create GitHub Release
+        run: |
+          # This combines the intel and m1 binaries into a single binary
+          lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
+
+          # Creates artifact for homebrew. -C means run from `target` directory
+          tar -czf target/packs-mac.tar.gz -C target packs
+
+          # This uploads the raw binary
+          gh release upload $NEW_VERSION target/packs
+
+          # This tarball is a binary that is executable
+          gh release upload $NEW_VERSION target/packs-mac.tar.gz
+
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ needs.release.outputs.new_version }}
+
   upload-linux-bin:
     needs: release
     if: github.ref == 'refs/heads/main' && ${{needs.release.outputs.changed}} == 'true'
@@ -134,9 +149,31 @@ jobs:
         run: |
           tar -czf target/x86_64-unknown-linux-gnu.tar.gz -C target/x86_64-unknown-linux-gnu/release pks packs
           tar -czf target/aarch64-unknown-linux-gnu.tar.gz -C target/aarch64-unknown-linux-gnu/release pks packs
-          gh release upload v$NEW_VERSION target/x86_64-unknown-linux-gnu.tar.gz
-          gh release upload v$NEW_VERSION target/aarch64-unknown-linux-gnu.tar.gz 
+          gh release upload $NEW_VERSION target/x86_64-unknown-linux-gnu.tar.gz
+          gh release upload $NEW_VERSION target/aarch64-unknown-linux-gnu.tar.gz 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ needs.release.outputs.new_version }}
 
+  generate-dotslash-files:
+    name: Generating and uploading DotSlash files
+    needs: 
+      - release
+      - upload-linux-bin
+      - upload-mac-universal-bin
+    if: success() && github.ref == 'refs/heads/main' && ${{needs.release.outputs.changed}} == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: facebook/dotslash-publish-release@v1
+        # This is necessary because the action uses
+        # `gh release upload` to publish the generated DotSlash file(s)
+        # as part of the release.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Additional file that lives in your repo that defines
+          # how your DotSlash file(s) should be generated.
+          config: .github/workflows/dotslash-config.json
+          # Tag for the release to target.
+          tag: ${{ needs.release.outputs.new_version }}
