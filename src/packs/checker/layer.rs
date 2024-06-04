@@ -1,4 +1,5 @@
 use super::output_helper::print_reference_location;
+use super::pack_checker::{PackChecker, ViolationDirection};
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::{CheckerSetting, Pack};
@@ -108,51 +109,25 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_set = &configuration.pack_set;
-
-        let referencing_pack = &reference.referencing_pack(pack_set)?;
-
-        let relative_defining_file = &reference.relative_defining_file;
-
-        let referencing_pack_name = &referencing_pack.name;
-        let defining_pack = &reference.defining_pack(pack_set)?;
-        if defining_pack.is_none() {
-            return Ok(None);
-        }
-        let defining_pack = defining_pack.unwrap();
-
-        if self
-            .layers
-            .pack_enforces_layers(referencing_pack)
-            .is_false()
-        {
+        let pack_checker = PackChecker::new(
+            configuration,
+            reference,
+            &self.violation_type(),
+            ViolationDirection::Outgoing,
+        )?;
+        if !pack_checker.checkable()? {
             return Ok(None);
         }
 
-        let defining_pack_name = &defining_pack.name;
-
-        let relative_defining_file = match relative_defining_file {
-            Some(file) => file,
-            None => return Ok(None),
-        };
-
-        if referencing_pack_name == defining_pack_name {
-            return Ok(None);
-        }
-
-        match (&referencing_pack.layer, &defining_pack.layer) {
+        match (
+            &pack_checker.referencing_pack.layer,
+            &pack_checker.defining_pack.unwrap().layer,
+        ) {
             (Some(referencing_layer), Some(defining_layer)) => {
                 if self
                     .layers
                     .can_depend_on(referencing_layer, defining_layer)?
                 {
-                    return Ok(None);
-                }
-
-                if referencing_pack.is_ignored(
-                    relative_defining_file,
-                    &self.violation_type(),
-                )? {
                     return Ok(None);
                 }
 
@@ -163,9 +138,9 @@ impl CheckerInterface for Checker {
                     loc,
                     self.layers.violation_name(),
                     reference.constant_name,
-                    defining_pack_name,
+                    pack_checker.defining_pack.unwrap().name,
                     defining_layer,
-                    referencing_pack_name,
+                    pack_checker.referencing_pack.name,
                     referencing_layer,
                 );
 
@@ -173,14 +148,18 @@ impl CheckerInterface for Checker {
                 let file = reference.relative_referencing_file.clone();
                 let identifier = ViolationIdentifier {
                     violation_type,
-                    strict: self
-                        .layers
-                        .pack_enforces_layers(referencing_pack)
-                        .is_strict(),
+                    strict: pack_checker.is_strict(),
                     file,
                     constant_name: reference.constant_name.clone(),
-                    referencing_pack_name: referencing_pack_name.clone(),
-                    defining_pack_name: defining_pack_name.clone(),
+                    referencing_pack_name: pack_checker
+                        .referencing_pack
+                        .name
+                        .clone(),
+                    defining_pack_name: pack_checker
+                        .defining_pack
+                        .unwrap()
+                        .name
+                        .clone(),
                 };
 
                 Ok(Some(Violation {
