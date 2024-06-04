@@ -1,4 +1,5 @@
 use super::output_helper::print_reference_location;
+use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::reference::Reference;
 use crate::packs::pack::Pack;
@@ -12,26 +13,14 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_set = &configuration.pack_set;
-        let referencing_pack = &reference.referencing_pack(pack_set)?;
-        let relative_defining_file = &reference.relative_defining_file;
-        if relative_defining_file.is_none() {
+        let pack_checker =
+            PackChecker::new(configuration, reference, &self.violation_type())?;
+        if !pack_checker.checkable()? {
             return Ok(None);
         }
-        let defining_pack = &reference.defining_pack(pack_set)?;
-        if defining_pack.is_none() {
-            return Ok(None);
-        }
-        let defining_pack = defining_pack.unwrap();
+        let defining_pack = pack_checker.defining_pack.unwrap();
 
-        if defining_pack.is_ignored(
-            &reference.relative_referencing_file,
-            &self.violation_type(),
-        )? {
-            return Ok(None);
-        }
-
-        if !folder_visible(referencing_pack, defining_pack) {
+        if !folder_visible(pack_checker.referencing_pack, defining_pack) {
             let loc = print_reference_location(reference);
 
             let message = format!(
@@ -39,14 +28,17 @@ impl CheckerInterface for Checker {
                 loc,
                 reference.constant_name,
                 defining_pack.name,
-                referencing_pack.name,
+                pack_checker.referencing_pack.name,
             );
             let identifier = ViolationIdentifier {
                 violation_type: self.violation_type(),
-                strict: defining_pack.enforce_folder_privacy().is_strict(),
+                strict: pack_checker.is_strict(),
                 file: reference.relative_referencing_file.clone(),
                 constant_name: reference.constant_name.clone(),
-                referencing_pack_name: referencing_pack.name.clone(),
+                referencing_pack_name: pack_checker
+                    .referencing_pack
+                    .name
+                    .clone(),
                 defining_pack_name: defining_pack.name.clone(),
             };
             Ok(Some(Violation {

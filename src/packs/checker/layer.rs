@@ -109,12 +109,8 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker = PackChecker::new(
-            configuration,
-            reference,
-            &self.violation_type(),
-            ViolationDirection::Outgoing,
-        )?;
+        let pack_checker =
+            PackChecker::new(configuration, reference, &self.violation_type())?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }

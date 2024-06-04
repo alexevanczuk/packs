@@ -9,7 +9,6 @@ pub struct PackChecker<'a> {
     pub referencing_pack: &'a Pack,
     pub defining_pack: Option<&'a Pack>,
     pub violation_type: ViolationType,
-    pub violation_direction: ViolationDirection,
     pub reference: &'a Reference,
 }
 
@@ -57,16 +56,25 @@ impl<'a> PackChecker<'a> {
         configuration: &'a Configuration,
         reference: &'a Reference,
         violation_type: &str,
-        violation_direction: ViolationDirection,
     ) -> anyhow::Result<Self> {
         let pack_set = &configuration.pack_set;
         Ok(Self {
             referencing_pack: reference.referencing_pack(pack_set)?,
             defining_pack: reference.defining_pack(pack_set)?,
             violation_type: ViolationType::from(violation_type),
-            violation_direction,
             reference,
         })
+    }
+
+    pub fn violation_direction(&self) -> ViolationDirection {
+        match self.violation_type {
+            ViolationType::Dependency | ViolationType::Layer => {
+                ViolationDirection::Outgoing
+            }
+            ViolationType::Privacy
+            | ViolationType::FolderPrivacy
+            | ViolationType::Visibility => ViolationDirection::Incoming,
+        }
     }
 
     pub fn checkable(&self) -> anyhow::Result<bool> {
@@ -101,8 +109,9 @@ impl<'a> PackChecker<'a> {
         match self.violation_type {
             ViolationType::Dependency => self
                 .checker_setting_for(&self.rules_pack().enforce_dependencies),
-            ViolationType::FolderPrivacy => self
-                .checker_setting_for(&self.rules_pack().enforce_folder_privacy),
+            ViolationType::FolderPrivacy => {
+                self.rules_pack().enforce_folder_privacy()
+            }
             ViolationType::Layer => {
                 self.checker_setting_for(&self.rules_pack().enforce_layers)
             }
@@ -126,7 +135,7 @@ impl<'a> PackChecker<'a> {
     }
 
     fn rules_pack(&self) -> &Pack {
-        match self.violation_direction {
+        match self.violation_direction() {
             ViolationDirection::Outgoing => self.referencing_pack,
             ViolationDirection::Incoming => {
                 self.defining_pack.as_ref().unwrap()
@@ -135,7 +144,7 @@ impl<'a> PackChecker<'a> {
     }
 
     fn is_ignored(&self) -> anyhow::Result<bool> {
-        let file_path = match self.violation_direction {
+        let file_path = match self.violation_direction() {
             ViolationDirection::Incoming => {
                 &self.reference.relative_referencing_file
             }
