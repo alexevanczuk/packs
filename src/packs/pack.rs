@@ -307,13 +307,6 @@ impl Pack {
         self.relative_path.join("package.yml")
     }
 
-    pub(crate) fn enforce_dependencies(&self) -> &CheckerSetting {
-        match &self.enforce_dependencies {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
     pub(crate) fn enforce_folder_privacy(&self) -> &CheckerSetting {
         if self.enforce_folder_privacy.is_none() {
             // enforce_folder_visibility is deprecated
@@ -326,13 +319,6 @@ impl Pack {
                 Some(setting) => setting,
                 None => &CheckerSetting::False,
             }
-        }
-    }
-
-    pub(crate) fn enforce_privacy(&self) -> &CheckerSetting {
-        match &self.enforce_privacy {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
         }
     }
 

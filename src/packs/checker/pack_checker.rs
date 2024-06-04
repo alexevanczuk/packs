@@ -12,7 +12,7 @@ pub struct PackChecker<'a> {
     pub reference: &'a Reference,
 }
 
-pub enum ViolationDirection {
+enum ViolationDirection {
     Incoming,
     Outgoing,
 }
@@ -66,7 +66,7 @@ impl<'a> PackChecker<'a> {
         })
     }
 
-    pub fn violation_direction(&self) -> ViolationDirection {
+    fn violation_direction(&self) -> ViolationDirection {
         match self.violation_type {
             ViolationType::Dependency | ViolationType::Layer => {
                 ViolationDirection::Outgoing

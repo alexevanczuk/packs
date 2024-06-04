@@ -1,5 +1,5 @@
 use super::output_helper::print_reference_location;
-use super::pack_checker::{PackChecker, ViolationDirection};
+use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
