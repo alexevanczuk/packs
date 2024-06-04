@@ -118,11 +118,9 @@ impl CheckerInterface for Checker {
         if !pack_checker.checkable()? {
             return Ok(None);
         }
+        let defining_pack = pack_checker.defining_pack.unwrap();
 
-        match (
-            &pack_checker.referencing_pack.layer,
-            &pack_checker.defining_pack.unwrap().layer,
-        ) {
+        match (&pack_checker.referencing_pack.layer, &defining_pack.layer) {
             (Some(referencing_layer), Some(defining_layer)) => {
                 if self
                     .layers
@@ -138,7 +136,7 @@ impl CheckerInterface for Checker {
                     loc,
                     self.layers.violation_name(),
                     reference.constant_name,
-                    pack_checker.defining_pack.unwrap().name,
+                    defining_pack.name,
                     defining_layer,
                     pack_checker.referencing_pack.name,
                     referencing_layer,
@@ -155,11 +153,7 @@ impl CheckerInterface for Checker {
                         .referencing_pack
                         .name
                         .clone(),
-                    defining_pack_name: pack_checker
-                        .defining_pack
-                        .unwrap()
-                        .name
-                        .clone(),
+                    defining_pack_name: defining_pack.name.clone(),
                 };
 
                 Ok(Some(Violation {
