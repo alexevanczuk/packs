@@ -108,8 +108,10 @@ pub(crate) fn walk_directory(
                 children.iter_mut().for_each(|child_dir_entry_result| {
                     if let Ok(child_dir_entry) = child_dir_entry_result {
                         let child_absolute_dirname = child_dir_entry.path();
-                        child_dir_entry.client_state.current_package_yml =
-                            read_dir_state.current_package_yml.clone();
+                        child_dir_entry
+                            .client_state
+                            .current_package_yml
+                            .clone_from(&read_dir_state.current_package_yml);
 
                         let relative_path = child_absolute_dirname
                             .strip_prefix(cloned_absolute_root.as_ref())

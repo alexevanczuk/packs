@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use super::output_helper::print_reference_location;
+use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ValidatorInterface, ViolationIdentifier};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
@@ -109,35 +110,22 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let referencing_pack =
-            reference.referencing_pack(&configuration.pack_set)?;
-
-        if referencing_pack.enforce_dependencies().is_false() {
+        let pack_checker =
+            PackChecker::new(configuration, reference, &self.violation_type())?;
+        if !pack_checker.checkable()? {
             return Ok(None);
         }
+        let defining_pack = pack_checker.defining_pack.unwrap();
 
-        let referencing_pack_name = &referencing_pack.name;
-        let defining_pack =
-            &reference.defining_pack(&configuration.pack_set)?;
+        let referencing_pack_dependencies =
+            &pack_checker.referencing_pack.dependencies;
 
-        if defining_pack.is_none() {
-            return Ok(None);
-        }
-
-        let defining_pack = defining_pack.unwrap();
-
-        let defining_pack_name = &defining_pack.name;
-        if referencing_pack_name == defining_pack_name {
-            return Ok(None);
-        }
-
-        let referencing_pack_dependencies = &referencing_pack.dependencies;
-
-        let ignored_dependency = referencing_pack
+        let ignored_dependency = pack_checker
+            .referencing_pack
             .ignored_dependencies
-            .contains(defining_pack_name);
+            .contains(&defining_pack.name);
 
-        if referencing_pack_dependencies.contains(defining_pack_name)
+        if referencing_pack_dependencies.contains(&defining_pack.name)
             || ignored_dependency
         {
             return Ok(None);
@@ -146,10 +134,11 @@ impl CheckerInterface for Checker {
         let relative_defining_file =
             reference.relative_defining_file.as_ref().context(format!(
                 "expected a relative defining file for defining pack: {}",
-                defining_pack_name
+                defining_pack.name
             ))?;
 
-        if referencing_pack
+        if pack_checker
+            .referencing_pack
             .is_ignored(relative_defining_file, &self.violation_type())?
         {
             return Ok(None);
@@ -170,20 +159,20 @@ impl CheckerInterface for Checker {
                 "{}Dependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
                 loc,
                 reference.constant_name,
-                defining_pack_name,
-                referencing_pack.relative_yml().to_string_lossy(),
-                defining_pack_name,
+                defining_pack.name,
+                pack_checker.referencing_pack.relative_yml().to_string_lossy(),
+                defining_pack.name,
             );
 
         let violation_type = String::from("dependency");
         let file = reference.relative_referencing_file.clone();
         let identifier = ViolationIdentifier {
             violation_type,
-            strict: referencing_pack.enforce_dependencies().is_strict(),
+            strict: pack_checker.is_strict(),
             file,
             constant_name: reference.constant_name.clone(),
-            referencing_pack_name: referencing_pack_name.clone(),
-            defining_pack_name: defining_pack_name.clone(),
+            referencing_pack_name: pack_checker.referencing_pack.name.clone(),
+            defining_pack_name: defining_pack.name.clone(),
         };
 
         Ok(Some(Violation {

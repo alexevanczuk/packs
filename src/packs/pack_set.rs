@@ -64,7 +64,7 @@ impl PackSet {
 
         let indexed_packs = indexed_packs_by_name;
 
-        if indexed_packs.get(".").is_none() {
+        if !indexed_packs.contains_key(".") {
             bail!("No root pack found. First double check a root pack exists (a package.yml file in the application root). Secondly, double check your packwerk.yml `package_paths` includes the root pack by using command packs list-packs.");
         }
 

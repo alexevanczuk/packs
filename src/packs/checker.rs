@@ -5,6 +5,7 @@ pub(crate) mod layer;
 mod common_test;
 mod folder_privacy;
 mod output_helper;
+pub(crate) mod pack_checker;
 mod privacy;
 pub(crate) mod reference;
 mod visibility;
