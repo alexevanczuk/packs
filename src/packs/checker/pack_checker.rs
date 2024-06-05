@@ -6,6 +6,7 @@ use crate::packs::{
 use super::reference::Reference;
 
 pub struct PackChecker<'a> {
+    pub configuration: &'a Configuration,
     pub referencing_pack: &'a Pack,
     pub defining_pack: Option<&'a Pack>,
     pub violation_type: ViolationType,
@@ -59,6 +60,7 @@ impl<'a> PackChecker<'a> {
     ) -> anyhow::Result<Self> {
         let pack_set = &configuration.pack_set;
         Ok(Self {
+            configuration,
             referencing_pack: reference.referencing_pack(pack_set)?,
             defining_pack: reference.defining_pack(pack_set)?,
             violation_type: ViolationType::from(violation_type),
@@ -85,6 +87,9 @@ impl<'a> PackChecker<'a> {
             return Ok(false);
         }
         if self.rules_checker_setting().is_false() {
+            return Ok(false);
+        }
+        if self.violation_globally_disabled() {
             return Ok(false);
         }
         if self.is_ignored()? {
@@ -120,6 +125,24 @@ impl<'a> PackChecker<'a> {
             }
             ViolationType::Visibility => {
                 self.checker_setting_for(&self.rules_pack().enforce_visibility)
+            }
+        }
+    }
+
+    fn violation_globally_disabled(&self) -> bool {
+        match self.violation_type {
+            ViolationType::Dependency => {
+                self.configuration.disable_enforce_dependencies
+            }
+            ViolationType::FolderPrivacy => {
+                self.configuration.disable_enforce_folder_privacy
+            }
+            ViolationType::Layer => self.configuration.disable_enforce_layers,
+            ViolationType::Privacy => {
+                self.configuration.disable_enforce_privacy
+            }
+            ViolationType::Visibility => {
+                self.configuration.disable_enforce_visibility
             }
         }
     }

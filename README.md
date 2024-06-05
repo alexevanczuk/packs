@@ -135,7 +135,7 @@ enforcement_globs_ignore:
 
 ```yml
 # packs/pack2/package.yml
-enforce_dependency: true
+enforce_dependencies: true
 dependencies:
 # not required because of the below enforcement_globs_ignore
 # - packs/pack1 
