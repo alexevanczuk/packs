@@ -38,6 +38,11 @@ pub struct Configuration {
     pub print_files: bool,
     pub packs_first_mode: bool,
     pub ignore_recorded_violations: bool,
+    pub disable_enforce_dependencies: bool,
+    pub disable_enforce_folder_privacy: bool,
+    pub disable_enforce_layers: bool,
+    pub disable_enforce_privacy: bool,
+    pub disable_enforce_visibility: bool,
 }
 
 impl Configuration {
@@ -140,10 +145,6 @@ pub(crate) fn from_raw(
 
     debug!("Finished building configuration");
 
-    let stdin_file_path: Option<PathBuf> = None;
-    let print_files = false;
-    let ignore_recorded_violations = false;
-
     Ok(Configuration {
         included_files,
         absolute_root,
@@ -156,10 +157,15 @@ pub(crate) fn from_raw(
         autoload_roots,
         inflections_path,
         custom_associations,
-        stdin_file_path,
-        print_files,
+        stdin_file_path: None,
+        print_files: false,
         packs_first_mode,
-        ignore_recorded_violations,
+        ignore_recorded_violations: false,
+        disable_enforce_dependencies: false,
+        disable_enforce_folder_privacy: false,
+        disable_enforce_layers: false,
+        disable_enforce_privacy: false,
+        disable_enforce_visibility: false,
     })
 }
 

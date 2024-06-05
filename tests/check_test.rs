@@ -32,6 +32,52 @@ fn test_check() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_check_enforce_privacy_disabled() -> Result<(), Box<dyn Error>> {
+    let output = Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("--debug")
+        .arg("--disable-enforce-privacy")
+        .arg("check")
+        .assert()
+        .failure()
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("1 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`."));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
+fn test_check_enforce_dependency_disabled() -> Result<(), Box<dyn Error>> {
+    let output = Command::cargo_bin("packs")?
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("--debug")
+        .arg("--disable-enforce-dependencies")
+        .arg("check")
+        .assert()
+        .failure()
+        .get_output()
+        .stdout
+        .clone();
+
+    let stripped_output = stripped_output(output);
+
+    assert!(stripped_output.contains("1 violation(s) detected:"));
+    assert!(stripped_output.contains("packs/foo/app/services/foo.rb:3:4\nPrivacy violation: `::Bar` is private to `packs/bar`, but referenced from `packs/foo`"));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
 fn test_check_with_single_file() -> Result<(), Box<dyn Error>> {
     let output = Command::cargo_bin("packs")?
         .arg("--project-root")

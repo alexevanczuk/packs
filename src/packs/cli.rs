@@ -34,6 +34,26 @@ struct Args {
     /// Print to console when files begin and finish processing (to identify files that panic when processing files concurrently)
     #[arg(short, long)]
     print_files: bool,
+
+    /// Globally disable enforce_dependency
+    #[arg(long)]
+    disable_enforce_dependencies: bool,
+
+    /// Globally disable enforce_folder_privacy
+    #[arg(long)]
+    disable_enforce_folder_privacy: bool,
+
+    /// Globally disable enforce_layers
+    #[arg(long)]
+    disable_enforce_layers: bool,
+
+    /// Globally disable enforce_privacy
+    #[arg(long)]
+    disable_enforce_privacy: bool,
+
+    /// Globally disable enforce_visibility
+    #[arg(long)]
+    disable_enforce_visibility: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -180,6 +200,26 @@ pub fn run() -> anyhow::Result<()> {
     if args.no_cache {
         debug!("Cache is disabled");
         configuration.cache_enabled = false;
+    }
+
+    if args.disable_enforce_dependencies {
+        configuration.disable_enforce_dependencies = true;
+    }
+
+    if args.disable_enforce_folder_privacy {
+        configuration.disable_enforce_folder_privacy = true;
+    }
+
+    if args.disable_enforce_layers {
+        configuration.disable_enforce_layers = true;
+    }
+
+    if args.disable_enforce_privacy {
+        configuration.disable_enforce_privacy = true;
+    }
+
+    if args.disable_enforce_visibility {
+        configuration.disable_enforce_visibility = true;
     }
 
     match args.command {

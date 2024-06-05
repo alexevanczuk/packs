@@ -1,0 +1,4 @@
+enforce_visibility: true
+visible_to:
+  - packs/foos/too 
+
