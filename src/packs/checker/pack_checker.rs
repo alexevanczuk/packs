@@ -3,7 +3,7 @@ use crate::packs::{
     Configuration,
 };
 
-use super::reference::Reference;
+use super::{reference::Reference, ViolationIdentifier};
 
 pub struct PackChecker<'a> {
     pub configuration: &'a Configuration,
@@ -177,5 +177,17 @@ impl<'a> PackChecker<'a> {
         };
         self.rules_pack()
             .is_ignored(file_path, self.violation_type.into())
+    }
+
+    pub fn violation_identifier(&self) -> ViolationIdentifier {
+        let violation_type: &str = self.violation_type.into();
+        ViolationIdentifier {
+            violation_type: violation_type.to_string(),
+            strict: self.is_strict(),
+            file: self.reference.relative_referencing_file.clone(),
+            constant_name: self.reference.constant_name.clone(),
+            referencing_pack_name: self.referencing_pack.name.clone(),
+            defining_pack_name: self.defining_pack.unwrap().name.clone(),
+        }
     }
 }

@@ -322,13 +322,6 @@ impl Pack {
         }
     }
 
-    pub(crate) fn enforce_visibility(&self) -> &CheckerSetting {
-        match &self.enforce_visibility {
-            Some(setting) => setting,
-            None => &CheckerSetting::False,
-        }
-    }
-
     pub(crate) fn public_folder(&self) -> PathBuf {
         match &self.public_folder {
             Some(folder) => folder.to_owned(),
