@@ -1,4 +1,3 @@
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ValidatorInterface};
 use crate::packs::checker::Reference;
@@ -12,7 +11,6 @@ pub struct Layers {
 }
 
 const VIOLATION_TYPE: &str = "layer";
-const VIOLATION_NAME: &str = "Layer";
 
 impl Layers {
     fn can_depend_on(
@@ -48,10 +46,6 @@ impl Layers {
 
     fn violation_type(&self) -> String {
         VIOLATION_TYPE.to_string()
-    }
-
-    fn violation_name(&self) -> String {
-        VIOLATION_NAME.to_string()
     }
 }
 
@@ -125,23 +119,13 @@ impl CheckerInterface for Checker {
                     return Ok(None);
                 }
 
-                let loc = print_reference_location(reference);
-
-                let message = format!(
-                    "{}{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
-                    loc,
-                    self.layers.violation_name(),
-                    reference.constant_name,
-                    defining_pack.name,
-                    defining_layer,
-                    pack_checker.referencing_pack.name,
-                    referencing_layer,
-                );
-
-                Ok(Some(Violation {
-                    message,
-                    identifier: pack_checker.violation_identifier(),
-                }))
+                // using `push_str` because `format!` changes `{{` to `{` and `}}` to `}`
+                let mut violation_message = "{{reference_location}}Layer violation: `{{constant_name}}` belongs to `{{defining_pack_name}}` (whose layer is `".to_string();
+                violation_message.push_str(defining_layer);
+                violation_message.push_str("`) cannot be accessed from `{{referencing_pack_name}}` (whose layer is `");
+                violation_message.push_str(referencing_layer);
+                violation_message.push_str("`)");
+                pack_checker.violation(&violation_message)
             }
             _ => Ok(None),
         }

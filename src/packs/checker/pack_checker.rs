@@ -1,9 +1,14 @@
+use std::collections::HashMap;
+
 use crate::packs::{
     pack::{CheckerSetting, Pack},
     Configuration,
 };
 
-use super::{reference::Reference, ViolationIdentifier};
+use super::{
+    output_helper::print_reference_location, reference::Reference, Violation,
+    ViolationIdentifier,
+};
 
 pub struct PackChecker<'a> {
     pub configuration: &'a Configuration,
@@ -179,6 +184,13 @@ impl<'a> PackChecker<'a> {
             .is_ignored(file_path, self.violation_type.into())
     }
 
+    pub fn violation(&self, msg: &str) -> anyhow::Result<Option<Violation>> {
+        Ok(Some(Violation {
+            message: self.interpolate_violation_message(msg),
+            identifier: self.violation_identifier(),
+        }))
+    }
+
     pub fn violation_identifier(&self) -> ViolationIdentifier {
         let violation_type: &str = self.violation_type.into();
         ViolationIdentifier {
@@ -189,5 +201,35 @@ impl<'a> PackChecker<'a> {
             referencing_pack_name: self.referencing_pack.name.clone(),
             defining_pack_name: self.defining_pack.unwrap().name.clone(),
         }
+    }
+
+    fn interpolate_violation_message(&self, msg: &str) -> String {
+        let mut map = HashMap::new();
+        map.insert(
+            "{{referencing_pack_name}}",
+            self.referencing_pack.name.clone(),
+        );
+        map.insert(
+            "{{defining_pack_name}}",
+            self.defining_pack.unwrap().name.clone(),
+        );
+        map.insert("{{constant_name}}", self.reference.constant_name.clone());
+        map.insert(
+            "{{reference_location}}",
+            print_reference_location(self.reference),
+        );
+        map.insert(
+            "{{referencing_pack_relative_yml}}",
+            self.referencing_pack
+                .relative_yml()
+                .to_string_lossy()
+                .to_string(),
+        );
+
+        let mut interpolated_msg = msg.to_string();
+        for (key, value) in &map {
+            interpolated_msg = interpolated_msg.replace(key, value);
+        }
+        interpolated_msg
     }
 }

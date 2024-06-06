@@ -1,4 +1,3 @@
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::reference::Reference;
@@ -21,20 +20,8 @@ impl CheckerInterface for Checker {
         let defining_pack = pack_checker.defining_pack.unwrap();
 
         if !folder_visible(pack_checker.referencing_pack, defining_pack) {
-            let loc = print_reference_location(reference);
-
-            let message = format!(
-                "{}Folder Privacy violation: `{}` belongs to `{}`, which is private to `{}` as it is not a sibling pack or parent pack.",
-                loc,
-                reference.constant_name,
-                defining_pack.name,
-                pack_checker.referencing_pack.name,
-            );
-
-            Ok(Some(Violation {
-                message,
-                identifier: pack_checker.violation_identifier(),
-            }))
+            let violation_message = "{{reference_location}}Folder Privacy violation: `{{constant_name}}` belongs to `{{defining_pack_name}}`, which is private to `{{referencing_pack_name}}` as it is not a sibling pack or parent pack.";
+            pack_checker.violation(violation_message)
         } else {
             Ok(None)
         }
