@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::Reference;
@@ -32,20 +31,8 @@ impl CheckerInterface for Checker {
             return Ok(None);
         }
 
-        let loc = print_reference_location(reference);
-
-        let message = format!(
-            "{}Visibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
-            loc,
-            reference.constant_name,
-            defining_pack.name,
-            pack_checker.referencing_pack.name,
-        );
-
-        Ok(Some(Violation {
-            message,
-            identifier: pack_checker.violation_identifier(),
-        }))
+        let violation_message = "{{reference_location}}Visibility violation: `{{constant_name}}` belongs to `{{defining_pack_name}}`, which is not visible to `{{referencing_pack_name}}`";
+        pack_checker.violation(violation_message)
     }
 
     fn violation_type(&self) -> String {
