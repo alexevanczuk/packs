@@ -1,6 +1,6 @@
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
-use super::{CheckerInterface, ViolationIdentifier};
+use super::CheckerInterface;
 use crate::packs::checker::Reference;
 use crate::packs::{Configuration, Violation};
 
@@ -80,20 +80,9 @@ impl CheckerInterface for Checker {
             &pack_checker.referencing_pack.name,
         );
 
-        let violation_type = self.violation_type();
-        let file = reference.relative_referencing_file.clone();
-        let identifier = ViolationIdentifier {
-            violation_type,
-            strict: pack_checker.is_strict(),
-            file,
-            constant_name: reference.constant_name.clone(),
-            referencing_pack_name: pack_checker.referencing_pack.name.clone(),
-            defining_pack_name: defining_pack.name.clone(),
-        };
-
         Ok(Some(Violation {
             message,
-            identifier,
+            identifier: pack_checker.violation_identifier(),
         }))
     }
 
