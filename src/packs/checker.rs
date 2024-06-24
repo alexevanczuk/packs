@@ -29,6 +29,7 @@ use std::fmt::Formatter;
 use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
+use super::bin_locater;
 use super::reference_extractor::get_all_references;
 
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
@@ -90,7 +91,8 @@ impl CheckAllResult {
         if !self.stale_violations.is_empty() {
             writeln!(
                 f,
-                "There were stale violations found, please run `packs update`"
+                "There were stale violations found, please run `{} update`",
+                bin_locater::packs_bin_name(),
             )?;
         }
 

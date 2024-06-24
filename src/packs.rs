@@ -3,6 +3,7 @@
 pub mod cli;
 
 // Module declarations
+pub(crate) mod bin_locater;
 pub(crate) mod caching;
 pub(crate) mod checker;
 pub(crate) mod configuration;
