@@ -1,4 +1,3 @@
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::Reference;
@@ -70,20 +69,8 @@ impl CheckerInterface for Checker {
         // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
         // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
         // END: Original packwerk message
-        let loc = print_reference_location(reference);
-
-        let message = format!(
-            "{}Privacy violation: `{}` is private to `{}`, but referenced from `{}`",
-            loc,
-            reference.constant_name,
-            defining_pack.name,
-            &pack_checker.referencing_pack.name,
-        );
-
-        Ok(Some(Violation {
-            message,
-            identifier: pack_checker.violation_identifier(),
-        }))
+        let violation_message = "{{reference_location}}Privacy violation: `{{constant_name}}` is private to `{{defining_pack_name}}`, but referenced from `{{referencing_pack_name}}`";
+        pack_checker.violation(violation_message)
     }
 
     fn violation_type(&self) -> String {
