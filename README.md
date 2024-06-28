@@ -131,6 +131,7 @@ enforcement_globs_ignore:
   - "**/*"
   # Enforce incoming privacy and visibility violation references _only_ in `packs/product_services/serv1/**/*`
   - "!packs/product_services/serv1/**/*"
+  reason: "It was decided only to fix incoming violations from serv1. See ticket #232"
 ```
 
 ```yml
@@ -149,6 +150,7 @@ enforcement_globs_ignore:
   - "**/*"
   # Enforce outgoing dependency violation references _only_ to `packs/pack3/**/*`
   - "!packs/pack3/**/*"
+  reason: "The other dependency violations are fine as those packs will be absorbed into this one."
 ```
 
 # Benchmarks

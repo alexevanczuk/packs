@@ -131,6 +131,7 @@ mod tests {
                         .iter()
                         .map(|s| s.to_string())
                         .collect(),
+                    reason: "foo is deprecated".to_string(),
                 }]),
                 ..default_defining_pack()
             }),

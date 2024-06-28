@@ -149,6 +149,11 @@ pub struct EnforcementGlobsIgnore {
         skip_serializing_if = "HashSet::is_empty"
     )]
     pub ignores: HashSet<String>,
+
+    #[serde(
+        default
+    )]
+    pub reason: String,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Deserialize, Serialize, Clone)]
@@ -640,10 +645,12 @@ enforcement_globs_ignore:
     ignores:
       - "**/*"
       - "!packs/foo"
+    reason: "deprecated foo"
   - enforcements:
       - layer
     ignores:
       - packs/bar
+    reason: "deprecated bar"
         "#
         .trim_start();
 
@@ -661,6 +668,7 @@ enforcement_globs_ignore:
                         .iter()
                         .map(|s| s.to_string())
                         .collect(),
+                    reason: "deprecated foo".to_string(),
                 },
                 EnforcementGlobsIgnore {
                     enforcements: ["layer"]
@@ -671,6 +679,7 @@ enforcement_globs_ignore:
                         .iter()
                         .map(|s| s.to_string())
                         .collect(),
+                    reason: "deprecated bar".to_string(),
                 },
             ]
         );
