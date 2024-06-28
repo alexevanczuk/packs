@@ -150,9 +150,7 @@ pub struct EnforcementGlobsIgnore {
     )]
     pub ignores: HashSet<String>,
 
-    #[serde(
-        default
-    )]
+    #[serde(default)]
     pub reason: String,
 }
 
