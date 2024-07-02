@@ -58,7 +58,7 @@ See https://github.com/rubyatscale/packs#readme for more info!");
 fn test_create_already_exists() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")?
         .arg("--project-root")
-        .arg("tests/fixtures/simple_app")
+        .arg("tests/fixtures/simple_packs_first_app")
         .arg("create")
         .arg("packs/foo")
         .assert()
