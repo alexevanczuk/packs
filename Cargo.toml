@@ -2,7 +2,7 @@
 
 [package]
 name = "pks"
-version = "0.2.11"
+version = "0.2.12"
 edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
