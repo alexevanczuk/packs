@@ -229,6 +229,23 @@ fn test_check_with_stale_violations_when_file_no_longer_exists(
 }
 
 #[test]
+fn test_check_with_relationship_violations() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("packs")
+        .unwrap()
+        .arg("--project-root")
+        .arg("tests/fixtures/app_with_rails_relationships")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("2 violation(s) detected:"))
+        .stdout(predicate::str::contains("Privacy violation: `::Taco` is private to `packs/baz`, but referenced from `packs/bar`"))
+        .stdout(predicate::str::contains("Privacy violation: `::Census` is private to `packs/baz`, but referenced from `packs/bar`"));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
 fn test_check_without_stale_violations() -> Result<(), Box<dyn Error>> {
     Command::cargo_bin("packs")
         .unwrap()
