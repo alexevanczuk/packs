@@ -110,16 +110,13 @@ jobs:
       - name: Upload mac universal binary
         run: |
           # This combines the intel and m1 binaries into a single binary
-          lipo -create -output target/packs target/aarch64-apple-darwin/release/packs target/x86_64-apple-darwin/release/packs
+          lipo -create -output target/pks target/aarch64-apple-darwin/release/pks target/x86_64-apple-darwin/release/pks
 
           # Creates artifact for homebrew. -C means run from `target` directory
-          tar -czf target/packs-mac.tar.gz -C target packs
-
-          # This uploads the raw binary
-          gh release upload $NEW_VERSION target/packs
+          tar -czf target/pks-mac.tar.gz -C target pks
 
           # This tarball is a binary that is executable
-          gh release upload $NEW_VERSION target/packs-mac.tar.gz
+          gh release upload $NEW_VERSION target/pks-mac.tar.gz
 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
