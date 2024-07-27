@@ -5,7 +5,7 @@ mod common;
 
 #[test]
 fn test_list_definitions_experimental() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_monkey_patches")
         .arg("--debug")
@@ -38,7 +38,7 @@ fn test_list_definitions_experimental() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_list_definitions_with_ambiguous_experimental(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_monkey_patches")
         .arg("--debug")

@@ -7,7 +7,7 @@ mod common;
 
 #[test]
 fn test_create() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("create")
@@ -56,7 +56,7 @@ See https://github.com/rubyatscale/packs#readme for more info!");
 
 #[test]
 fn test_create_already_exists() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_packs_first_app")
         .arg("create")

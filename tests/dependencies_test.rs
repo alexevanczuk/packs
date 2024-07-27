@@ -7,7 +7,7 @@ mod common;
 #[test]
 fn test_list_pack_dependencies_with_explicit_dependencies(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
@@ -25,7 +25,7 @@ fn test_list_pack_dependencies_with_explicit_dependencies(
 #[test]
 fn list_pack_dependencies_with_implicit_dependencies(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/contains_package_todo")
         .arg("--debug")

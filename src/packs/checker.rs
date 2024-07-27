@@ -10,6 +10,7 @@ mod privacy;
 pub(crate) mod reference;
 mod visibility;
 
+use crate::packs::checker_configuration::CheckerType;
 // Internal imports
 use crate::packs::pack::write_pack_to_disk;
 use crate::packs::pack::Pack;
@@ -270,9 +271,16 @@ pub(crate) fn check_all(
 fn validate(configuration: &Configuration) -> Vec<String> {
     debug!("Running validators against packages");
     let validators: Vec<Box<dyn ValidatorInterface + Send + Sync>> = vec![
-        Box::new(dependency::Checker {}),
+        Box::new(dependency::Checker {
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Dependency]
+                .clone(),
+        }),
         Box::new(layer::Checker {
             layers: configuration.layers.clone(),
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Layer]
+                .clone(),
         }),
     ];
 
@@ -453,13 +461,32 @@ fn get_checkers(
     configuration: &Configuration,
 ) -> Vec<Box<dyn CheckerInterface + Send + Sync>> {
     vec![
-        Box::new(dependency::Checker {}),
-        Box::new(privacy::Checker {}),
-        Box::new(visibility::Checker {}),
+        Box::new(dependency::Checker {
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Dependency]
+                .clone(),
+        }),
+        Box::new(privacy::Checker {
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Privacy]
+                .clone(),
+        }),
+        Box::new(visibility::Checker {
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Visibility]
+                .clone(),
+        }),
         Box::new(layer::Checker {
             layers: configuration.layers.clone(),
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::Layer]
+                .clone(),
         }),
-        Box::new(folder_privacy::Checker {}),
+        Box::new(folder_privacy::Checker {
+            checker_configuration: configuration.checker_configuration
+                [&CheckerType::FolderPrivacy]
+                .clone(),
+        }),
     ]
 }
 

@@ -5,7 +5,7 @@ mod common;
 
 #[test]
 fn test_check() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/folder_privacy_violations")
         .arg("--debug")
@@ -19,8 +19,23 @@ fn test_check() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
+fn test_check_with_overrides() -> Result<(), Box<dyn Error>> {
+    Command::cargo_bin("pks")?
+        .arg("--project-root")
+        .arg("tests/fixtures/folder_privacy_violations_with_overrides")
+        .arg("--debug")
+        .arg("check")
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains("Folder Privacy violation: `::Foo` belongs to the `packs/foos/foo` product service, which is not visible to `packs/baz` as it is a different product service. See https://docs.google.com"));
+
+    common::teardown();
+    Ok(())
+}
+
+#[test]
 fn test_check_enforce_folder_privacy_disabled() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/folder_privacy_violations")
         .arg("--debug")
@@ -36,7 +51,7 @@ fn test_check_enforce_folder_privacy_disabled() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_invisible_pack_violation_with_deprecated_enforce_folder_visibility(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/folder_visibility_violations")
         .arg("--debug")

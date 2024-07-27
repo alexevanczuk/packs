@@ -9,7 +9,7 @@ use pretty_assertions::assert_eq;
 // This and the next test are run in serial because they both use the same fixtures.
 #[serial]
 fn test_update() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
@@ -53,7 +53,7 @@ packs/bar:
 #[test]
 #[serial]
 fn test_update_with_experimental_parser() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
+    Command::cargo_bin("pks")
         .unwrap()
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
@@ -100,7 +100,7 @@ packs/bar:
 fn test_update_with_stale_violations() -> Result<(), Box<dyn Error>> {
     common::set_up_fixtures();
 
-    Command::cargo_bin("packs")
+    Command::cargo_bin("pks")
         .unwrap()
         .arg("--project-root")
         .arg("tests/fixtures/contains_stale_violations")
@@ -147,7 +147,7 @@ packs/bar:
 
 #[test]
 fn test_update_with_packs_first_app() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_packs_first_app")
         .arg("update")
@@ -195,7 +195,7 @@ fn test_update_with_strict_violations() -> anyhow::Result<()> {
     );
     let _ignore = std::fs::remove_file(path);
 
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/contains_strict_violations")
         .arg("update")

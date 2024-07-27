@@ -1,10 +1,12 @@
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::Reference;
+use crate::packs::checker_configuration::CheckerConfiguration;
 use crate::packs::{Configuration, Violation};
 
-pub struct Checker {}
+pub struct Checker {
+    pub checker_configuration: CheckerConfiguration,
+}
 
 impl CheckerInterface for Checker {
     fn check(
@@ -12,8 +14,11 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker =
-            PackChecker::new(configuration, reference, &self.violation_type())?;
+        let pack_checker = PackChecker::new(
+            configuration,
+            self.checker_configuration.checker_type.clone(),
+            reference,
+        )?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }
@@ -70,24 +75,11 @@ impl CheckerInterface for Checker {
         // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
         // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
         // END: Original packwerk message
-        let loc = print_reference_location(reference);
-
-        let message = format!(
-            "{}Privacy violation: `{}` is private to `{}`, but referenced from `{}`",
-            loc,
-            reference.constant_name,
-            defining_pack.name,
-            &pack_checker.referencing_pack.name,
-        );
-
-        Ok(Some(Violation {
-            message,
-            identifier: pack_checker.violation_identifier(),
-        }))
+        pack_checker.violation(None)
     }
 
     fn violation_type(&self) -> String {
-        "privacy".to_owned()
+        self.checker_configuration.checker_name()
     }
 }
 
@@ -101,6 +93,7 @@ mod tests {
             default_defining_pack, default_referencing_pack, test_check,
             TestChecker,
         },
+        checker_configuration::CheckerType,
         pack::EnforcementGlobsIgnore,
     };
 
@@ -127,7 +120,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -147,7 +147,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -168,7 +175,14 @@ mod tests {
                 String::from("privacy"), false,
             )),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -189,7 +203,14 @@ mod tests {
                 String::from("privacy"), true,
             )),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -209,7 +230,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -240,7 +268,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -268,7 +303,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -297,7 +339,14 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -326,7 +375,14 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -359,7 +415,14 @@ mod tests {
             expected_violation: None,
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -396,7 +459,14 @@ mod tests {
             )),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -428,7 +498,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -461,7 +538,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -494,7 +578,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -517,7 +608,14 @@ mod tests {
             referencing_pack: default_referencing_pack(),
             ..Default::default()
         };
-        let result = test_check(&Checker {}, &mut test_checker);
+        let result = test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Privacy,
+                ),
+            },
+            &mut test_checker,
+        );
         assert!(result.is_err());
         Ok(())
     }

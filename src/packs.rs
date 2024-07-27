@@ -6,6 +6,7 @@ pub mod cli;
 pub(crate) mod bin_locater;
 pub(crate) mod caching;
 pub(crate) mod checker;
+pub(crate) mod checker_configuration;
 pub(crate) mod configuration;
 pub(crate) mod constant_resolver;
 pub(crate) mod dependencies;

@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ValidatorInterface};
 use crate::packs::checker::Reference;
+use crate::packs::checker_configuration::CheckerConfiguration;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
 use anyhow::Context;
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
 
-pub struct Checker {}
+pub struct Checker {
+    pub checker_configuration: CheckerConfiguration,
+}
 impl ValidatorInterface for Checker {
     fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
         // configuration.pack_set
@@ -110,8 +112,11 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker =
-            PackChecker::new(configuration, reference, &self.violation_type())?;
+        let pack_checker = PackChecker::new(
+            configuration,
+            self.checker_configuration.checker_type.clone(),
+            reference,
+        )?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }
@@ -153,25 +158,11 @@ impl CheckerInterface for Checker {
         // Inference details: this is a reference to ::Constant which seems to be defined in packs/defining_pack/path/to/definition.rb.
         // To receive help interpreting or resolving this error message, see: https://github.com/Shopify/packwerk/blob/main/TROUBLESHOOT.md#Troubleshooting-violations
         // END: Original packwerk message
-
-        let loc = print_reference_location(reference);
-        let message = format!(
-                "{}Dependency violation: `{}` belongs to `{}`, but `{}` does not specify a dependency on `{}`.",
-                loc,
-                reference.constant_name,
-                defining_pack.name,
-                pack_checker.referencing_pack.relative_yml().to_string_lossy(),
-                defining_pack.name,
-            );
-
-        Ok(Some(Violation {
-            message,
-            identifier: pack_checker.violation_identifier(),
-        }))
+        pack_checker.violation(None)
     }
 
     fn violation_type(&self) -> String {
-        "dependency".to_owned()
+        self.checker_configuration.checker_name()
     }
 }
 
@@ -182,6 +173,7 @@ mod tests {
             build_expected_violation, default_defining_pack,
             default_referencing_pack, test_check, TestChecker,
         },
+        checker_configuration::CheckerType,
         pack::{CheckerSetting, EnforcementGlobsIgnore},
     };
 
@@ -208,7 +200,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Dependency,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -229,7 +228,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
                 "dependency".to_string(), false)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Dependency,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -250,7 +256,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nDependency violation: `::Bar` belongs to `packs/bar`, but `packs/foo/package.yml` does not specify a dependency on `packs/bar`.".to_string(),
                 "dependency".to_string(), true)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Dependency,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -274,7 +287,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Dependency,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -305,12 +325,23 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Dependency,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
     fn test_validate_with_cycle() {
-        let checker = Checker {};
+        let checker = Checker {
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Dependency,
+            ),
+        };
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/app_with_dependency_cycles")
                 .canonicalize()
@@ -333,7 +364,11 @@ packs/foo, packs/bar",
 
     #[test]
     fn test_validate_without_cycle() {
-        let checker = Checker {};
+        let checker = Checker {
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Dependency,
+            ),
+        };
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/simple_app")
                 .canonicalize()
@@ -351,7 +386,11 @@ packs/foo, packs/bar",
         expected = "tests/fixtures/contains_duplicates_in_package/packs/bar/package.yml"
     )]
     fn test_invalid_package_yml() {
-        let checker = Checker {};
+        let checker = Checker {
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Dependency,
+            ),
+        };
         let configuration = configuration::get(
             PathBuf::from("tests/fixtures/contains_duplicates_in_package")
                 .canonicalize()

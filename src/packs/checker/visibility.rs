@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::Reference;
+use crate::packs::checker_configuration::CheckerConfiguration;
 use crate::packs::{Configuration, Violation};
 
-pub struct Checker {}
+pub struct Checker {
+    pub checker_configuration: CheckerConfiguration,
+}
 
 // TODO:
 // Once we implement packs validate, we need to ensure that nothing can add a dependency
@@ -17,8 +19,11 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker =
-            PackChecker::new(configuration, reference, &self.violation_type())?;
+        let pack_checker = PackChecker::new(
+            configuration,
+            self.checker_configuration.checker_type.clone(),
+            reference,
+        )?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }
@@ -32,24 +37,11 @@ impl CheckerInterface for Checker {
             return Ok(None);
         }
 
-        let loc = print_reference_location(reference);
-
-        let message = format!(
-            "{}Visibility violation: `{}` belongs to `{}`, which is not visible to `{}`",
-            loc,
-            reference.constant_name,
-            defining_pack.name,
-            pack_checker.referencing_pack.name,
-        );
-
-        Ok(Some(Violation {
-            message,
-            identifier: pack_checker.violation_identifier(),
-        }))
+        pack_checker.violation(None)
     }
 
     fn violation_type(&self) -> String {
-        "visibility".to_owned()
+        self.checker_configuration.checker_name()
     }
 }
 
@@ -62,6 +54,7 @@ mod tests {
             build_expected_violation, default_defining_pack,
             default_referencing_pack, test_check, TestChecker,
         },
+        checker_configuration::CheckerType,
         pack::EnforcementGlobsIgnore,
     };
 
@@ -89,7 +82,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Visibility,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -110,7 +110,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
                 "visibility".to_string(), false)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Visibility,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -141,7 +148,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Visibility,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -162,7 +176,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nVisibility violation: `::Bar` belongs to `packs/bar`, which is not visible to `packs/foo`".to_string(),
                 "visibility".to_string(), true)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Visibility,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -186,6 +207,13 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::Visibility,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 }

@@ -1,7 +1,9 @@
-use super::output_helper::print_reference_location;
+use std::collections::HashMap;
+
 use super::pack_checker::PackChecker;
 use super::{CheckerInterface, ValidatorInterface};
 use crate::packs::checker::Reference;
+use crate::packs::checker_configuration::CheckerConfiguration;
 use crate::packs::pack::{CheckerSetting, Pack};
 use crate::packs::{Configuration, Violation};
 use anyhow::{bail, Result};
@@ -10,9 +12,6 @@ use anyhow::{bail, Result};
 pub struct Layers {
     pub layers: Vec<String>,
 }
-
-const VIOLATION_TYPE: &str = "layer";
-const VIOLATION_NAME: &str = "Layer";
 
 impl Layers {
     fn can_depend_on(
@@ -44,14 +43,6 @@ impl Layers {
             Some(setting) => setting,
             None => &CheckerSetting::False,
         }
-    }
-
-    fn violation_type(&self) -> String {
-        VIOLATION_TYPE.to_string()
-    }
-
-    fn violation_name(&self) -> String {
-        VIOLATION_NAME.to_string()
     }
 }
 
@@ -101,6 +92,7 @@ impl ValidatorInterface for Checker {
 
 pub struct Checker {
     pub layers: Layers,
+    pub checker_configuration: CheckerConfiguration,
 }
 
 impl CheckerInterface for Checker {
@@ -109,8 +101,11 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker =
-            PackChecker::new(configuration, reference, &self.violation_type())?;
+        let pack_checker = PackChecker::new(
+            configuration,
+            self.checker_configuration.checker_type.clone(),
+            reference,
+        )?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }
@@ -125,30 +120,17 @@ impl CheckerInterface for Checker {
                     return Ok(None);
                 }
 
-                let loc = print_reference_location(reference);
-
-                let message = format!(
-                    "{}{} violation: `{}` belongs to `{}` (whose layer is `{}`) cannot be accessed from `{}` (whose layer is `{}`)",
-                    loc,
-                    self.layers.violation_name(),
-                    reference.constant_name,
-                    defining_pack.name,
-                    defining_layer,
-                    pack_checker.referencing_pack.name,
-                    referencing_layer,
-                );
-
-                Ok(Some(Violation {
-                    message,
-                    identifier: pack_checker.violation_identifier(),
-                }))
+                let mut map: HashMap<&str, String> = HashMap::new();
+                map.insert("{{defining_layer}}", defining_layer.into());
+                map.insert("{{referencing_layer}}", referencing_layer.into());
+                pack_checker.violation(Some(map))
             }
             _ => Ok(None),
         }
     }
 
     fn violation_type(&self) -> String {
-        self.layers.violation_type()
+        self.checker_configuration.checker_name()
     }
 }
 
@@ -162,6 +144,7 @@ mod tests {
         build_expected_violation, default_defining_pack,
         default_referencing_pack, test_check, TestChecker,
     };
+    use crate::packs::checker_configuration::CheckerType;
     use crate::packs::pack::EnforcementGlobsIgnore;
     use crate::packs::{
         configuration,
@@ -179,6 +162,9 @@ mod tests {
                     String::from("utilities"),
                 ],
             },
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Layer,
+            ),
         }
     }
 
@@ -357,6 +343,9 @@ mod tests {
             layers: Layers {
                 layers: config_layers,
             },
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Layer,
+            ),
         };
         checker.validate(&configuration)
     }
@@ -478,6 +467,9 @@ mod tests {
                     String::from("utilities"),
                 ],
             },
+            checker_configuration: CheckerConfiguration::new(
+                CheckerType::Layer,
+            ),
         };
 
         let error = checker.validate(&configuration);

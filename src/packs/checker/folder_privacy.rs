@@ -1,11 +1,13 @@
-use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::reference::Reference;
+use crate::packs::checker_configuration::CheckerConfiguration;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
 
-pub struct Checker {}
+pub struct Checker {
+    pub checker_configuration: CheckerConfiguration,
+}
 
 impl CheckerInterface for Checker {
     fn check(
@@ -13,35 +15,25 @@ impl CheckerInterface for Checker {
         reference: &Reference,
         configuration: &Configuration,
     ) -> anyhow::Result<Option<Violation>> {
-        let pack_checker =
-            PackChecker::new(configuration, reference, &self.violation_type())?;
+        let pack_checker = PackChecker::new(
+            configuration,
+            self.checker_configuration.checker_type.clone(),
+            reference,
+        )?;
         if !pack_checker.checkable()? {
             return Ok(None);
         }
         let defining_pack = pack_checker.defining_pack.unwrap();
 
         if !folder_visible(pack_checker.referencing_pack, defining_pack) {
-            let loc = print_reference_location(reference);
-
-            let message = format!(
-                "{}Folder Privacy violation: `{}` belongs to `{}`, which is private to `{}` as it is not a sibling pack or parent pack.",
-                loc,
-                reference.constant_name,
-                defining_pack.name,
-                pack_checker.referencing_pack.name,
-            );
-
-            Ok(Some(Violation {
-                message,
-                identifier: pack_checker.violation_identifier(),
-            }))
+            pack_checker.violation(None)
         } else {
             Ok(None)
         }
     }
 
     fn violation_type(&self) -> String {
-        "folder_privacy".to_owned()
+        self.checker_configuration.checker_name()
     }
 }
 
@@ -77,6 +69,7 @@ mod tests {
             build_expected_violation, default_defining_pack,
             default_referencing_pack, test_check, TestChecker,
         },
+        checker_configuration::CheckerType,
         pack::{CheckerSetting, EnforcementGlobsIgnore},
     };
     use std::path::PathBuf;
@@ -99,7 +92,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nFolder Privacy violation: `::Bar` belongs to `packs/bar`, which is private to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
                 "folder_privacy".to_string(), false)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::FolderPrivacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -130,7 +130,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::FolderPrivacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
     #[test]
     fn test_with_strict_violation() -> anyhow::Result<()> {
@@ -150,7 +157,14 @@ mod tests {
                 "packs/foo/app/services/foo.rb:3:1\nFolder Privacy violation: `::Bar` belongs to `packs/bar`, which is private to `packs/foo` as it is not a sibling pack or parent pack.".to_string(),
                 "folder_privacy".to_string(), true)),
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::FolderPrivacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     #[test]
@@ -170,7 +184,14 @@ mod tests {
             },
             ..Default::default()
         };
-        test_check(&Checker {}, &mut test_checker)
+        test_check(
+            &Checker {
+                checker_configuration: CheckerConfiguration::new(
+                    CheckerType::FolderPrivacy,
+                ),
+            },
+            &mut test_checker,
+        )
     }
 
     fn assert_folder_privacy(

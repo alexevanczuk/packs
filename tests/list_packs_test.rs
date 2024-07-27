@@ -4,7 +4,7 @@ use std::{error::Error, process::Command};
 
 #[test]
 fn lint_packs() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")

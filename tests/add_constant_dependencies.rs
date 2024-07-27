@@ -9,7 +9,7 @@ mod common;
 #[test]
 #[serial]
 fn test_add_constant_dependencies() -> anyhow::Result<()> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_missing_dependencies")
         .arg("update-dependencies-for-constant")
@@ -43,7 +43,7 @@ fn test_add_constant_dependencies() -> anyhow::Result<()> {
 #[test]
 #[serial]
 fn test_add_constant_dependencies_no_dependencies() -> anyhow::Result<()> {
-    Command::cargo_bin("packs")?
+    Command::cargo_bin("pks")?
         .arg("--project-root")
         .arg("tests/fixtures/app_with_missing_dependencies")
         .arg("update-dependencies-for-constant")

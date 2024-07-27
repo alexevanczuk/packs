@@ -92,19 +92,12 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: cargo publish and create GitHub Release if current commit has updated the version in Cargo.toml
+      - name: Create GitHub Release if current commit has updated the version in Cargo.toml
         if: steps.check_for_version_changes.outputs.changed == 'true'
         run: |
           gh release create ${{steps.check_for_version_changes.outputs.new_version}} --target "${{ github.sha }}" --generate-notes
-
-          cargo publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Skip publishing
-        if: steps.check_for_version_changes.outputs.changed == 'false'
-        run: |
-          echo "No diff to the version found in Cargo.toml. Skipping publishing."
   upload-mac-universal-bin:
     needs: release
     runs-on: macos-latest

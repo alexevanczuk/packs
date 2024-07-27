@@ -1,32 +1,31 @@
 # packs
 ![Logo](logo.png)
 
-[![CI](https://github.com/alexevanczuk/packs/actions/workflows/ci.yml/badge.svg)](https://github.com/alexevanczuk/packs/actions)
-[![Crates.io](https://img.shields.io/crates/v/pks.svg?color=33c552)](https://crates.io/crates/pks)
-[![Security Audit](https://github.com/alexevanczuk/packs/actions/workflows/audit.yml/badge.svg)](https://github.com/alexevanczuk/packs/actions?query=workflow%3A%22Security+audit%22++)
+[![CI](https://github.com/rubyatscale/pks/actions/workflows/ci.yml/badge.svg)](https://github.com/rubyatscale/pks/actions)
+[![Security Audit](https://github.com/rubyatscale/pks/actions/workflows/audit.yml/badge.svg)](https://github.com/rubyatscale/pks/actions?query=workflow%3A%22Security+audit%22++)
 
 A 100% Rust implementation of [packwerk](https://github.com/Shopify/packwerk), a gradual modularization platform for Ruby.
 
 # Goals:
 ## Serve as a drop-in replacement for `packwerk` on most projects
 - Currently can serve as a drop-in replacement on Gusto's extra-large Rails monolith
-- This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `packs` is the same as `packwerk`.
+- This is a work in progress! Please see [Verification](#verification) for instructions on how to verify the output of `pks` is the same as `packwerk`.
 
 ## Run 20x faster than `packwerk` on most projects
-- Currently ~10-20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md).
+- Currently ~10-20x as fast as the ruby implementation. See [BENCHMARKS.md](https://github.com/rubyatscale/pks/blob/main/BENCHMARKS.md).
 - Your mileage may vary!
 - Other performance improvements are coming soon!
 
 ## Support non-Rails, non-zeitwerk apps
 - Currently supports non-Rails apps through an experimental implementation
 - Uses the same public API as `packwerk`, but has different behavior.
-- See [EXPERIMENTAL_PARSER_USAGE.md](https://github.com/alexevanczuk/packs/blob/main/EXPERIMENTAL_PARSER_USAGE.md) for more info
+- See [EXPERIMENTAL_PARSER_USAGE.md](https://github.com/rubyatscale/pks/blob/main/EXPERIMENTAL_PARSER_USAGE.md) for more info
 
 # Usage and Documentation
 Once installed and added to your `$PATH`, just call `pks` to see the CLI help message and documentation.
 
 ```
-Welcome! Please see https://github.com/alexevanczuk/packs for more information!
+Welcome! Please see https://github.com/rubyatscale/pks for more information!
 
 Usage: pks [OPTIONS] <COMMAND>
 
@@ -58,25 +57,25 @@ Options:
 ```
 
 # Installation
-See [INSTALLATION.md](https://github.com/alexevanczuk/packs/blob/main/INSTALLATION.md)
+See [INSTALLATION.md](https://github.com/rubyatscale/pks/blob/main/INSTALLATION.md)
 
 # Using with VSCode/RubyMine Extension
 `packwerk` has a VSCode Extension: https://github.com/rubyatscale/packwerk-vscode/tree/main
 
 It also has a RubyMine Extension: https://github.com/vinted/packwerk-intellij
 
-Using the extension with `packs` is straightforward and results in a much more responsive experience.
+Using the extension with `pks` is straightforward and results in a much more responsive experience.
 
 Directions:
-- Follow [INSTALLATION.md](https://github.com/alexevanczuk/packs/blob/main/INSTALLATION.md) instructions to install `packs`
-- Follow the [configuration](https://github.com/rubyatscale/packwerk-vscode/tree/main#configuration) directions to configure the extension to use `packs` instead of the ruby gem by setting the executable to `packs check`
+- Follow [INSTALLATION.md](https://github.com/rubyatscale/pks/blob/main/INSTALLATION.md) instructions to install `pks`
+- Follow the [configuration](https://github.com/rubyatscale/packwerk-vscode/tree/main#configuration) directions to configure the extension to use `pks` instead of the ruby gem by setting the executable to `pks check`
 
 # Verification
-As `packs` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
+As `pks` is still a work-in-progress, it's possible it will not produce the same results as the ruby implementation (see [Not Yet Supported](#not-yet-supported)). If so, please file an issue – I'd love to try to support your use case!
 
 Instructions:
-- Follow the directions above to install `packs`
-- Run `packs update`
+- Follow the directions above to install `pks`
+- Run `pks update`
 - Confirm the output of `git diff` is empty
 - Please file an issue if it's not!
 
@@ -95,16 +94,16 @@ If you'd like to contribute but don't know where to start, please reach out! I'd
 - extensible plugin system
 
 # Behavioral differences
-There are still some known behavioral differences between `packs` and `packwerk`. If you find any, please file an issue!
-- `package_paths` must not end in a slash, e.g. `packs/*/` is not supported, but `packs/*` is.
-- A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `packs/**` is supported and will match `packs/*/*/package.yml`, but will not match `packs/*/package.yml`. `packs/*` must be used to match that.
+There are still some known behavioral differences between `pks` and `packwerk`. If you find any, please file an issue!
+- `package_paths` must not end in a slash, e.g. `pks/*/` is not supported, but `pks/*` is.
+- A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `pks/**` is supported and will match `pks/*/*/package.yml`, but will not match `pks/*/package.yml`. `pks/*` must be used to match that.
 
 ## Default Namespaces
-`packs` supports Zeitwerk default namespaces. However, since it doesn't have access to the Rails runtime, you need to explicitly specify the namespaces in `packwerk.yml`.
+`pks` supports Zeitwerk default namespaces. However, since it doesn't have access to the Rails runtime, you need to explicitly specify the namespaces in `packwerk.yml`.
 
-For example, if you're using [`packs-rails`](https://github.com/rubyatscale/packs-rails) and [`automatic_namespaces`](https://github.com/gap777/automatic_namespaces) to configure your default namespaces, and you have
-- `packs/foo/app/models/bar.rb` which is configured to define `Foo::Bar`
-- `packs/foo/app/domain/baz.rb` which is configured to define `Foo::Baz`
+For example, if you're using [`pks-rails`](https://github.com/rubyatscale/packs-rails) and [`automatic_namespaces`](https://github.com/gap777/automatic_namespaces) to configure your default namespaces, and you have
+- `pks/foo/app/models/bar.rb` which is configured to define `Foo::Bar`
+- `pks/foo/app/domain/baz.rb` which is configured to define `Foo::Baz`
 
 You'll need to specify the default namespaces in `packwerk.yml` like so:
 ```yml
@@ -129,7 +128,7 @@ enforcement_globs_ignore:
   - visiblity
   ignores:
   - "**/*"
-  # Enforce incoming privacy and visibility violation references _only_ in `packs/product_services/serv1/**/*`
+  # Enforce incoming privacy and visibility violation references _only_ in `pks/product_services/serv1/**/*`
   - "!packs/product_services/serv1/**/*"
   reason: "It was decided only to fix incoming violations from serv1. See ticket #232"
 ```
@@ -148,13 +147,13 @@ enforcement_globs_ignore:
   - dependency
   ignores:
   - "**/*"
-  # Enforce outgoing dependency violation references _only_ to `packs/pack3/**/*`
+  # Enforce outgoing dependency violation references _only_ to `pks/pack3/**/*`
   - "!packs/pack3/**/*"
   reason: "The other dependency violations are fine as those packs will be absorbed into this one."
 ```
 
 # Benchmarks
-See [BENCHMARKS.md](https://github.com/alexevanczuk/packs/blob/main/BENCHMARKS.md)
+See [BENCHMARKS.md](https://github.com/rubyatscale/pks/blob/main/BENCHMARKS.md)
 
 # Kudos
 - Current (@gmcgibbon, @rafaelfranca), and Ex-Shopifolks (@exterm, @wildmaples) for open-sourcing and maintaining `packwerk`

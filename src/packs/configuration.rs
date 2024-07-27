@@ -3,8 +3,10 @@ use super::caching::{
     per_file_cache::PerFileCache,
 };
 use super::checker::layer::Layers;
+use super::checker_configuration::{CheckerConfiguration, CheckerType};
 use super::file_utils::user_inputted_paths_to_absolute_filepaths;
 
+use super::raw_configuration::CheckerOverrides;
 use super::{
     constant_resolver::ConstantResolverConfiguration, raw_configuration,
     raw_configuration::RawConfiguration, walk_directory,
@@ -43,6 +45,7 @@ pub struct Configuration {
     pub disable_enforce_layers: bool,
     pub disable_enforce_privacy: bool,
     pub disable_enforce_visibility: bool,
+    pub checker_configuration: HashMap<CheckerType, CheckerConfiguration>,
 }
 
 impl Configuration {
@@ -142,6 +145,9 @@ pub(crate) fn from_raw(
         // In packwerk, custom_associations are an array of symbols. We strip the leading : so this configuration is compatible with the rust implementation.
         .map(|a| a.trim_start_matches(':').to_owned())
         .collect();
+    let violation_checker_configuration = build_violation_checker_configuration(
+        raw_config.checker_overrides.as_ref(),
+    );
 
     debug!("Finished building configuration");
 
@@ -166,7 +172,45 @@ pub(crate) fn from_raw(
         disable_enforce_layers: false,
         disable_enforce_privacy: false,
         disable_enforce_visibility: false,
+        checker_configuration: violation_checker_configuration,
     })
+}
+
+fn build_violation_checker_configuration(
+    violation_checker_overrides: Option<&CheckerOverrides>,
+) -> HashMap<CheckerType, CheckerConfiguration> {
+    let mut checker_configurations = HashMap::new();
+    checker_configurations.insert(
+        CheckerType::Dependency,
+        CheckerConfiguration::new(CheckerType::Dependency),
+    );
+    checker_configurations.insert(
+        CheckerType::Privacy,
+        CheckerConfiguration::new(CheckerType::Privacy),
+    );
+    checker_configurations.insert(
+        CheckerType::Layer,
+        CheckerConfiguration::new(CheckerType::Layer),
+    );
+    checker_configurations.insert(
+        CheckerType::Visibility,
+        CheckerConfiguration::new(CheckerType::Visibility),
+    );
+    let mut checker_configuration =
+        CheckerConfiguration::new(CheckerType::FolderPrivacy);
+    if let Some(violation_checker_overrides) = violation_checker_overrides {
+        if let Some(error_template) = violation_checker_overrides
+            .folder_privacy_error_template
+            .clone()
+        {
+            checker_configuration.override_error_template =
+                Some(error_template);
+        }
+    }
+    checker_configurations
+        .insert(CheckerType::FolderPrivacy, checker_configuration);
+
+    checker_configurations
 }
 
 #[cfg(test)]

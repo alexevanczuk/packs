@@ -71,6 +71,15 @@ pub(crate) struct RawConfiguration {
     // Use packs copy
     #[serde(default)]
     pub packs_first_mode: bool,
+
+    #[serde(default)]
+    pub checker_overrides: Option<CheckerOverrides>,
+}
+/// Customize violation names and error messages
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CheckerOverrides {
+    /// Mustache style error message template
+    pub folder_privacy_error_template: Option<String>,
 }
 
 pub(crate) fn get(absolute_root: &Path) -> anyhow::Result<RawConfiguration> {
