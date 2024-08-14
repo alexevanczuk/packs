@@ -62,10 +62,7 @@ enum Command {
     Greet,
 
     #[clap(about = "Set up packs in this project")]
-    Init {
-        #[arg(long, default_value = ".")]
-        path: PathBuf,
-    },
+    Init,
 
     #[clap(about = "Create a new pack")]
     Create { name: String },
@@ -193,9 +190,8 @@ pub fn run() -> anyhow::Result<()> {
     install_logger(args.debug);
 
     match args.command {
-        Command::Init { ref path } => {
-            packs::init(&path);
-            ()
+        Command::Init => {
+            packs::init(&absolute_root)?
         }
         _ => {}
     }
@@ -241,8 +237,8 @@ pub fn run() -> anyhow::Result<()> {
             packs::greet();
             Ok(())
         }
-        Command::Init { path: _ } => {
-            println!("Successfully initalized packs in this directory!");
+        Command::Init => {
+            println!("Successfully initialized packs in this directory!");
             Ok(())
         }
         Command::ListPacks => {

@@ -50,7 +50,7 @@ pub fn greet() {
 }
 
 
-pub fn init(path: &PathBuf) {
+pub fn init(absolute_root: &PathBuf) -> anyhow::Result<()> {
     let root_package = "\
 # This file represents the root package of the application
 # Please validate the configuration using `packwerk validate` (for Rails applications) or running the auto generated
@@ -89,12 +89,23 @@ enforce_dependencies: false
 # Where you want the cache to be stored (default below)
 # cache_directory: \"tmp/cache/packwerk\"
 ";
-    let root_package_path = path.join("package.yml");
-    let packs_config_path = path.join("packwerk.yml"); // Can you just create a packs.yml?
+    let root_package_path = absolute_root.join("package.yml");
+    let packs_config_path = absolute_root.join("packwerk.yml"); // Can you just create a packs.yml?
+
+    if root_package_path.exists() {
+        println!("`{}` already exists!", root_package_path.display());
+        bail!("Could not initialize package.yml")
+    }
+    if packs_config_path.exists() {
+        println!("`{}` already exists!", packs_config_path.display());
+        bail!("Could not initialize packwerk.yml")
+    }
+
     std::fs::write(root_package_path.clone(), root_package).unwrap();
     std::fs::write(packs_config_path.clone(), packs_config).unwrap();
 
-    println!("Creating '{}' and '{}'", packs_config_path.display(), root_package_path.display());
+    println!("Created '{}' and '{}'", packs_config_path.display(), root_package_path.display());
+    return Ok(());
 }
 
 fn create(configuration: &Configuration, name: String) -> anyhow::Result<()> {
