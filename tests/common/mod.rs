@@ -31,6 +31,28 @@ pub fn delete_foobar() {
     }
 }
 
+#[allow(dead_code)]
+pub fn create_new_app(dir_name: &str) {
+    let directory = PathBuf::from(format!("tests/fixtures/{}", dir_name));
+    if let Err(err) = fs::create_dir_all(directory) {
+        eprintln!(
+            "Failed to create tests/fixtures/new_app during test setup: {}",
+            err
+        );
+    }
+}
+
+#[allow(dead_code)]
+pub fn delete_new_app(dir_name: &str) {
+    let directory = PathBuf::from(format!("tests/fixtures/{}", dir_name));
+    if let Err(err) = fs::remove_dir_all(directory) {
+        eprintln!(
+            "Failed to remove tests/fixtures/new_app during test teardown: {}",
+            err
+        );
+    }
+}
+
 // In case we want our tests to call `update` or otherwise mutate the file system
 #[allow(dead_code)]
 pub fn set_up_fixtures() {

@@ -61,6 +61,13 @@ enum Command {
     #[clap(about = "Just saying hi")]
     Greet,
 
+    #[clap(about = "Set up packs in this project")]
+    Init {
+        /// Generate packwerk compatible packwerk.yml instead of packs.yml
+        #[arg(long)]
+        use_packwerk: bool,
+    },
+
     #[clap(about = "Create a new pack")]
     Create { name: String },
 
@@ -186,6 +193,14 @@ pub fn run() -> anyhow::Result<()> {
 
     install_logger(args.debug);
 
+    // The `init` command is run in directories which have no configuration yet, however, below we
+    // attempt to load configuration before the CLI commands are processed. To avoid this catch-22
+    // we process `init` here, before configuration load. In future consider restructuring so that
+    // command matching is not dependent on configuration files being available.
+    if let Command::Init { use_packwerk } = args.command {
+        packs::init(&absolute_root, use_packwerk)?
+    }
+
     let mut configuration = packs::configuration::get(&absolute_root)?;
 
     if args.print_files {
@@ -225,6 +240,13 @@ pub fn run() -> anyhow::Result<()> {
     match args.command {
         Command::Greet => {
             packs::greet();
+            Ok(())
+        }
+        Command::Init { use_packwerk } => {
+            println!(
+                "Successfully initialized packs{} in this directory!",
+                if use_packwerk { "/packwerk" } else { "" }
+            );
             Ok(())
         }
         Command::ListPacks => {
