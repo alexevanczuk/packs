@@ -62,7 +62,11 @@ enum Command {
     Greet,
 
     #[clap(about = "Set up packs in this project")]
-    Init,
+    Init {
+        /// Generate packwerk compatible packwerk.yml instead of packs.yml
+        #[arg(long)]
+        use_packwerk: bool,
+    },
 
     #[clap(about = "Create a new pack")]
     Create { name: String },
@@ -189,11 +193,8 @@ pub fn run() -> anyhow::Result<()> {
 
     install_logger(args.debug);
 
-    match args.command {
-        Command::Init => {
-            packs::init(&absolute_root)?
-        }
-        _ => {}
+    if let Command::Init { use_packwerk } = args.command {
+        packs::init(&absolute_root, use_packwerk)?
     }
 
     let mut configuration = packs::configuration::get(&absolute_root)?;
@@ -237,8 +238,11 @@ pub fn run() -> anyhow::Result<()> {
             packs::greet();
             Ok(())
         }
-        Command::Init => {
-            println!("Successfully initialized packs in this directory!");
+        Command::Init { use_packwerk } => {
+            println!(
+                "Successfully initialized packs{} in this directory!",
+                if use_packwerk { "/packwerk" } else { "" }
+            );
             Ok(())
         }
         Command::ListPacks => {

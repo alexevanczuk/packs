@@ -43,18 +43,18 @@ pub(crate) use package_todo::PackageTodo;
 use anyhow::Context;
 use serde::Deserialize;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn greet() {
     println!("👋 Hello! Welcome to packs 📦 🔥 🎉 🌈. This tool is under construction.")
 }
 
-
-pub fn init(absolute_root: &PathBuf) -> anyhow::Result<()> {
-    let root_package = "\
+pub fn init(absolute_root: &Path, use_packwerk: bool) -> anyhow::Result<()> {
+    let command = if use_packwerk { "packwerk" } else { "pks" };
+    let root_package = format!("\
 # This file represents the root package of the application
-# Please validate the configuration using `packwerk validate` (for Rails applications) or running the auto generated
-# test case (for non-Rails projects). You can then use `packwerk check` to check your code.
+# Please validate the configuration using `{} validate` (for Rails applications) or running the auto generated
+# test case (for non-Rails projects). You can then use `{} check` to check your code.
 
 # Change to `true` to turn on dependency checks for this package
 enforce_dependencies: false
@@ -63,7 +63,8 @@ enforce_dependencies: false
 # Note that packages in this list require their own `package.yml` file
 # dependencies:
 # - \"packages/billing\"
-";
+", command, command);
+
     let packs_config = "\
 # See: Setting up the configuration file
 # https://github.com/Shopify/packwerk/blob/main/USAGE.md#configuring-packwerk
@@ -90,7 +91,11 @@ enforce_dependencies: false
 # cache_directory: \"tmp/cache/packwerk\"
 ";
     let root_package_path = absolute_root.join("package.yml");
-    let packs_config_path = absolute_root.join("packwerk.yml"); // Can you just create a packs.yml?
+    let packs_config_path = absolute_root.join(if use_packwerk {
+        "packwerk.yml"
+    } else {
+        "packs.yml"
+    });
 
     if root_package_path.exists() {
         println!("`{}` already exists!", root_package_path.display());
@@ -98,14 +103,21 @@ enforce_dependencies: false
     }
     if packs_config_path.exists() {
         println!("`{}` already exists!", packs_config_path.display());
-        bail!("Could not initialize packwerk.yml")
+        bail!(format!(
+            "Could not initialize {}",
+            packs_config_path.display()
+        ))
     }
 
     std::fs::write(root_package_path.clone(), root_package).unwrap();
     std::fs::write(packs_config_path.clone(), packs_config).unwrap();
 
-    println!("Created '{}' and '{}'", packs_config_path.display(), root_package_path.display());
-    return Ok(());
+    println!(
+        "Created '{}' and '{}'",
+        packs_config_path.display(),
+        root_package_path.display()
+    );
+    Ok(())
 }
 
 fn create(configuration: &Configuration, name: String) -> anyhow::Result<()> {

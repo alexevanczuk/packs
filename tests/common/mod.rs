@@ -32,8 +32,8 @@ pub fn delete_foobar() {
 }
 
 #[allow(dead_code)]
-pub fn create_new_app() {
-    let directory = PathBuf::from("tests/fixtures/new_app");
+pub fn create_new_app(dir_name: &str) {
+    let directory = PathBuf::from(format!("tests/fixtures/{}", dir_name));
     if let Err(err) = fs::create_dir_all(directory) {
         eprintln!(
             "Failed to create tests/fixtures/new_app during test setup: {}",
@@ -41,9 +41,10 @@ pub fn create_new_app() {
         );
     }
 }
+
 #[allow(dead_code)]
-pub fn delete_new_app() {
-    let directory = PathBuf::from("tests/fixtures/new_app");
+pub fn delete_new_app(dir_name: &str) {
+    let directory = PathBuf::from(format!("tests/fixtures/{}", dir_name));
     if let Err(err) = fs::remove_dir_all(directory) {
         eprintln!(
             "Failed to remove tests/fixtures/new_app during test teardown: {}",
