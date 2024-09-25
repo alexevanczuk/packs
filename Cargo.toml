@@ -2,7 +2,7 @@
 
 [package]
 name = "pks"
-version = "0.2.13"
+version = "0.2.14"
 edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
@@ -28,33 +28,33 @@ name = "packs"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = { version = "1.0.75", features = [] } # for error handling
-clap = { version = "4.2.1", features = ["derive"] } # cli
-clap_derive = "4.2.0" # cli
-itertools = "0.13.0" # tools for iterating over iterable things
-jwalk = "0.8.1" # for walking the file tree
-path-clean = "1.0.1" # Pathname#cleaname in Ruby
-rayon = "1.7.0" # for parallel iteration
+anyhow = { version = "1.0.75", features = [] }                         # for error handling
+clap = { version = "4.2.1", features = ["derive"] }                    # cli
+clap_derive = "4.2.0"                                                  # cli
+itertools = "0.13.0"                                                   # tools for iterating over iterable things
+jwalk = "0.8.1"                                                        # for walking the file tree
+path-clean = "1.0.1"                                                   # Pathname#cleaname in Ruby
+rayon = "1.7.0"                                                        # for parallel iteration
 regex = "1.7.3"
-serde = { version = "~1", features = ["derive"] } # de(serialization)
-serde_yaml = "0.9.19" # de(serialization)
-serde_json = "1.0.96" # de(serialization)
-serde_magnus = "0.7.0" # permits a ruby gem to interface with this library
-tracing = "0.1.37" # logging
+serde = { version = "~1", features = ["derive"] }                      # de(serialization)
+serde_yaml = "0.9.19"                                                  # de(serialization)
+serde_json = "1.0.96"                                                  # de(serialization)
+serde_magnus = "0.7.0"                                                 # permits a ruby gem to interface with this library
+tracing = "0.1.37"                                                     # logging
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] } # logging
-glob = "0.3.1" # globbing
-globset = "0.4.10" # globbing
-lib-ruby-parser = "4.0.6" # ruby parser
-md5 = "0.7.0" # md5 hashing to take and compare md5 digests of file contents to ensure cache validity
-line-col = "0.2.1" # for creating source maps of violations
-ruby_inflector = '0.0.8' # for inflecting strings, e.g. turning `has_many :companies` into `Company`
-petgraph = "0.6.3" # for running graph algorithms (e.g. does the dependency graph contain a cycle?)
+glob = "0.3.1"                                                         # globbing
+globset = "0.4.10"                                                     # globbing
+lib-ruby-parser = "4.0.6"                                              # ruby parser
+md5 = "0.7.0"                                                          # md5 hashing to take and compare md5 digests of file contents to ensure cache validity
+line-col = "0.2.1"                                                     # for creating source maps of violations
+ruby_inflector = '0.0.8'                                               # for inflecting strings, e.g. turning `has_many :companies` into `Company`
+petgraph = "0.6.3"                                                     # for running graph algorithms (e.g. does the dependency graph contain a cycle?)
 fnmatch-regex2 = "0.3.0"
 strip-ansi-escapes = "0.2.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.10" # testing CLI
-rusty-hook = "^0.11.2" # git hooks
-predicates = "3.0.2" # kind of like rspec assertions
+assert_cmd = "2.0.10"       # testing CLI
+rusty-hook = "^0.11.2"      # git hooks
+predicates = "3.0.2"        # kind of like rspec assertions
 pretty_assertions = "1.3.0" # Shows a more readable diff when comparing objects
-serial_test = "3.1.1" # Run specific tests in serial
+serial_test = "3.1.1"       # Run specific tests in serial
