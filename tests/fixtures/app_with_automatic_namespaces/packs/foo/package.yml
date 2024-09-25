@@ -1,2 +1,6 @@
 enforce_dependencies: true
 enforce_privacy: true
+metadata:
+  automatic_pack_namespace: true
+  automatic_pack_namespace_exclusions:
+    - app/models # Exclude models
