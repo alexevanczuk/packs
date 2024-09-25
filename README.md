@@ -100,13 +100,15 @@ There are still some known behavioral differences between `packs` and `packwerk`
 - A `**` in `package_paths` is supported, but is not a substitute for a single `*`, e.g. `packs/**` is supported and will match `packs/*/*/package.yml`, but will not match `packs/*/package.yml`. `packs/*` must be used to match that.
 
 ## Default Namespaces
-`packs` supports Zeitwerk default namespaces. However, since it doesn't have access to the Rails runtime, you need to explicitly specify the namespaces in `packwerk.yml`.
+`packs` supports Zeitwerk default namespaces.
 
 For example, if you're using [`packs-rails`](https://github.com/rubyatscale/packs-rails) and [`automatic_namespaces`](https://github.com/gap777/automatic_namespaces) to configure your default namespaces, and you have
 - `packs/foo/app/models/bar.rb` which is configured to define `Foo::Bar`
 - `packs/foo/app/domain/baz.rb` which is configured to define `Foo::Baz`
 
-You'll need to specify the default namespaces in `packwerk.yml` like so:
+then `packs` will automatically read the configuration as specified in the `automatic_namespaces` gem and should interpret the namespaces correctly. Please file an issue if you find any problems. There is a known limitation here where acronym-based automatic namespaces are not yet supported (feel free to open an issue if you need this).
+
+If you are not using `automatic_namespaces`, you can also explicitly specify the namespaces in `packwerk.yml`, like so:
 ```yml
 autoload_roots:
   packs/foo/app/models: "::Foo"
