@@ -173,6 +173,10 @@ impl CheckerSetting {
 }
 
 impl Pack {
+    pub fn last_name(&self) -> &str {
+        self.name.split('/').last().unwrap()
+    }
+
     pub fn all_violations(&self) -> Vec<ViolationIdentifier> {
         let mut violations = Vec::new();
         let violations_by_pack = &self.package_todo.violations_by_defining_pack;

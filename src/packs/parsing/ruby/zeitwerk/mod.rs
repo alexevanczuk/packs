@@ -15,6 +15,7 @@ use crate::packs::{
         ConstantDefinition, ConstantResolver, ConstantResolverConfiguration,
     },
     file_utils::expand_glob,
+    pack::Pack,
     parsing::ruby::rails_utils::get_acronyms_from_disk,
     PackSet,
 };
@@ -32,16 +33,117 @@ pub fn get_zeitwerk_constant_resolver(
     ZeitwerkConstantResolver::create(constants)
 }
 
+#[derive(Debug)]
+struct PackNamespaceSettings {
+    automatic_pack_namespace: bool,
+    automatic_pack_namespace_exclusions: HashSet<PathBuf>,
+}
+
+fn get_pack_namespace_settings(pack: &Pack) -> PackNamespaceSettings {
+    pack.client_keys
+        .get("metadata")
+        .and_then(|metadata| {
+            if let serde_yaml::Value::Mapping(map) = metadata {
+                // Extract automatic_pack_namespace
+                let automatic_pack_namespace = map
+                    .get(&serde_yaml::Value::String(
+                        "automatic_pack_namespace".to_string(),
+                    ))
+                    .and_then(|val| match val {
+                        serde_yaml::Value::Bool(b) => Some(*b),
+                        _ => None,
+                    })
+                    .unwrap_or(false); // Default to false if not found or not a boolean
+
+                // Extract automatic_pack_namespace_exclusions and combine with pack.yml
+                let automatic_pack_namespace_exclusions: HashSet<PathBuf> = map
+                    .get(&serde_yaml::Value::String(
+                        "automatic_pack_namespace_exclusions".to_string(),
+                    ))
+                    .and_then(|val| match val {
+                        serde_yaml::Value::Sequence(seq) => Some(
+                            seq.iter()
+                                .filter_map(|v| {
+                                    v.as_str().map(|s| {
+                                        // Combine pack.yml with the exclusion path to form the full absolute path
+                                        let mut full_path = pack.yml.clone();
+                                        full_path.pop(); // Remove the last component (usually the filename like "pack.yml")
+                                        full_path.push(s); // Add the exclusion path
+                                        full_path
+                                    })
+                                })
+                                .collect(),
+                        ),
+                        _ => None,
+                    })
+                    .unwrap_or_default(); // Default to empty set if not found or not a sequence
+
+                Some(PackNamespaceSettings {
+                    automatic_pack_namespace,
+                    automatic_pack_namespace_exclusions,
+                })
+            } else {
+                None
+            }
+        })
+        .unwrap_or(PackNamespaceSettings {
+            automatic_pack_namespace: false,
+            automatic_pack_namespace_exclusions: HashSet::new(),
+        }) // Default to false and empty set if metadata doesn't exist
+}
+
 fn inferred_constants_from_pack_set(
     pack_set: &PackSet,
     configuration: &ConstantResolverConfiguration,
 ) -> Vec<ConstantDefinition> {
     // build the full list of default autoload roots from the pack set, using the default namespace for each.
+    // There is one exception to using the default namespace:
+    // Each pack may have metadata that takes this shape:
+    // metadata:
+    // automatic_pack_namespace: true
+    // automatic_pack_namespace_exclusions:
+    //     - app/models # Exclude models
+    // For packs that have this configuration, if the autoload root is not in the list of automatic_pack_namespace_exclusions,
+    // set the namespace associated with that root to inflector_shim::camelize(pack.name).
     let mut full_autoload_roots: HashMap<PathBuf, String> = pack_set
         .packs
         .iter()
-        .flat_map(|pack| pack.default_autoload_roots())
-        .map(|path| (path, String::from("")))
+        .flat_map(|pack| {
+            let default_roots = pack.default_autoload_roots();
+
+            // Check if metadata exists and automatic_pack_namespace is set to true
+
+            let PackNamespaceSettings {
+                automatic_pack_namespace,
+                automatic_pack_namespace_exclusions,
+            } = get_pack_namespace_settings(pack);
+
+            // Build the autoload roots
+            default_roots.into_iter().map(move |path| {
+                if automatic_pack_namespace
+                    && !automatic_pack_namespace_exclusions.contains(&path)
+                {
+                    // Pass an empty set of acronyms as the second argument
+                    // NOTE: This is not the correct implementation – if we want automatic namespacing to work with
+                    // acronym-based pack names, we need to pull from the file, preferably from the cache.
+                    let empty_acronyms = HashSet::new();
+
+                    // Camelized pack namespace based on pack name with leading double colon:
+                    // e.g. pack name "packs/my_pack" -> "::MyPack"
+                    let namespace = format!(
+                        "::{}",
+                        inflector_shim::camelize(
+                            pack.last_name(),
+                            &empty_acronyms,
+                        )
+                    );
+
+                    (path, namespace)
+                } else {
+                    (path, String::from("")) // default namespace handling
+                }
+            })
+        })
         .collect();
 
     // override the default autoload roots with any that may have been explicitly specified.
