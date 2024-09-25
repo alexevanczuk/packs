@@ -37,6 +37,14 @@ fn inferred_constants_from_pack_set(
     configuration: &ConstantResolverConfiguration,
 ) -> Vec<ConstantDefinition> {
     // build the full list of default autoload roots from the pack set, using the default namespace for each.
+    // There is one exception to using the default namespace:
+    // Each pack may have metadata that takes this shape:
+    // metadata:
+    // automatic_pack_namespace: true
+    // automatic_pack_namespace_exclusions:
+    //     - app/models # Exclude models
+    // For packs that have this configuration, if the autoload root is not in the list of automatic_pack_namespace_exclusions,
+    // set the namespace associated with that root to inflector_shim::camelize(pack.name).
     let mut full_autoload_roots: HashMap<PathBuf, String> = pack_set
         .packs
         .iter()
