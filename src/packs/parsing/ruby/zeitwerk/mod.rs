@@ -48,8 +48,36 @@ fn inferred_constants_from_pack_set(
     let mut full_autoload_roots: HashMap<PathBuf, String> = pack_set
         .packs
         .iter()
-        .flat_map(|pack| pack.default_autoload_roots())
-        .map(|path| (path, String::from("")))
+        .flat_map(|pack| {
+            let default_roots = pack.default_autoload_roots();
+
+            // Check if metadata exists and automatic_pack_namespace is set to true
+            let automatic_pack_namespace = pack
+                .client_keys
+                .get("automatic_pack_namespace")
+                .and_then(|val| val.as_bool())
+                .unwrap_or(false);
+
+            let exclusions: HashSet<PathBuf> = pack
+                .client_keys
+                .get("automatic_pack_namespace_exclusions")
+                .and_then(|val| val.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(PathBuf::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            // Build the autoload roots
+            default_roots.into_iter().map(move |path| {
+                if automatic_pack_namespace && !exclusions.contains(&path) {
+                    (path, inflector_shim::camelize(&pack.name))
+                } else {
+                    (path, String::from("")) // default namespace handling
+                }
+            })
+        })
         .collect();
 
     // override the default autoload roots with any that may have been explicitly specified.
