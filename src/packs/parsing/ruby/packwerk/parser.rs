@@ -159,6 +159,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
 
     fn on_const(&mut self, node: &nodes::Const) {
         let Ok(name) = fetch_const_const_name(node) else {
+            if let Some(s) = &node.scope {
+                self.visit(s);
+            }
             return;
         };
 
