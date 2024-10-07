@@ -425,4 +425,29 @@ end
 
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn mix_of_metaprogramming_and_regular_reference() {
+        let contents: String = String::from("Foo['bar']::Baz");
+        let configuration = Configuration::default();
+
+        std::assert_eq!(
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration,
+            )
+            .unresolved_references,
+            vec![UnresolvedReference {
+                name: String::from("Foo"),
+                namespace_path: vec![],
+                location: Range {
+                    start_row: 1,
+                    start_col: 0,
+                    end_row: 1,
+                    end_col: 4
+                }
+            }],
+        );
+    }
 }
