@@ -252,9 +252,10 @@ These monkey patches redefine behavior in a pack within your app (as determined 
 </details>"
       );
 
-        let mut configuration = configuration::get(&PathBuf::from(
-            "tests/fixtures/app_with_monkey_patches",
-        ))
+        let mut configuration = configuration::get(
+            &PathBuf::from("tests/fixtures/app_with_monkey_patches"),
+            &0,
+        )
         .unwrap();
         configuration.experimental_parser = true;
         let actual_message = expose_monkey_patches(

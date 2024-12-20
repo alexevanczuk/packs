@@ -214,7 +214,10 @@ pub fn add_dependency(
     // (which takes ownership over the previous one).
     // For now, we simply refetch the entire configuration for simplicity,
     // since we don't mind the slowdown for this CLI command.
-    let new_configuration = configuration::get(&configuration.absolute_root)?;
+    let new_configuration = configuration::get(
+        &configuration.absolute_root,
+        &configuration.input_files_count,
+    )?;
     let validation_result = packs::validate(&new_configuration);
     if validation_result.is_err() {
         println!("Added `{}` as a dependency to `{}`!", to, from);
@@ -238,9 +241,12 @@ pub fn validate(configuration: &Configuration) -> anyhow::Result<()> {
     checker::validate_all(configuration)
 }
 
-pub fn configuration(project_root: PathBuf) -> anyhow::Result<Configuration> {
+pub fn configuration(
+    project_root: PathBuf,
+    input_files_count: &usize,
+) -> anyhow::Result<Configuration> {
     let absolute_root = project_root.canonicalize()?;
-    configuration::get(&absolute_root)
+    configuration::get(&absolute_root, input_files_count)
 }
 
 pub fn check_unnecessary_dependencies(
@@ -439,6 +445,7 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
+            &10,
         )
         .unwrap();
         let absolute_file_path = configuration

@@ -201,7 +201,8 @@ pub fn run() -> anyhow::Result<()> {
         packs::init(&absolute_root, use_packwerk)?
     }
 
-    let mut configuration = packs::configuration::get(&absolute_root)?;
+    // Input filesize TBD
+    let mut configuration = packs::configuration::get(&absolute_root, &0)?;
 
     if args.print_files {
         configuration.print_files = true;
@@ -266,6 +267,7 @@ pub fn run() -> anyhow::Result<()> {
         } => {
             configuration.ignore_recorded_violations =
                 ignore_recorded_violations;
+            configuration.input_files_count = files.len();
             packs::check(&configuration, files)
         }
         Command::CheckContents {
@@ -277,6 +279,7 @@ pub fn run() -> anyhow::Result<()> {
 
             let absolute_path = get_absolute_path(file.clone(), &configuration);
             configuration.stdin_file_path = Some(absolute_path);
+            configuration.input_files_count = 1;
             packs::check(&configuration, vec![file])
         }
         Command::Update => packs::update(&configuration),
