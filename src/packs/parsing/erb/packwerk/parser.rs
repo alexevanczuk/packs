@@ -24,6 +24,7 @@ pub(crate) fn process_from_contents(
     let processed_file =
         process_from_ruby_contents(ruby_contents, path, configuration);
     let references = processed_file.unresolved_references;
+    let sigils = processed_file.sigils;
     // let references_without_range = references
     let references_without_range = references
         .iter()
@@ -40,5 +41,6 @@ pub(crate) fn process_from_contents(
         absolute_path: path.to_path_buf(),
         unresolved_references: references_without_range,
         definitions: vec![],
+        sigils,
     }
 }

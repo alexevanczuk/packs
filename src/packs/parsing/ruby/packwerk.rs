@@ -6,7 +6,7 @@ mod tests {
 
     use crate::packs::parsing::ruby::packwerk::parser::process_from_contents;
     use crate::packs::parsing::Range;
-    use crate::packs::{Configuration, UnresolvedReference};
+    use crate::packs::{Configuration, Sigil, UnresolvedReference};
 
     #[test]
     fn trivial_case() {
@@ -1333,6 +1333,52 @@ end
                 }
             },
             *reference,
+        );
+    }
+
+    #[test]
+    fn sigil_on_line_one() {
+        let contents: String = String::from("# pack_public: true\nFoo");
+        let configuration = Configuration::default();
+
+        std::assert_eq!(
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration,
+            )
+            .sigils,
+            vec![Sigil {
+                name: String::from("public"),
+                value: true,
+            }]
+        );
+    }
+
+    #[test]
+    fn sigil_on_line_6() {
+        let contents: String = String::from(
+            "\
+Foo
+
+
+
+
+
+# pack_public: true
+            ",
+        );
+
+        let configuration = Configuration::default();
+
+        std::assert_eq!(
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration,
+            )
+            .sigils,
+            vec![]
         );
     }
 }

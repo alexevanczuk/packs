@@ -53,6 +53,7 @@ pub fn process_file(
             absolute_path: path.to_path_buf(),
             unresolved_references: vec![],
             definitions: vec![], // TODO
+            sigils: vec![],
         })
     };
 

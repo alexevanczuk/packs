@@ -51,7 +51,9 @@ mod tests {
 
     use crate::packs::parsing::ruby::experimental::parser::process_from_contents;
     use crate::packs::parsing::{ParsedDefinition, Range};
-    use crate::packs::{Configuration, ProcessedFile, UnresolvedReference};
+    use crate::packs::{
+        Configuration, ProcessedFile, Sigil, UnresolvedReference,
+    };
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -79,6 +81,7 @@ mod tests {
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -108,6 +111,7 @@ mod tests {
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -138,6 +142,7 @@ mod tests {
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -168,6 +173,7 @@ mod tests {
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -194,6 +200,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -230,6 +237,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -266,6 +274,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -301,6 +310,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -340,6 +350,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
         assert_eq!(expected, actual);
     }
@@ -380,6 +391,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
 
         assert_eq!(expected, actual);
@@ -421,6 +433,7 @@ end
             absolute_path,
             unresolved_references,
             definitions,
+            sigils: vec![],
         };
 
         assert_eq!(expected, actual);
@@ -448,6 +461,52 @@ end
                     end_col: 4
                 }
             }],
+        );
+    }
+
+    #[test]
+    fn sigil_on_line_one() {
+        let contents: String = String::from("# pack_public: true\nFoo");
+        let configuration = Configuration::default();
+
+        std::assert_eq!(
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration,
+            )
+            .sigils,
+            vec![Sigil {
+                name: String::from("public"),
+                value: true,
+            }]
+        );
+    }
+
+    #[test]
+    fn sigil_on_line_6() {
+        let contents: String = String::from(
+            "\
+Foo
+
+
+
+
+
+# pack_public: true
+            ",
+        );
+
+        let configuration = Configuration::default();
+
+        std::assert_eq!(
+            process_from_contents(
+                contents,
+                &PathBuf::from("path/to/file.rb"),
+                &configuration,
+            )
+            .sigils,
+            vec![]
         );
     }
 }

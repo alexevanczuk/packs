@@ -171,6 +171,7 @@ mod tests {
                     }
                 }],
                 definitions: vec![],
+                sigils: vec![],
             }
         };
 

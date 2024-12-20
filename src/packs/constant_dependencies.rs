@@ -2,7 +2,7 @@ use anyhow::Context;
 
 use crate::packs::{
     checker::reference::Reference, pack::write_pack_to_disk,
-    reference_extractor::get_all_references,
+    reference_extractor::get_all_references_and_sigils,
 };
 
 use super::{pack::Pack, Configuration};
@@ -13,8 +13,10 @@ pub fn update_dependencies_for_constant(
     configuration: &Configuration,
     constant_name: &str,
 ) -> anyhow::Result<usize> {
-    let all_references =
-        get_all_references(configuration, &configuration.included_files)?;
+    let (all_references, _sigils) = get_all_references_and_sigils(
+        configuration,
+        &configuration.included_files,
+    )?;
     if let Some((defining_pack_name, reference_pack_names_set)) =
         find_defining_and_referencing_packs(&all_references, constant_name)
     {

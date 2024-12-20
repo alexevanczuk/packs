@@ -267,6 +267,7 @@ mod tests {
                 ignored_private_constants: HashSet::new(),
                 private_constants: HashSet::new(),
                 public_folder: None,
+
                 layer: None,
                 client_keys: HashMap::new(),
                 enforcement_globs_ignore: None,
