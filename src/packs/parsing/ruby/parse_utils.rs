@@ -3,7 +3,10 @@ use std::collections::HashSet;
 use lib_ruby_parser::{nodes, Loc, Node};
 use line_col::LineColLookup;
 
-use crate::packs::parsing::{ParsedDefinition, Range, UnresolvedReference};
+use crate::packs::{
+    parsing::{ParsedDefinition, Range, UnresolvedReference},
+    Sigil,
+};
 
 use super::inflector_shim::to_class_case;
 
@@ -205,4 +208,20 @@ pub fn get_constant_assignment_definition(
         fully_qualified_name,
         location: loc_to_range(&node.expression_l, line_col_lookup),
     })
+}
+
+pub fn extract_sigils_from_contents(contents: &str) -> Vec<Sigil> {
+    let mut sigils: Vec<Sigil> = Vec::new();
+
+    // Hardcoded to public, but later we can make this a convention like `pack_*: true`, if we find it more generally useful
+    contents.lines().take(5).for_each(|line| {
+        if line.contains("pack_public: true") {
+            sigils.push(Sigil {
+                name: "public".to_string(),
+                value: true,
+            });
+        }
+    });
+
+    sigils
 }

@@ -314,6 +314,16 @@ pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
     pub definitions: Vec<ParsedDefinition>,
+    pub sigils: Vec<Sigil>,
+}
+
+// A sigil is a way to specify some packs specific behavior at the top of a file, like
+// `# pack_public: true`. This struct picks up sigil names, which are an enum of string values, starting with just one possibility.
+// and value, which is a boolean
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+pub struct Sigil {
+    pub name: String,
+    pub value: bool,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq, Clone)]

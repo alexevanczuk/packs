@@ -1,4 +1,5 @@
 use crate::packs::file_utils::file_read_contents;
+use crate::packs::parsing::ruby::parse_utils::extract_sigils_from_contents;
 use crate::packs::{
     parsing::{
         ruby::parse_utils::{
@@ -8,7 +9,7 @@ use crate::packs::{
         },
         ParsedDefinition, UnresolvedReference,
     },
-    Configuration, ProcessedFile,
+    Configuration, ProcessedFile, Sigil,
 };
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,
@@ -213,6 +214,7 @@ pub(crate) fn process_from_contents(
                 absolute_path: path.to_owned(),
                 unresolved_references: vec![],
                 definitions: vec![],
+                sigils: vec![],
             }
         }
     };
@@ -237,9 +239,12 @@ pub(crate) fn process_from_contents(
     // For a parser that uses parsed constants, see the experimental parser
     let definitions = collector.definitions;
 
+    let sigils = extract_sigils_from_contents(&contents);
+
     ProcessedFile {
         absolute_path,
         unresolved_references,
         definitions,
+        sigils,
     }
 }
