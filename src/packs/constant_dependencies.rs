@@ -13,8 +13,10 @@ pub fn update_dependencies_for_constant(
     configuration: &Configuration,
     constant_name: &str,
 ) -> anyhow::Result<usize> {
-    let (all_references, _sigils) =
-        get_all_references_and_sigils(configuration, &configuration.included_files)?;
+    let (all_references, _sigils) = get_all_references_and_sigils(
+        configuration,
+        &configuration.included_files,
+    )?;
     if let Some((defining_pack_name, reference_pack_names_set)) =
         find_defining_and_referencing_packs(&all_references, constant_name)
     {
