@@ -32,9 +32,6 @@ Privacy violation: `::Bar::Api` is private to `packs/bar`, but referenced from `
 packs/foo/app/domain/foo/api.rb:6:8
 Privacy violation: `::Bar::Api2` is private to `packs/bar`, but referenced from `packs/foo`
 
-packs/foo/app/domain/foo/api.rb:7:8
-Privacy violation: `::Bar::Api3` is private to `packs/bar`, but referenced from `packs/foo`
-
 
 "#;
 
