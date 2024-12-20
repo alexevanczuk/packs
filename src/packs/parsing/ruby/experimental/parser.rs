@@ -9,7 +9,7 @@ use crate::packs::{
         },
         ParsedDefinition, UnresolvedReference,
     },
-    Configuration, ProcessedFile, Sigil,
+    Configuration, ProcessedFile,
 };
 use lib_ruby_parser::{
     nodes, traverse::visitor::Visitor, Node, Parser, ParserOptions,

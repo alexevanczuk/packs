@@ -109,6 +109,7 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
+        _sigils: &HashMap<std::path::PathBuf, Vec<crate::packs::Sigil>>,
     ) -> anyhow::Result<Option<Violation>> {
         let pack_checker =
             PackChecker::new(configuration, reference, &self.violation_type())?;

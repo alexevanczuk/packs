@@ -30,7 +30,8 @@ use std::{collections::HashSet, path::PathBuf};
 use tracing::debug;
 
 use super::bin_locater;
-use super::reference_extractor::get_all_references;
+use super::reference_extractor::get_all_references_and_sigils;
+use super::Sigil;
 
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
@@ -52,6 +53,7 @@ pub(crate) trait CheckerInterface {
         &self,
         reference: &Reference,
         configuration: &Configuration,
+        sigils: &HashMap<PathBuf, Vec<Sigil>>,
     ) -> anyhow::Result<Option<Violation>>;
 
     fn violation_type(&self) -> String;
@@ -387,8 +389,10 @@ pub(crate) fn check_unnecessary_dependencies(
 fn get_unnecessary_dependencies(
     configuration: &Configuration,
 ) -> anyhow::Result<HashMap<Pack, Vec<String>>> {
-    let references =
-        get_all_references(configuration, &configuration.included_files)?;
+    let (references, _sigils) = get_all_references_and_sigils(
+        configuration,
+        &configuration.included_files,
+    )?;
     let mut edge_counts: HashMap<(String, String), i32> = HashMap::new();
     for reference in references {
         let defining_pack_name = reference.defining_pack_name;
@@ -426,14 +430,17 @@ fn get_all_violations(
     absolute_paths: &HashSet<PathBuf>,
     checkers: &Vec<Box<dyn CheckerInterface + Send + Sync>>,
 ) -> anyhow::Result<HashSet<Violation>> {
-    let references = get_all_references(configuration, absolute_paths)?;
+    let (references, sigils) =
+        get_all_references_and_sigils(configuration, absolute_paths)?;
     debug!("Running checkers on resolved references");
 
     let violations = checkers
         .into_par_iter()
         .try_fold(HashSet::new, |mut acc, c| {
             for reference in &references {
-                if let Some(violation) = c.check(reference, configuration)? {
+                if let Some(violation) =
+                    c.check(reference, configuration, &sigils)?
+                {
                     acc.insert(violation);
                 }
             }

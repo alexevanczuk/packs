@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
@@ -11,6 +13,7 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
+        sigils: &HashMap<std::path::PathBuf, Vec<crate::packs::Sigil>>,
     ) -> anyhow::Result<Option<Violation>> {
         let pack_checker =
             PackChecker::new(configuration, reference, &self.violation_type())?;
@@ -27,13 +30,23 @@ impl CheckerInterface for Checker {
 
         // This is a hack for now – we need to read package.yml file public_paths at some point,
         // and probably find a better way to check if the constant is public
-
         let public_folder = &defining_pack.public_folder();
         let is_public = reference
             .relative_defining_file
             .as_ref()
-            .unwrap()
-            .starts_with(public_folder.to_string_lossy().as_ref());
+            .map(|relative_file| {
+                let absolute_file = configuration
+                    .absolute_root
+                    .join(relative_file)
+                    .canonicalize()
+                    .unwrap();
+
+                // Check if the relative file starts with `public_folder` or the absolute file is in `sigils`
+                relative_file
+                    .starts_with(public_folder.to_string_lossy().as_ref())
+                    || sigils.contains_key(&absolute_file)
+            })
+            .unwrap_or(false);
 
         // Note this means that if the constant is ALSO in the list of private_constants,
         // it will be considered public.

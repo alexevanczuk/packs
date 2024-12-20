@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
@@ -16,6 +16,7 @@ impl CheckerInterface for Checker {
         &self,
         reference: &Reference,
         configuration: &Configuration,
+        _sigils: &HashMap<std::path::PathBuf, Vec<crate::packs::Sigil>>,
     ) -> anyhow::Result<Option<Violation>> {
         let pack_checker =
             PackChecker::new(configuration, reference, &self.violation_type())?;

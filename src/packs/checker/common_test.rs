@@ -1,14 +1,17 @@
 #[cfg(test)]
 pub mod tests {
     use pretty_assertions::assert_eq;
-    use std::collections::{HashMap, HashSet};
+    use std::{
+        collections::{HashMap, HashSet},
+        path::PathBuf,
+    };
 
     use crate::packs::{
         checker::{
             reference::Reference, CheckerInterface, ViolationIdentifier,
         },
         pack::Pack,
-        Configuration, PackSet, SourceLocation, Violation,
+        Configuration, PackSet, Sigil, SourceLocation, Violation,
     };
 
     pub struct TestChecker {
@@ -135,7 +138,9 @@ pub mod tests {
                 }
             });
 
-        let result = checker.check(&reference, &configuration)?;
+        let sigils: HashMap<PathBuf, Vec<Sigil>> = HashMap::new();
+
+        let result = checker.check(&reference, &configuration, &sigils)?;
 
         let stripped_result = match result {
             Some(violation) => {

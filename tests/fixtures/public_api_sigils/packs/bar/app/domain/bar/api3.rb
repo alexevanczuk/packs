@@ -7,5 +7,6 @@
 
 module Bar
    class Api3
+      def does_thing; end
    end
 end

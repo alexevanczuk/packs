@@ -1,4 +1,7 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use tracing::debug;
@@ -8,12 +11,16 @@ use crate::packs::{
     process_files_with_cache, ProcessedFile,
 };
 
-use super::{checker::reference::Reference, Configuration};
+use super::{checker::reference::Reference, Configuration, Sigil};
 
-pub(crate) fn get_all_references(
+// It might be nice to have this return a simpler type rather than the tuple
+// This method returns everything we need as input into packwerk checking
+// (references and sigils). Not sure on naming yet.
+#[allow(clippy::type_complexity)]
+pub(crate) fn get_all_references_and_sigils(
     configuration: &Configuration,
     absolute_paths: &HashSet<PathBuf>,
-) -> anyhow::Result<Vec<Reference>> {
+) -> anyhow::Result<(Vec<Reference>, HashMap<PathBuf, Vec<Sigil>>)> {
     let cache = configuration.get_cache();
 
     debug!("Getting unresolved references (using cache if possible)");
@@ -55,6 +62,19 @@ pub(crate) fn get_all_references(
         (constant_resolver, processed_files)
     };
 
+    // Now we're going to get all the files with sigils (i.e. processed_files_to_check where property sigils is not empty)
+    // And then make a separate map of PathBuf => Sigils
+    debug!("Getting sigils");
+    let mut path_to_sigils: HashMap<PathBuf, Vec<Sigil>> = HashMap::new();
+    for processed_file in &processed_files_to_check {
+        if !processed_file.sigils.is_empty() {
+            path_to_sigils.insert(
+                processed_file.absolute_path.to_owned(),
+                processed_file.sigils.to_owned(),
+            );
+        }
+    }
+
     debug!("Turning unresolved references into fully qualified references");
     let references: anyhow::Result<Vec<Reference>> = processed_files_to_check
         .par_iter()
@@ -85,5 +105,5 @@ pub(crate) fn get_all_references(
         );
     debug!("Finished turning unresolved references into fully qualified references");
 
-    references
+    Ok((references?, path_to_sigils))
 }
