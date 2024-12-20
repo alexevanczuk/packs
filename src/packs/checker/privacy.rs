@@ -45,13 +45,17 @@ impl CheckerInterface for Checker {
 
                 let manual_read_of_defining_file_contains_sigil =
                     if configuration.included_files.len() < 100 {
-                        let contents =
-                            std::fs::read_to_string(&absolute_file).unwrap();
-                        let sigils =
-                            ruby::parse_utils::extract_sigils_from_contents(
-                                &contents,
-                            );
-                        sigils.iter().any(|sigil| sigil.name == "public")
+                        if let Ok(contents) =
+                            std::fs::read_to_string(&absolute_file)
+                        {
+                            let sigils =
+                                ruby::parse_utils::extract_sigils_from_contents(
+                                    &contents,
+                                );
+                            sigils.iter().any(|sigil| sigil.name == "public")
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     };
