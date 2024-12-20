@@ -314,6 +314,8 @@ pub struct ProcessedFile {
     pub absolute_path: PathBuf,
     pub unresolved_references: Vec<UnresolvedReference>,
     pub definitions: Vec<ParsedDefinition>,
+
+    #[serde(default)] // Default to an empty Vec if not present
     pub sigils: Vec<Sigil>,
 }
 

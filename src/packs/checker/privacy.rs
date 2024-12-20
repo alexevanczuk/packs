@@ -35,11 +35,8 @@ impl CheckerInterface for Checker {
             .relative_defining_file
             .as_ref()
             .map(|relative_file| {
-                let absolute_file = configuration
-                    .absolute_root
-                    .join(relative_file)
-                    .canonicalize()
-                    .unwrap();
+                let absolute_file =
+                    configuration.absolute_root.join(relative_file);
 
                 // Check if the relative file starts with `public_folder` or the absolute file is in `sigils`
                 relative_file
