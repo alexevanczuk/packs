@@ -26,7 +26,7 @@ mod test_util {
         fixture_name: &str,
     ) -> anyhow::Result<Box<dyn ConstantResolver>> {
         let absolute_root = get_absolute_root(fixture_name);
-        let configuration = configuration::get(&absolute_root)?;
+        let configuration = configuration::get(&absolute_root, &10)?;
 
         Ok(get_zeitwerk_constant_resolver(
             &configuration.pack_set,
@@ -85,6 +85,7 @@ mod test_util {
                 &default_absolute_root,
                 RawConfiguration::default(),
                 walk_directory_result,
+                &0,
             )
             .unwrap() // TODO: potentially convert `default` to `new` and return a Result
         }

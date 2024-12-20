@@ -21,9 +21,10 @@ fn test_add_dependency() -> Result<(), Box<dyn Error>> {
             "Successfully added `packs/foo` as a dependency to `packs/baz`!",
         ));
 
-    let config = packs::packs::configuration(PathBuf::from(
-        "tests/fixtures/app_with_missing_dependency",
-    ))
+    let config = packs::packs::configuration(
+        PathBuf::from("tests/fixtures/app_with_missing_dependency"),
+        &0,
+    )
     .unwrap();
 
     let pack = config.pack_set.for_pack("packs/baz").unwrap();
@@ -61,9 +62,10 @@ fn test_add_dependency_creating_cycle() -> Result<(), Box<dyn Error>> {
         ))
         .stdout(predicate::str::contains("packs/foo, packs/bar"));
 
-    let config = packs::packs::configuration(PathBuf::from(
-        "tests/fixtures/app_with_missing_dependency",
-    ))
+    let config = packs::packs::configuration(
+        PathBuf::from("tests/fixtures/app_with_missing_dependency"),
+        &0,
+    )
     .unwrap();
 
     let pack = config.pack_set.for_pack("packs/bar").unwrap();
@@ -92,9 +94,10 @@ fn test_add_dependency_unnecessarily() -> Result<(), Box<dyn Error>> {
             "`packs/foo` already depends on `packs/bar`!",
         ));
 
-    let config = packs::packs::configuration(PathBuf::from(
-        "tests/fixtures/app_with_missing_dependency",
-    ))
+    let config = packs::packs::configuration(
+        PathBuf::from("tests/fixtures/app_with_missing_dependency"),
+        &0,
+    )
     .unwrap();
 
     let pack = config.pack_set.for_pack("packs/foo").unwrap();

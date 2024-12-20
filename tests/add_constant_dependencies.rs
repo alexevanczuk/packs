@@ -20,9 +20,10 @@ fn test_add_constant_dependencies() -> anyhow::Result<()> {
             "Successfully updated 1 dependency for constant '::Bar::Tender'",
         ));
 
-    let config = packs::packs::configuration(PathBuf::from(
-        "tests/fixtures/app_with_missing_dependencies",
-    ))
+    let config = packs::packs::configuration(
+        PathBuf::from("tests/fixtures/app_with_missing_dependencies"),
+        &0,
+    )
     .unwrap();
 
     let pack = config.pack_set.for_pack("packs/foo").unwrap();

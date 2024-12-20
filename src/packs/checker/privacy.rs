@@ -39,12 +39,11 @@ impl CheckerInterface for Checker {
                 let absolute_file =
                     configuration.absolute_root.join(relative_file);
 
-                // if configuration.included_files is less than 100, we're just going to individually
+                // if configuration.input_files_count is less than 100, we're just going to individually
                 // take the contents of the absolute file and call extract_sigils_from_contents on it to get the sigils
                 // and then check if a "public" sigil is contained. manual_read_of_defining_file_contains_sigil
-
                 let manual_read_of_defining_file_contains_sigil =
-                    if configuration.included_files.len() < 100 {
+                    if configuration.input_files_count < 100 {
                         if let Ok(contents) =
                             std::fs::read_to_string(&absolute_file)
                         {
@@ -52,6 +51,7 @@ impl CheckerInterface for Checker {
                                 ruby::parse_utils::extract_sigils_from_contents(
                                     &contents,
                                 );
+
                             sigils.iter().any(|sigil| sigil.name == "public")
                         } else {
                             false

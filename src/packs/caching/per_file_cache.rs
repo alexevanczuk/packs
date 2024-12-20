@@ -119,7 +119,7 @@ mod tests {
 
     fn teardown() {
         packs::delete_cache(
-            configuration::get(&PathBuf::from("tests/fixtures/simple_app"))
+            configuration::get(&PathBuf::from("tests/fixtures/simple_app"), &1)
                 .unwrap(),
         );
     }

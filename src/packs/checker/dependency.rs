@@ -317,6 +317,7 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
+            &1,
         )
         .unwrap();
 
@@ -340,6 +341,7 @@ packs/foo, packs/bar",
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
+            &1,
         )
         .unwrap();
 
@@ -358,6 +360,7 @@ packs/foo, packs/bar",
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
+            &1,
         )
         .unwrap();
 

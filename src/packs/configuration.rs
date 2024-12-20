@@ -21,6 +21,7 @@ use walk_directory::walk_directory;
 
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
+    pub input_files_count: usize, // Helpful for optimizations in privacy chcker
     pub absolute_root: PathBuf,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
@@ -93,20 +94,29 @@ impl Configuration {
     }
 }
 
-pub(crate) fn get(absolute_root: &Path) -> anyhow::Result<Configuration> {
+pub(crate) fn get(
+    absolute_root: &Path,
+    input_files_count: &usize,
+) -> anyhow::Result<Configuration> {
     debug!("Beginning to build configuration");
 
     let raw_config = raw_configuration::get(absolute_root)?;
     let walk_directory_result =
         walk_directory(absolute_root.to_path_buf(), &raw_config)?;
 
-    from_raw(absolute_root, raw_config, walk_directory_result)
+    from_raw(
+        absolute_root,
+        raw_config,
+        walk_directory_result,
+        input_files_count,
+    )
 }
 
 pub(crate) fn from_raw(
     absolute_root: &Path,
     raw_config: RawConfiguration,
     walk_directory_result: WalkDirectoryResult,
+    input_files_count: &usize,
 ) -> anyhow::Result<Configuration> {
     let WalkDirectoryResult {
         included_files,
@@ -147,6 +157,7 @@ pub(crate) fn from_raw(
 
     Ok(Configuration {
         included_files,
+        input_files_count: input_files_count.to_owned(),
         absolute_root,
         cache_enabled,
         cache_directory,
@@ -184,7 +195,7 @@ mod tests {
     #[test]
     fn default_options() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let actual = configuration::get(&absolute_root).unwrap();
+        let actual = configuration::get(&absolute_root, &0).unwrap();
         assert_eq!(actual.absolute_root, absolute_root);
 
         let expected_included_files = vec![
@@ -304,7 +315,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_nonempty_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(&absolute_root).unwrap();
+        let configuration = configuration::get(&absolute_root, &0).unwrap();
         let actual_paths = configuration.intersect_files(vec![
             String::from("packs/foo/app/services/foo.rb"),
             String::from("scripts/my_script.rb"),
@@ -323,7 +334,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_empty_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(&absolute_root).unwrap();
+        let configuration = configuration::get(&absolute_root, &0).unwrap();
         let actual_paths = configuration.intersect_files(vec![]);
         let expected_paths = vec![
             absolute_root.join("frontend/ui_helper.rb"),
@@ -344,7 +355,7 @@ mod tests {
     #[test]
     fn filtered_absolute_paths_with_directory_input_paths() {
         let absolute_root = PathBuf::from("tests/fixtures/simple_app");
-        let configuration = configuration::get(&absolute_root).unwrap();
+        let configuration = configuration::get(&absolute_root, &0).unwrap();
         let actual_paths =
             configuration.intersect_files(vec![String::from("packs/bar")]);
         let expected_paths = vec![
@@ -376,9 +387,13 @@ mod tests {
             owning_package_yml_for_file: Default::default(),
         };
 
-        let configuration =
-            configuration::from_raw(&absolute_root, raw, walk_directory_result)
-                .unwrap();
+        let configuration = configuration::from_raw(
+            &absolute_root,
+            raw,
+            walk_directory_result,
+            &0,
+        )
+        .unwrap();
         let actual_associations = configuration.custom_associations;
         let expected_paths = vec!["my_association".to_owned()];
 

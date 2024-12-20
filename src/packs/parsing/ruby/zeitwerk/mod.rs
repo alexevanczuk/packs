@@ -333,7 +333,7 @@ mod tests {
 
     fn teardown() {
         packs::delete_cache(
-            configuration::get(&PathBuf::from("tests/fixtures/simple_app"))
+            configuration::get(&PathBuf::from("tests/fixtures/simple_app"), &0)
                 .unwrap(),
         );
     }
@@ -487,7 +487,7 @@ mod tests {
             .canonicalize()
             .expect("Could not canonicalize path");
 
-        let configuration = configuration::get(absolute_root).unwrap();
+        let configuration = configuration::get(absolute_root, &0).unwrap();
 
         let constant_resolver = get_zeitwerk_constant_resolver(
             &configuration.pack_set,
