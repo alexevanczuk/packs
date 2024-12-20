@@ -74,7 +74,7 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-                &0
+            &0,
         )
         .unwrap();
 
@@ -92,7 +92,7 @@ mod tests {
                 .canonicalize()
                 .expect("Could not canonicalize path")
                 .as_path(),
-                &0
+            &0,
         )
         .unwrap();
 
