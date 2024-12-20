@@ -4,6 +4,7 @@ use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
 use super::CheckerInterface;
 use crate::packs::checker::Reference;
+use crate::packs::parsing::ruby;
 use crate::packs::{Configuration, Violation};
 
 pub struct Checker {}
@@ -38,10 +39,32 @@ impl CheckerInterface for Checker {
                 let absolute_file =
                     configuration.absolute_root.join(relative_file);
 
+                // if configuration.included_files is less than 100, we're just going to individually
+                // take the contents of the absolute file and call extract_sigils_from_contents on it to get the sigils
+                // and then check if a "public" sigil is contained. manual_read_of_defining_file_contains_sigil
+
+                let manual_read_of_defining_file_contains_sigil =
+                    if configuration.included_files.len() < 100 {
+                        if let Ok(contents) =
+                            std::fs::read_to_string(&absolute_file)
+                        {
+                            let sigils =
+                                ruby::parse_utils::extract_sigils_from_contents(
+                                    &contents,
+                                );
+                            sigils.iter().any(|sigil| sigil.name == "public")
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    };
+
                 // Check if the relative file starts with `public_folder` or the absolute file is in `sigils`
                 relative_file
                     .starts_with(public_folder.to_string_lossy().as_ref())
                     || sigils.contains_key(&absolute_file)
+                    || manual_read_of_defining_file_contains_sigil
             })
             .unwrap_or(false);
 
