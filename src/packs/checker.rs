@@ -17,6 +17,7 @@ use crate::packs::package_todo;
 use crate::packs::Configuration;
 
 use anyhow::bail;
+use anyhow::Context;
 // External imports
 use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
@@ -353,6 +354,41 @@ pub(crate) fn remove_unnecessary_dependencies(
     for (pack, dependency_names) in unnecessary_dependencies.iter() {
         remove_reference_to_dependency(pack, dependency_names)?;
     }
+    Ok(())
+}
+
+pub(crate) fn add_all_dependencies(
+    configuration: &Configuration,
+    pack_name: &str,
+) -> anyhow::Result<()> {
+    let (references, _sigils) = get_all_references_and_sigils(
+        configuration,
+        &configuration.included_files,
+    )?;
+
+    let from_pack = configuration
+        .pack_set
+        .for_pack(pack_name)
+        .context(format!("`{}` not found", pack_name))?;
+
+    let mut defining_pack_names: HashSet<String> = HashSet::new();
+
+    for reference in references {
+        if reference.referencing_pack_name == pack_name {
+            if let Some(defining_pack_name) = reference.defining_pack_name {
+                if defining_pack_name != pack_name {
+                    defining_pack_names.insert(defining_pack_name);
+                }
+            }
+        }
+    }
+
+    let updated_pack = Pack {
+        dependencies: defining_pack_names.clone().into_iter().collect(),
+        ..from_pack.to_owned()
+    };
+    write_pack_to_disk(&updated_pack)?;
+
     Ok(())
 }
 

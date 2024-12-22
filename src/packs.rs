@@ -11,7 +11,7 @@ pub(crate) mod constant_resolver;
 pub(crate) mod dependencies;
 pub(crate) mod ignored;
 pub(crate) mod monkey_patch_detection;
-pub(crate) mod pack;
+pub mod pack;
 pub(crate) mod parsing;
 pub(crate) mod raw_configuration;
 pub(crate) mod walk_directory;
@@ -258,6 +258,13 @@ pub fn check_unnecessary_dependencies(
     } else {
         checker::check_unnecessary_dependencies(configuration)
     }
+}
+
+pub fn add_dependencies(
+    configuration: &Configuration,
+    pack_name: &str,
+) -> anyhow::Result<()> {
+    checker::add_all_dependencies(configuration, pack_name)
 }
 
 pub fn update_dependencies_for_constant(
