@@ -31,30 +31,39 @@ Welcome! Please see https://github.com/alexevanczuk/packs for more information!
 Usage: pks [OPTIONS] <COMMAND>
 
 Commands:
-  greet                           Just saying hi
-  create                          Create a new pack
-  check                           Look for violations in the codebase
-  check-contents                  Check file contents piped to stdin
-  update                          Update package_todo.yml files with the current violations
-  validate                        Look for validation errors in the codebase
-  add-dependency                  Add a dependency from one pack to another
-  check-unnecessary-dependencies  Check for dependencies that when removed produce no violations.
-  lint-package-yml-files          Lint package.yml files
-  expose-monkey-patches           Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself
-  delete-cache                    `rm -rf` on your cache directory, default `tmp/cache/packwerk`
-  list-packs                      List packs based on configuration in packwerk.yml (for debugging purposes)
-  list-included-files             List analyzed files based on configuration in packwerk.yml (for debugging purposes)
-  list-definitions                List the constants that packs sees and where it sees them (for debugging purposes)
-  help                            Print this message or the help of the given subcommand(s)
+  greet                             Just saying hi
+  init                              Set up packs in this project
+  create                            Create a new pack
+  check                             Look for violations in the codebase
+  check-contents                    Check file contents piped to stdin
+  update                            Update package_todo.yml files with the current violations
+  validate                          Look for validation errors in the codebase
+  add-dependency                    Add a dependency from one pack to another
+  update-dependencies-for-constant  Add missing dependencies for the pack that defines the constant
+  check-unnecessary-dependencies    Check for dependencies that when removed produce no violations.
+  add-dependencies                  Add everything a pack depends on (may cause cycles)
+  lint-package-yml-files            Lint package.yml files
+  expose-monkey-patches             Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself
+  delete-cache                      `rm -rf` on your cache directory, default `tmp/cache/packwerk`
+  list-packs                        List packs based on configuration in packwerk.yml (for debugging purposes)
+  list-pack-dependencies            List packs that depend on a pack
+  list-included-files               List analyzed files based on configuration in packwerk.yml (for debugging purposes)
+  list-definitions                  List the constants that packs sees and where it sees them (for debugging purposes)
+  help                              Print this message or the help of the given subcommand(s)
 
 Options:
-      --project-root <PROJECT_ROOT>  Path for the root of the project [default: .]
-  -d, --debug                        Run with performance debug mode
-  -e, --experimental-parser          Run with the experimental parser, which gets constant definitions directly from the AST
-      --no-cache                     Run without the cache (good for CI, testing)
-  -p, --print-files                  Print to console when files begin and finish processing (to identify files that panic when processing files concurrently)
-  -h, --help                         Print help
-  -V, --version                      Print version
+      --project-root <PROJECT_ROOT>     Path for the root of the project [default: .]
+  -d, --debug                           Run with performance debug mode
+  -e, --experimental-parser             Run with the experimental parser, which gets constant definitions directly from the AST
+      --no-cache                        Run without the cache (good for CI, testing)
+  -p, --print-files                     Print to console when files begin and finish processing (to identify files that panic when processing files concurrently)
+      --disable-enforce-dependencies    Globally disable enforce_dependency
+      --disable-enforce-folder-privacy  Globally disable enforce_folder_privacy
+      --disable-enforce-layers          Globally disable enforce_layers
+      --disable-enforce-privacy         Globally disable enforce_privacy
+      --disable-enforce-visibility      Globally disable enforce_visibility
+  -h, --help                            Print help
+  -V, --version                         Print version
 ```
 
 # Installation

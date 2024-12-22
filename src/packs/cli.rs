@@ -122,6 +122,9 @@ enum Command {
         auto_correct: bool,
     },
 
+    #[clap(about = "Add everything a pack depends on (may cause cycles)")]
+    AddDependencies { pack_name: String },
+
     #[clap(about = "Lint package.yml files")]
     LintPackageYmlFiles,
 
@@ -289,6 +292,9 @@ pub fn run() -> anyhow::Result<()> {
         }
         Command::CheckUnnecessaryDependencies { auto_correct } => {
             packs::check_unnecessary_dependencies(&configuration, auto_correct)
+        }
+        Command::AddDependencies { pack_name } => {
+            packs::add_dependencies(&configuration, &pack_name)
         }
         Command::UpdateDependenciesForConstant { constant } => Ok(
             packs::update_dependencies_for_constant(&configuration, &constant)?,
