@@ -399,12 +399,67 @@ fn is_default_public_folder(value: &Option<PathBuf>) -> bool {
     }
 }
 
+const KEY_SORT_ORDER: &[&str] = &[
+    "enforce_dependencies",
+    "enforce_privacy",
+    "enforce_layers",
+    "enforce_visibility",
+    "enforce_folder_privacy",
+    "enforce_folder_visibility",
+    "enforce_architecture",
+    "layer",
+    "public_path",
+    "dependencies",
+    "owner",
+    "private_constants",
+    "visible_to",
+    "enforcement_globs_ignore",
+    "metadata",
+];
+
 pub fn serialize_pack(pack: &Pack) -> String {
-    let serialized_pack = serde_yaml::to_string(&pack).unwrap();
-    if serialized_pack == "{}\n" {
-        "".to_owned()
+    let serialized: Value = serde_yaml::to_value(pack).unwrap();
+    let mapping = serialized.as_mapping().unwrap();
+
+    // Prepare a Vec to preserve order
+    let mut ordered_map: Vec<(String, Value)> = Vec::new();
+
+    // Add keys from KEY_SORT_ORDER
+    for key in KEY_SORT_ORDER {
+        if let Some(value) = mapping.get(&Value::String(key.to_string())) {
+            ordered_map.push((key.to_string(), value.clone()));
+        }
+    }
+
+    // Add remaining keys not in KEY_SORT_ORDER
+    let mut added_keys: HashSet<String> =
+        ordered_map.iter().map(|(k, _)| k.clone()).collect();
+    for (key, value) in mapping {
+        if let Value::String(key_str) = key {
+            if !added_keys.contains(key_str) {
+                ordered_map.push((key_str.clone(), value.clone()));
+                added_keys.insert(key_str.clone());
+            }
+        }
+    }
+
+    // Convert the ordered map to a serde_yaml::Mapping
+    let mut sorted_mapping = serde_yaml::Mapping::new();
+    for (key, value) in ordered_map {
+        sorted_mapping.insert(Value::String(key), value);
+    }
+
+    // Serialize to YAML
+    let raw_yaml =
+        serde_yaml::to_string(&Value::Mapping(sorted_mapping)).unwrap();
+
+    // Remove YAML header (`---\n`) to match Ruby behavior
+    let trimmed_yaml = raw_yaml.trim_start_matches("---\n").to_string();
+
+    if trimmed_yaml == "{}\n" {
+        "".to_string()
     } else {
-        serialized_pack
+        trimmed_yaml
     }
 }
 
@@ -614,6 +669,30 @@ metadata:
 enforce_dependencies: false
 metadata:
   foobar: true
+"#
+        .trim_start();
+
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn test_serde_with_many_fields() {
+        let pack_yml = r#"
+enforce_dependencies: true
+enforce_privacy: true
+dependencies:
+- packs/utilities
+enforce_architecture: true
+"#;
+
+        let actual = reserialize_pack(pack_yml);
+
+        let expected = r#"
+enforce_dependencies: true
+enforce_privacy: true
+enforce_architecture: true
+dependencies:
+- packs/utilities
 "#
         .trim_start();
 

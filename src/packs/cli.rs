@@ -125,7 +125,7 @@ enum Command {
     #[clap(about = "Add everything a pack depends on (may cause cycles)")]
     AddDependencies { pack_name: String },
 
-    #[clap(about = "Lint package.yml files")]
+    #[clap(about = "Lint package.yml files", aliases = ["lint"])]
     LintPackageYmlFiles,
 
     #[clap(
