@@ -66,6 +66,7 @@ jobs:
         with:
           profile: minimal
           toolchain: 1.81
+          components: rustfmt
           override: true
 
       - name: Run cargo fmt
