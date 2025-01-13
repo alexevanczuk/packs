@@ -12,9 +12,7 @@ pub enum CacheResult {
 
 #[derive(Debug, Default)]
 pub struct EmptyCacheEntry {
-    pub filepath: PathBuf,
     pub file_contents_digest: String,
-    pub file_name_digest: String,
     pub cache_file_path: PathBuf,
 }
 
@@ -25,15 +23,13 @@ impl EmptyCacheEntry {
     ) -> anyhow::Result<EmptyCacheEntry> {
         let file_digest = md5::compute(filepath.to_str().unwrap());
         let file_name_digest = format!("{:x}", file_digest);
-        let cache_file_path = cache_directory.join(&file_name_digest);
+        let cache_file_path = cache_directory.join(file_name_digest);
 
         let file_contents_digest = file_content_digest(filepath)?;
 
         Ok(EmptyCacheEntry {
-            filepath: filepath.to_owned(),
             file_contents_digest,
             cache_file_path,
-            file_name_digest,
         })
     }
 }
