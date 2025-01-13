@@ -426,7 +426,7 @@ pub fn serialize_pack(pack: &Pack) -> String {
 
     // Add keys from KEY_SORT_ORDER
     for key in KEY_SORT_ORDER {
-        if let Some(value) = mapping.get(&Value::String(key.to_string())) {
+        if let Some(value) = mapping.get(Value::String(key.to_string())) {
             ordered_map.push((key.to_string(), value.clone()));
         }
     }
