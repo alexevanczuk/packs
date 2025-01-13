@@ -25,6 +25,13 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          override: true
+
       - name: Run cargo check
         run: cargo check
   test:
@@ -33,6 +40,13 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          override: true
 
       - name: Run cargo test with backtrace
         run: cargo test -- --nocapture
@@ -46,6 +60,13 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          override: true
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
