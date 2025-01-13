@@ -25,6 +25,13 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          override: true
+
       - name: Run cargo check
         run: cargo check
   test:
@@ -33,6 +40,13 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          override: true
 
       - name: Run cargo test with backtrace
         run: cargo test -- --nocapture
@@ -46,6 +60,14 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.81
+          components: rustfmt, clippy
+          override: true
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
@@ -131,49 +153,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ needs.release.outputs.new_version }}
-
-  upload-linux-bin:
-    needs: release
-    if: ${{needs.release.outputs.new_version}}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Update local toolchain
-        run: |
-          cargo install cross
-      - name: Build linux binaries
-        run: |
-          cross build --release --target x86_64-unknown-linux-gnu
-          cross build --release --target aarch64-unknown-linux-gnu
-      - name: Upload linux binaries
-        run: |
-          tar -czf target/x86_64-unknown-linux-gnu.tar.gz -C target/x86_64-unknown-linux-gnu/release pks packs
-          tar -czf target/aarch64-unknown-linux-gnu.tar.gz -C target/aarch64-unknown-linux-gnu/release pks packs
-          gh release upload $NEW_VERSION target/x86_64-unknown-linux-gnu.tar.gz
-          gh release upload $NEW_VERSION target/aarch64-unknown-linux-gnu.tar.gz 
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_VERSION: ${{ needs.release.outputs.new_version }}
-
-  generate-dotslash-files:
-    name: Generating and uploading DotSlash files
-    needs: 
-      - release
-      - upload-linux-bin
-      - upload-mac-universal-bin
-    if: success() && ${{needs.release.outputs.new_version}}
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: facebook/dotslash-publish-release@v1
-        # This is necessary because the action uses
-        # `gh release upload` to publish the generated DotSlash file(s)
-        # as part of the release.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Additional file that lives in your repo that defines
-          # how your DotSlash file(s) should be generated.
-          config: .github/workflows/dotslash-config.json
-          # Tag for the release to target.
-          tag: ${{ needs.release.outputs.new_version }}

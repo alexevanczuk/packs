@@ -46,7 +46,7 @@ fn get_pack_namespace_settings(pack: &Pack) -> PackNamespaceSettings {
             if let serde_yaml::Value::Mapping(map) = metadata {
                 // Extract automatic_pack_namespace
                 let automatic_pack_namespace = map
-                    .get(&serde_yaml::Value::String(
+                    .get(serde_yaml::Value::String(
                         "automatic_pack_namespace".to_string(),
                     ))
                     .and_then(|val| match val {
@@ -57,7 +57,7 @@ fn get_pack_namespace_settings(pack: &Pack) -> PackNamespaceSettings {
 
                 // Extract automatic_pack_namespace_exclusions and combine with pack.yml
                 let automatic_pack_namespace_exclusions: HashSet<PathBuf> = map
-                    .get(&serde_yaml::Value::String(
+                    .get(serde_yaml::Value::String(
                         "automatic_pack_namespace_exclusions".to_string(),
                     ))
                     .and_then(|val| match val {
