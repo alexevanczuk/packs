@@ -2,6 +2,7 @@ mod constant_resolver;
 
 use std::{
     collections::{HashMap, HashSet},
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -21,6 +22,7 @@ use crate::packs::{
 };
 
 use self::constant_resolver::ZeitwerkConstantResolver;
+use fs2::FileExt; // Provides file locking methods
 
 use super::inflector_shim;
 
@@ -320,9 +322,23 @@ fn cache_constant_definitions(
     })
     .expect("Failed to serialize");
 
+    // Ensure cache directory exists
     create_cache_dir_idempotently(cache_dir);
-    std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
-        .unwrap();
+
+    let cache_file_path = cache_dir.join("constant_resolver.json");
+
+    // Open the file and acquire an exclusive lock (blocking)
+    let mut file = std::fs::File::create(&cache_file_path)
+        .expect("Failed to open cache file");
+    file.lock_exclusive().expect("Failed to acquire file lock");
+
+    // Write to the file safely
+    file.write_all(cache_data_json.as_bytes())
+        .expect("Failed to write cache data");
+    file.flush().expect("Failed to flush data to cache file");
+
+    // Unlock automatically when `file` goes out of scope
+    println!("Cache safely written with file locking.");
 }
 
 #[cfg(test)]

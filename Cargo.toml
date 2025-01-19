@@ -51,6 +51,7 @@ ruby_inflector = '0.0.8'                                               # for inf
 petgraph = "0.6.3"                                                     # for running graph algorithms (e.g. does the dependency graph contain a cycle?)
 fnmatch-regex2 = "0.3.0"
 strip-ansi-escapes = "0.2.0"
+fs2 = "0.4.3"                                                         # for async file system operations, right now only concurrency control in writing the constant resolver cache
 
 [dev-dependencies]
 assert_cmd = "2.0.10"       # testing CLI
