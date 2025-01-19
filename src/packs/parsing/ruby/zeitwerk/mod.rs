@@ -2,6 +2,7 @@ mod constant_resolver;
 
 use std::{
     collections::{HashMap, HashSet},
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -21,6 +22,7 @@ use crate::packs::{
 };
 
 use self::constant_resolver::ZeitwerkConstantResolver;
+use fs2::FileExt; // Provides file locking methods
 
 use super::inflector_shim;
 
@@ -280,7 +282,7 @@ fn inferred_constant_from_file(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct ConstantResolverCache {
     file_definition_map: HashMap<PathBuf, String>,
 }
@@ -320,9 +322,23 @@ fn cache_constant_definitions(
     })
     .expect("Failed to serialize");
 
+    // Ensure cache directory exists
     create_cache_dir_idempotently(cache_dir);
-    std::fs::write(cache_dir.join("constant_resolver.json"), cache_data_json)
-        .unwrap();
+
+    let cache_file_path = cache_dir.join("constant_resolver.json");
+
+    // Open the file and acquire an exclusive lock (blocking)
+    let mut file = std::fs::File::create(&cache_file_path)
+        .expect("Failed to open cache file");
+    file.lock_exclusive().expect("Failed to acquire file lock");
+
+    // Write to the file safely
+    file.write_all(cache_data_json.as_bytes())
+        .expect("Failed to write cache data");
+    file.flush().expect("Failed to flush data to cache file");
+
+    // Unlock automatically when `file` goes out of scope
+    println!("Cache safely written with file locking.");
 }
 
 #[cfg(test)]
@@ -558,4 +574,122 @@ mod tests {
         assert_eq!(&expected_constant_map, actual_constant_map);
         teardown();
     }
+
+    #[test]
+    fn test_cache_constant_definitions() {
+        let absolute_root = &PathBuf::from("tests/fixtures/simple_app")
+            .canonicalize()
+            .expect("Could not canonicalize path");
+
+        let configuration = configuration::get(absolute_root, &0).unwrap();
+
+        let constant_resolver = get_zeitwerk_constant_resolver(
+            &configuration.pack_set,
+            &configuration.constant_resolver_configuration(),
+        );
+        let constants = constant_resolver
+            .fully_qualified_constant_name_to_constant_definition_map();
+
+        let cache_dir = configuration
+            .constant_resolver_configuration()
+            .cache_directory
+            .clone();
+        cache_constant_definitions(
+            &constants.values().flatten().cloned().collect(),
+            &cache_dir,
+            false,
+        );
+
+        let cache_data = get_constant_resolver_cache(&cache_dir);
+
+        // ~/workspace/packs - main ! $ tree tests/fixtures/simple_app
+        // tests/fixtures/simple_app
+        // ├── app
+        // │   ├── company_data
+        // │   │   └── widget.rb
+        // │   └── services
+        // │       └── some_root_class.rb
+        // ├── frontend
+        // │   └── ui_helper.rb
+        // ├── node_modules
+        // │   ├── file.rb
+        // │   └── subfolder
+        // │       └── file.rb
+        // ├── package.yml
+        // ├── packs
+        // │   ├── bar
+        // │   │   ├── app
+        // │   │   │   ├── models
+        // │   │   │   │   └── concerns
+        // │   │   │   │       └── some_concern.rb
+        // │   │   │   └── services
+        // │   │   │       └── bar.rb
+        // │   │   └── package.yml
+        // │   ├── baz
+        // │   │   ├── app
+        // │   │   │   └── services
+        // │   │   │       └── baz.rb
+        // │   │   └── package.yml
+        // │   └── foo
+        // │       ├── app
+        // │       │   ├── services
+        // │       │   │   ├── foo
+        // │       │   │   │   └── bar.rb
+        // │       │   │   └── foo.rb
+        // │       │   └── views
+        // │       │       └── foo.erb
+        // │       └── package.yml
+        // ├── packwerk.yml
+        // ├── script
+        // │   └── my_script.rb
+        // └── tmp
+        let mut expected_file_definition_map = HashMap::new();
+
+        expected_file_definition_map.insert(
+            absolute_root.join("packs/foo/app/services/foo.rb"),
+            "::Foo".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("packs/foo/app/services/foo/bar.rb"),
+            "::Foo::Bar".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("packs/bar/app/services/bar.rb"),
+            "::Bar".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("packs/bar/app/models/concerns/some_concern.rb"),
+            "::SomeConcern".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("packs/baz/app/services/baz.rb"),
+            "::Baz".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("app/services/some_root_class.rb"),
+            "::SomeRootClass".to_string(),
+        );
+
+        expected_file_definition_map.insert(
+            absolute_root.join("app/company_data/widget.rb"),
+            "::Company::Widget".to_string(),
+        );
+
+        assert_eq!(
+            ConstantResolverCache {
+                file_definition_map: expected_file_definition_map
+            },
+            cache_data
+        );
+
+        teardown();
+    }
+
+    use std::collections::HashMap;
+    use std::path::PathBuf;
 }
