@@ -338,7 +338,6 @@ fn cache_constant_definitions(
     file.flush().expect("Failed to flush data to cache file");
 
     // Unlock automatically when `file` goes out of scope
-    println!("Cache safely written with file locking.");
 }
 
 #[cfg(test)]
