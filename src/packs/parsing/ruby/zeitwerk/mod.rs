@@ -289,15 +289,14 @@ struct ConstantResolverCache {
 
 fn get_constant_resolver_cache(cache_dir: &Path) -> ConstantResolverCache {
     let path = cache_dir.join("constant_resolver.json");
-    if path.exists() {
-        let file = std::fs::File::open(path).unwrap();
-        let reader = std::io::BufReader::new(file);
-        serde_json::from_reader(reader).unwrap()
-    } else {
-        ConstantResolverCache {
+    std::fs::File::open(&path)
+        .ok()
+        .and_then(|file| {
+            serde_json::from_reader(std::io::BufReader::new(file)).ok()
+        })
+        .unwrap_or_else(|| ConstantResolverCache {
             file_definition_map: HashMap::new(),
-        }
-    }
+        })
 }
 
 fn cache_constant_definitions(
@@ -691,4 +690,46 @@ mod tests {
 
     use std::collections::HashMap;
     use std::path::PathBuf;
+
+    #[test]
+    /*
+       There's a bug where sometimes constant_resolver.json is written as an empty string,
+       ```
+       $ cat tmp/cache/packwerk/constant_resolver.json
+       !
+       ```
+
+       This test writes the corrupt file and ensures that we can properly call get_constant_resolver_cache without panicking.
+
+       Note that it'd be great to figure out why a corrupt cache is written instead of just papering it over like this.
+       I thought adding a file lock (as above) would fix the issue, but looks like not.
+       If you think you know why it gets corrupted, please let me know!
+       Just trying to fix the UX for now.
+    */
+    fn test_corrupt_constant_resolver_json() {
+        let cache_dir =
+            PathBuf::from("tests/fixtures/simple_app/tmp/cache/packwerk");
+        let cache_file_path = cache_dir.join("constant_resolver.json");
+
+        std::fs::create_dir_all(&cache_dir)
+            .expect("Failed to create cache dir");
+
+        let mut file = std::fs::File::create(&cache_file_path)
+            .expect("Failed to open cache file");
+
+        // Write to the file safely
+        file.write_all("".as_bytes())
+            .expect("Failed to write cache data");
+
+        let cache_data = get_constant_resolver_cache(&cache_dir);
+
+        assert_eq!(
+            ConstantResolverCache {
+                file_definition_map: HashMap::new()
+            },
+            cache_data
+        );
+
+        teardown();
+    }
 }
