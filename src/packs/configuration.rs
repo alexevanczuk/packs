@@ -19,6 +19,7 @@ use std::{
 use tracing::debug;
 use walk_directory::walk_directory;
 
+#[derive(Debug)]
 pub struct Configuration {
     pub included_files: HashSet<PathBuf>,
     pub input_files_count: usize, // Helpful for optimizations in privacy chcker

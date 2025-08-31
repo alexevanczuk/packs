@@ -178,6 +178,10 @@ pub fn check(
 }
 
 pub fn update(configuration: &Configuration) -> anyhow::Result<()> {
+    // Debug log configuration if ENV variable PACKS_DEBUG is set
+    if std::env::var("PACKS_DEBUG").is_ok() {
+        println!("Configuration: {:#?}", configuration);
+    }
     checker::update(configuration)
 }
 
