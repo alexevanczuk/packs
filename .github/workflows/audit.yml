@@ -5,8 +5,8 @@ on:
     - cron: 0 0 * * 1
   push:
     paths:
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
   pull_request:
 
 jobs:
@@ -20,6 +20,10 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Check Rust version
+        run: |
+          rustc --version
+          cargo --version
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
