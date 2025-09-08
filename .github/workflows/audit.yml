@@ -8,6 +8,7 @@ on:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
   pull_request:
+  workflow_dispatch:
 
 jobs:
   audit:
