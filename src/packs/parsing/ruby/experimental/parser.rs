@@ -24,6 +24,7 @@ struct ReferenceCollector<'a> {
     pub line_col_lookup: LineColLookup<'a>,
     pub behavioral_change_in_namespace: bool,
     pub custom_associations: Vec<String>,
+    pub is_spec_file: bool,
 }
 
 impl<'a> Visitor for ReferenceCollector<'a> {
@@ -75,8 +76,10 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_send(&mut self, node: &nodes::Send) {
-        if node.method_name == "private_constant" {
-            // `private_constant` is not considered to be a behavioral change
+        if node.method_name == "private_constant" || self.is_spec_file {
+            // `private_constant`, RSpec methods, and anything inside RSpec describe blocks
+            // are not considered to be behavioral changes
+            lib_ruby_parser::traverse::visitor::visit_send(self, node);
         } else {
             self.behavioral_change_in_namespace = true;
 
@@ -91,8 +94,9 @@ impl<'a> Visitor for ReferenceCollector<'a> {
             if let Some(association_reference) = association_reference {
                 self.references.push(association_reference);
             }
+
+            lib_ruby_parser::traverse::visitor::visit_send(self, node);
         }
-        lib_ruby_parser::traverse::visitor::visit_send(self, node);
     }
 
     fn on_casgn(&mut self, node: &nodes::Casgn) {
@@ -173,12 +177,16 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_def(&mut self, node: &nodes::Def) {
-        self.behavioral_change_in_namespace = true;
+        if !self.is_spec_file {
+            self.behavioral_change_in_namespace = true;
+        }
         lib_ruby_parser::traverse::visitor::visit_def(self, node);
     }
 
     fn on_defs(&mut self, node: &nodes::Defs) {
-        self.behavioral_change_in_namespace = true;
+        if !self.is_spec_file {
+            self.behavioral_change_in_namespace = true;
+        }
         lib_ruby_parser::traverse::visitor::visit_defs(self, node);
     }
 }
@@ -219,6 +227,28 @@ pub(crate) fn process_from_contents(
         }
     };
 
+    /*
+       `pks` has a feature that detects a monkey patch within a module, e.g.:
+       module SomeOtherPack
+         some_monkey_patch
+       end
+
+       It then considers this a definition of `SomeOtherPack`. This is a bit idiosyncratic – but was intended to support experimental detection
+       of monkey patches, e.g. to String.
+
+       This causes issues for a common RSpec pattern:
+
+       module MyModule
+         RSpec.describe MyClass do
+           ...
+         end
+       end
+
+       To address this, we disable the monkey patch detection in spec files.
+    */
+    let is_spec_file = path.to_string_lossy().contains("_spec.rb")
+        || path.to_string_lossy().contains("/spec/");
+
     let mut collector = ReferenceCollector {
         references: vec![],
         current_namespaces: vec![],
@@ -226,6 +256,7 @@ pub(crate) fn process_from_contents(
         line_col_lookup: lookup,
         behavioral_change_in_namespace: false,
         custom_associations: configuration.custom_associations.clone(),
+        is_spec_file,
     };
 
     collector.visit(&ast);
