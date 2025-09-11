@@ -100,8 +100,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
     }
 
     fn on_casgn(&mut self, node: &nodes::Casgn) {
-        // Skip constant assignment processing if we're inside an RSpec describe block
-        // if !self.is_spec_file {
         let definition = get_constant_assignment_definition(
             node,
             self.current_namespaces.to_owned(),
@@ -111,7 +109,6 @@ impl<'a> Visitor for ReferenceCollector<'a> {
         if let Some(definition) = definition {
             self.definitions.push(definition);
         }
-        // }
 
         if let Some(v) = node.value.to_owned() {
             self.visit(&v);
