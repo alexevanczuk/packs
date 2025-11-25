@@ -43,7 +43,8 @@ serde_magnus = "0.7.0"                                                 # permits
 tracing = "0.1.37"                                                     # logging
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] } # logging
 glob = "0.3.1"                                                         # globbing
-globset = "0.4.10"                                                     # globbing
+globset = "=0.4.15"                                                    # globbing - pinned to avoid edition2024 requirement in 0.4.18
+indexmap = "=2.6.0"                                                    # pinned to avoid rustc 1.82 requirement in 2.12.1
 lib-ruby-parser = "4.0.6"                                              # ruby parser
 md5 = "0.7.0"                                                          # md5 hashing to take and compare md5 digests of file contents to ensure cache validity
 line-col = "0.2.1"                                                     # for creating source maps of violations

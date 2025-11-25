@@ -1,3 +1,5 @@
+#[allow(deprecated)]
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::Command;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
@@ -9,7 +11,7 @@ mod common;
 #[test]
 #[serial]
 fn test_add_dependency() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_missing_dependency")
         .arg("add-dependency")
@@ -42,7 +44,7 @@ fn test_add_dependency() -> Result<(), Box<dyn Error>> {
 #[test]
 #[serial]
 fn test_add_dependency_creating_cycle() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_missing_dependency")
         .arg("add-dependency")
@@ -82,7 +84,7 @@ fn test_add_dependency_creating_cycle() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_add_dependency_unnecessarily() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_missing_dependency")
         .arg("add-dependency")
