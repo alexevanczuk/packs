@@ -69,11 +69,14 @@ fn test_list_references_default_json_format() -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(&output_file)?;
     let json: serde_json::Value = serde_json::from_str(&contents)?;
 
-    // Verify it's valid JSON object
-    assert!(json.is_object());
+    // Verify exact structure and contents
+    let expected: serde_json::Value = serde_json::json!({
+        "packs/foo/app/services/foo.rb": {
+            "::Bar": "packs/bar/app/services/bar.rb"
+        }
+    });
 
-    // Verify default format is JSON (parseable)
-    assert!(contents.starts_with("{"));
+    assert_eq!(json, expected);
 
     Ok(())
 }
