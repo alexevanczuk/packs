@@ -158,6 +158,11 @@ enum Command {
         about = "List the constants that packs sees and where it sees them (for debugging purposes)"
     )]
     ListDefinitions(ListDefinitionsArgs),
+
+    #[clap(
+        about = "List constant references and their definition files (for test selection)"
+    )]
+    ListReferences(ListReferencesArgs),
 }
 
 #[derive(Debug, Args)]
@@ -165,6 +170,17 @@ struct ListDefinitionsArgs {
     /// Show constants with multiple definitions only
     #[arg(short, long)]
     ambiguous: bool,
+}
+
+#[derive(Debug, Args)]
+struct ListReferencesArgs {
+    /// Output format: 'json' or 'text'
+    #[arg(short, long, default_value = "json")]
+    format: String,
+
+    /// Output file path
+    #[arg(short, long)]
+    out: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -307,6 +323,11 @@ pub fn run() -> anyhow::Result<()> {
             let ambiguous = args.ambiguous;
             packs::list_definitions(&configuration, ambiguous)
         }
+        Command::ListReferences(args) => packs::list_references(
+            &configuration,
+            &args.format,
+            args.out.as_deref(),
+        ),
         Command::ExposeMonkeyPatches(args) => packs::expose_monkey_patches(
             &configuration,
             &args.rubydir,
