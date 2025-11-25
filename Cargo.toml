@@ -52,6 +52,7 @@ petgraph = "0.6.3"                                                     # for run
 fnmatch-regex2 = "0.3.0"
 strip-ansi-escapes = "0.2.0"
 fs2 = "0.4.3"                                                         # for async file system operations, right now only concurrency control in writing the constant resolver cache
+indexmap = "=2.6.0"                                                   # pinned to avoid rustc 1.82 requirement
 
 [dev-dependencies]
 assert_cmd = "2.0.10"       # testing CLI
