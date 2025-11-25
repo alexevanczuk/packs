@@ -16,8 +16,7 @@ The following groups of packages form a cycle:
 packs/foo, packs/bar",
     );
 
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_dependency_cycles")
         .arg("--debug")
@@ -43,8 +42,7 @@ fn test_validate_layer() -> Result<(), Box<dyn Error>> {
         "Invalid \'layer\' option in \'packs/foo/package.yml\'. `layer` must be one of the layers defined in `packwerk.yml`"
     );
 
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_layer_violations_in_yml")
         .arg("validate")

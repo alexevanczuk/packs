@@ -172,8 +172,7 @@ fn test_check_with_package_todo_file_ignoring_recorded_violations(
 
 #[test]
 fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
-    let output = Command::cargo_bin("packs")
-        .unwrap()
+    let output = Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--experimental-parser")
@@ -197,8 +196,7 @@ fn test_check_with_experimental_parser() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/contains_stale_violations")
         .arg("check")
@@ -215,8 +213,7 @@ fn test_check_with_stale_violations() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_check_with_stale_violations_when_file_no_longer_exists(
 ) -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/contains_stale_violations_no_file")
         .arg("check")
@@ -232,8 +229,7 @@ fn test_check_with_stale_violations_when_file_no_longer_exists(
 
 #[test]
 fn test_check_with_relationship_violations() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_rails_relationships")
         .arg("check")
@@ -249,8 +245,7 @@ fn test_check_with_relationship_violations() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_check_without_stale_violations() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/contains_package_todo")
         .arg("check")
@@ -269,8 +264,7 @@ fn test_check_without_stale_violations() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_check_with_strict_mode() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")
-        .unwrap()
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/uses_strict_mode")
         .arg("check")
