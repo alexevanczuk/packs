@@ -1,3 +1,4 @@
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use serial_test::serial;
@@ -9,7 +10,7 @@ use pretty_assertions::assert_eq;
 // This and the next test are run in serial because they both use the same fixtures.
 #[serial]
 fn test_update() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--debug")
@@ -147,7 +148,7 @@ packs/bar:
 
 #[test]
 fn test_update_with_packs_first_app() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/simple_packs_first_app")
         .arg("update")
@@ -195,7 +196,7 @@ fn test_update_with_strict_violations() -> anyhow::Result<()> {
     );
     let _ignore = std::fs::remove_file(path);
 
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/contains_strict_violations")
         .arg("update")

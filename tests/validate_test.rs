@@ -1,3 +1,4 @@
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{error::Error, process::Command};
@@ -58,7 +59,7 @@ fn test_validate_layer() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_validate_with_referencing_unknown_pack() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/references_unknown_pack")
         .arg("--debug")

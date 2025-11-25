@@ -1,10 +1,11 @@
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use std::{error::Error, process::Command};
 
 mod common;
 #[test]
 fn test_check() -> Result<(), Box<dyn Error>> {
-    let output = Command::cargo_bin("packs")?
+    let output = Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/visibility_violations")
         .arg("--debug")
@@ -28,7 +29,7 @@ fn test_check() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_check_disabled_enforce_visibility() -> Result<(), Box<dyn Error>> {
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/visibility_violations")
         .arg("--debug")

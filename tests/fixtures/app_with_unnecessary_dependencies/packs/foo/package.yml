@@ -3,4 +3,3 @@ enforce_privacy: true
 layer: technical_services
 dependencies:
 - packs/bar
-- packs/baz
