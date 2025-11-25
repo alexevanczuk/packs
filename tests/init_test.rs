@@ -1,3 +1,5 @@
+#[allow(deprecated)]
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{error::Error, fs, process::Command};
@@ -10,7 +12,7 @@ fn init_pack() -> Result<(), Box<dyn Error>> {
     let rel_path = format!("tests/fixtures/{}", directory);
     common::create_new_app(directory);
 
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg(rel_path.clone())
         .arg("init")
@@ -42,7 +44,7 @@ fn init_pack_with_packwerk() -> Result<(), Box<dyn Error>> {
     let rel_path = format!("tests/fixtures/{}", directory);
     common::create_new_app(directory);
 
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg(rel_path.clone())
         .arg("init")
