@@ -323,13 +323,11 @@ pub fn run() -> anyhow::Result<()> {
             let ambiguous = args.ambiguous;
             packs::list_definitions(&configuration, ambiguous)
         }
-        Command::ListReferences(args) => {
-            packs::list_references(
-                &configuration,
-                &args.format,
-                args.out.as_deref(),
-            )
-        }
+        Command::ListReferences(args) => packs::list_references(
+            &configuration,
+            &args.format,
+            args.out.as_deref(),
+        ),
         Command::ExposeMonkeyPatches(args) => packs::expose_monkey_patches(
             &configuration,
             &args.rubydir,

@@ -427,7 +427,8 @@ pub(crate) fn list_references(
     };
 
     // Build map: source_file -> { constant_name -> definition_file }
-    let mut reference_map: HashMap<String, HashMap<String, String>> = HashMap::new();
+    let mut reference_map: HashMap<String, HashMap<String, String>> =
+        HashMap::new();
 
     for processed_file in &processed_files {
         let relative_source_path = processed_file
@@ -440,21 +441,23 @@ pub(crate) fn list_references(
 
         // Get all unresolved references from this file and resolve them
         for unresolved_ref in &processed_file.unresolved_references {
-
             // Resolve the reference to a fully qualified constant and its definition
-            let references = checker::reference::Reference::from_unresolved_reference(
-                configuration,
-                constant_resolver.as_ref(),
-                unresolved_ref,
-                &processed_file.absolute_path,
-            )?;
+            let references =
+                checker::reference::Reference::from_unresolved_reference(
+                    configuration,
+                    constant_resolver.as_ref(),
+                    unresolved_ref,
+                    &processed_file.absolute_path,
+                )?;
 
             // Each unresolved reference might resolve to multiple definitions
             for reference in references {
                 let constant_name = reference.constant_name.clone();
 
                 // Only include references that have a defining file
-                if let Some(relative_def_path) = reference.relative_defining_file {
+                if let Some(relative_def_path) =
+                    reference.relative_defining_file
+                {
                     constants_in_file.insert(constant_name, relative_def_path);
                 }
             }
