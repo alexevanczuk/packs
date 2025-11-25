@@ -1,4 +1,4 @@
-use assert_cmd::prelude::*;
+use assert_cmd::{cargo::cargo_bin, prelude::*};
 use std::{error::Error, fs, process::Command};
 use tempfile::TempDir;
 mod common;
@@ -8,7 +8,7 @@ fn test_list_references_simple_app() -> Result<(), Box<dyn Error>> {
     let temp_dir = TempDir::new()?;
     let output_file = temp_dir.path().join("references.json");
 
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--experimental-parser")
@@ -37,7 +37,7 @@ fn test_list_references_namespaced_app() -> Result<(), Box<dyn Error>> {
     let temp_dir = TempDir::new()?;
     let output_file = temp_dir.path().join("references.json");
 
-    Command::cargo_bin("packs")?
+    Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_namespaced_tests")
         .arg("--experimental-parser")
