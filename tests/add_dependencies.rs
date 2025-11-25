@@ -1,4 +1,3 @@
-use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use packs::packs::pack::Pack; // I'm definitely doing the wrong thing here
 use std::{error::Error, fs, process::Command};

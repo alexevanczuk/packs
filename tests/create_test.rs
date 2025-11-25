@@ -1,5 +1,6 @@
-use assert_cmd::cargo::cargo_bin;
 use assert_cmd::Command;
+#[allow(deprecated)]
+use assert_cmd::cargo::cargo_bin;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use std::{error::Error, fs};
