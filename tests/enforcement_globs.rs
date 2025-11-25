@@ -1,8 +1,8 @@
 use std::error::Error;
 
-use assert_cmd::Command;
 #[allow(deprecated)]
 use assert_cmd::cargo::cargo_bin;
+use assert_cmd::Command;
 
 mod common;
 

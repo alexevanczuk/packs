@@ -1,3 +1,5 @@
+#[allow(deprecated)]
+use assert_cmd::cargo::cargo_bin;
 use assert_cmd::prelude::*;
 use std::{error::Error, fs, path::PathBuf, process::Command};
 mod common;

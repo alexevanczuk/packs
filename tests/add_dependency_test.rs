@@ -1,6 +1,6 @@
-use assert_cmd::Command;
 #[allow(deprecated)]
 use assert_cmd::cargo::cargo_bin;
+use assert_cmd::Command;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use serial_test::serial;
