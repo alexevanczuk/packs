@@ -51,15 +51,29 @@ fn test_list_references_text_output() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn test_list_references_stdout_by_default() -> Result<(), Box<dyn Error>> {
+fn test_list_references_default_json_format() -> Result<(), Box<dyn Error>> {
+    let temp_dir = TempDir::new()?;
+    let output_file = temp_dir.path().join("references.json");
+
     Command::cargo_bin("packs")?
         .arg("--project-root")
         .arg("tests/fixtures/simple_app")
         .arg("--experimental-parser")
         .arg("list-references")
+        .arg("--out")
+        .arg(&output_file)
         .assert()
-        .success()
-        .stdout(predicate::str::contains("{"));
+        .success();
+
+    // Read and parse the output
+    let contents = fs::read_to_string(&output_file)?;
+    let json: serde_json::Value = serde_json::from_str(&contents)?;
+
+    // Verify it's valid JSON object
+    assert!(json.is_object());
+
+    // Verify default format is JSON (parseable)
+    assert!(contents.starts_with("{"));
 
     Ok(())
 }
