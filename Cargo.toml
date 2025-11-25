@@ -2,7 +2,7 @@
 
 [package]
 name = "pks"
-version = "0.2.25"
+version = "0.2.26"
 edition = "2021"
 description = "Welcome! Please see https://github.com/alexevanczuk/packs for more information!"
 license = "MIT"
@@ -59,3 +59,4 @@ rusty-hook = "^0.11.2"      # git hooks
 predicates = "3.0.2"        # kind of like rspec assertions
 pretty_assertions = "1.3.0" # Shows a more readable diff when comparing objects
 serial_test = "3.1.1"       # Run specific tests in serial
+tempfile = "3.8.0"          # temporary files and directories for testing

@@ -174,10 +174,6 @@ struct ListDefinitionsArgs {
 
 #[derive(Debug, Args)]
 struct ListReferencesArgs {
-    /// Filter by reference type (e.g., 'constant')
-    #[arg(short = 't', long)]
-    r#type: Option<String>,
-
     /// Output format: 'json' or 'text'
     #[arg(short, long, default_value = "json")]
     format: String,
@@ -330,7 +326,6 @@ pub fn run() -> anyhow::Result<()> {
         Command::ListReferences(args) => {
             packs::list_references(
                 &configuration,
-                args.r#type.as_deref(),
                 &args.format,
                 args.out.as_deref(),
             )

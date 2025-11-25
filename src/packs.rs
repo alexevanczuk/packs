@@ -398,7 +398,6 @@ pub(crate) fn list_definitions(
 
 pub(crate) fn list_references(
     configuration: &Configuration,
-    reference_type: Option<&str>,
     format: &str,
     output_file: Option<&Path>,
 ) -> anyhow::Result<()> {
@@ -441,12 +440,6 @@ pub(crate) fn list_references(
 
         // Get all unresolved references from this file and resolve them
         for unresolved_ref in &processed_file.unresolved_references {
-            // Filter by type if specified
-            if let Some(filter_type) = reference_type {
-                if filter_type != "constant" {
-                    continue; // Currently we only support constant references
-                }
-            }
 
             // Resolve the reference to a fully qualified constant and its definition
             let references = checker::reference::Reference::from_unresolved_reference(
