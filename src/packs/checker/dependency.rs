@@ -108,8 +108,12 @@ The following groups of packages form a cycle:
             .collect();
 
         for strict_pack in strict_packs {
-            let non_strict_deps =
-                find_non_strict_transitive_deps(strict_pack, &pack_to_node, &node_to_pack, &graph);
+            let non_strict_deps = find_non_strict_transitive_deps(
+                strict_pack,
+                &pack_to_node,
+                &node_to_pack,
+                &graph,
+            );
 
             for (_dep_name, path) in non_strict_deps {
                 let path_display = path.join(" -> ");
@@ -139,7 +143,8 @@ fn find_non_strict_transitive_deps<'a>(
 
     // BFS with path tracking
     // Queue contains: (node_index, path_from_start)
-    let mut queue: VecDeque<(petgraph::prelude::NodeIndex, Vec<String>)> = VecDeque::new();
+    let mut queue: VecDeque<(petgraph::prelude::NodeIndex, Vec<String>)> =
+        VecDeque::new();
 
     let start_node = match pack_to_node.get(start_pack) {
         Some(node) => *node,
@@ -149,7 +154,8 @@ fn find_non_strict_transitive_deps<'a>(
     // Add direct dependencies to queue
     for neighbor in graph.neighbors(start_node) {
         if let Some(neighbor_pack) = node_to_pack.get(&neighbor) {
-            let path = vec![start_pack.name.clone(), neighbor_pack.name.clone()];
+            let path =
+                vec![start_pack.name.clone(), neighbor_pack.name.clone()];
             queue.push_back((neighbor, path));
         }
     }
@@ -495,8 +501,12 @@ packs/foo, packs/bar",
         assert!(error.is_some());
         let errors = error.unwrap();
         assert_eq!(errors.len(), 2);
-        assert!(errors.iter().any(|e| e.contains("packs/foo") && e.contains("packs/baz")));
-        assert!(errors.iter().any(|e| e.contains("packs/bar") && e.contains("packs/baz")));
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("packs/foo") && e.contains("packs/baz")));
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("packs/bar") && e.contains("packs/baz")));
     }
 
     #[test]
