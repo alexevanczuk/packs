@@ -58,6 +58,9 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    #[clap(about = "Run check, validate, and lint")]
+    All,
+
     #[clap(about = "Just saying hi")]
     Greet,
 
@@ -258,6 +261,11 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     match args.command {
+        Command::All => {
+            packs::check(&configuration, vec![])?;
+            packs::validate(&configuration)?;
+            packs::lint_package_yml_files(&configuration)
+        }
         Command::Greet => {
             packs::greet();
             Ok(())
