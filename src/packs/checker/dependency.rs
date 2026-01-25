@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
@@ -9,6 +9,7 @@ use crate::packs::{Configuration, Violation};
 use anyhow::Context;
 use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
+use petgraph::Direction;
 
 pub struct Checker {}
 impl ValidatorInterface for Checker {
@@ -95,12 +96,145 @@ The following groups of packages form a cycle:
             error_messages.push(error_message);
         }
 
+        // Validate that strict packs only depend on other strict packs transitively
+        // Efficient approach: single reverse BFS from non-strict packs, then path-find only for violations
+        let strict_violations =
+            find_strict_violations(&pack_to_node, &node_to_pack, &graph);
+        for (strict_pack_name, path) in strict_violations {
+            let path_display = path.join(" -> ");
+            error_messages.push(format!(
+                "{} has `enforce_dependencies: strict` but has a non-strict transitive dependency: {}",
+                strict_pack_name, path_display
+            ));
+        }
+
         if error_messages.is_empty() {
             None
         } else {
             Some(error_messages)
         }
     }
+}
+
+/// Efficiently find all strict packs that transitively depend on non-strict packs.
+/// Uses reverse BFS to identify violating packs in O(nodes + edges), then finds paths only for violations.
+fn find_strict_violations<'a>(
+    pack_to_node: &HashMap<&'a Pack, petgraph::prelude::NodeIndex>,
+    node_to_pack: &HashMap<petgraph::prelude::NodeIndex, &'a Pack>,
+    graph: &DiGraph<(), ()>,
+) -> Vec<(String, Vec<String>)> {
+    // Step 1: Identify non-strict and strict packs
+    let mut non_strict_nodes: HashSet<petgraph::prelude::NodeIndex> =
+        HashSet::new();
+    let mut strict_nodes: HashSet<petgraph::prelude::NodeIndex> =
+        HashSet::new();
+
+    for (pack, &node) in pack_to_node {
+        let is_strict = pack
+            .enforce_dependencies
+            .as_ref()
+            .map_or(false, |s| s.is_strict());
+        if is_strict {
+            strict_nodes.insert(node);
+        } else {
+            non_strict_nodes.insert(node);
+        }
+    }
+
+    if non_strict_nodes.is_empty() || strict_nodes.is_empty() {
+        return Vec::new();
+    }
+
+    // Step 2: BFS from non-strict nodes using incoming edges to find all packs that can reach them
+    // A pack "can reach" a non-strict pack if it depends on it (directly or transitively)
+    // Using Incoming direction = following edges backwards = finding dependents
+    let mut can_reach_non_strict: HashSet<petgraph::prelude::NodeIndex> =
+        HashSet::new();
+    let mut queue: VecDeque<petgraph::prelude::NodeIndex> = VecDeque::new();
+
+    // Start BFS from all non-strict nodes
+    for &node in &non_strict_nodes {
+        can_reach_non_strict.insert(node);
+        queue.push_back(node);
+    }
+
+    while let Some(current) = queue.pop_front() {
+        // Incoming = nodes that have edges pointing TO current (i.e., nodes that depend on current)
+        for neighbor in graph.neighbors_directed(current, Direction::Incoming) {
+            if !can_reach_non_strict.contains(&neighbor) {
+                can_reach_non_strict.insert(neighbor);
+                queue.push_back(neighbor);
+            }
+        }
+    }
+
+    // Step 3: Find strict packs that can reach non-strict packs (these are violations)
+    let violating_strict_nodes: Vec<petgraph::prelude::NodeIndex> =
+        strict_nodes
+            .iter()
+            .filter(|node| can_reach_non_strict.contains(node))
+            .copied()
+            .collect();
+
+    // Step 4: For each violation, find shortest path to a non-strict dependency (for error message)
+    let mut results = Vec::new();
+    for start_node in violating_strict_nodes {
+        if let Some(path) = find_path_to_non_strict(
+            start_node,
+            &non_strict_nodes,
+            node_to_pack,
+            graph,
+        ) {
+            let start_pack = node_to_pack.get(&start_node).unwrap();
+            results.push((start_pack.name.clone(), path));
+        }
+    }
+
+    results
+}
+
+/// BFS to find shortest path from a node to any non-strict node
+fn find_path_to_non_strict(
+    start: petgraph::prelude::NodeIndex,
+    non_strict_nodes: &HashSet<petgraph::prelude::NodeIndex>,
+    node_to_pack: &HashMap<petgraph::prelude::NodeIndex, &Pack>,
+    graph: &DiGraph<(), ()>,
+) -> Option<Vec<String>> {
+    let mut visited: HashSet<petgraph::prelude::NodeIndex> = HashSet::new();
+    let mut queue: VecDeque<(petgraph::prelude::NodeIndex, Vec<String>)> =
+        VecDeque::new();
+
+    let start_pack = node_to_pack.get(&start)?;
+    queue.push_back((start, vec![start_pack.name.clone()]));
+    visited.insert(start);
+
+    while let Some((current, path)) = queue.pop_front() {
+        for neighbor in graph.neighbors(current) {
+            if visited.contains(&neighbor) {
+                continue;
+            }
+            visited.insert(neighbor);
+
+            let neighbor_pack = node_to_pack.get(&neighbor)?;
+            let mut new_path = path.clone();
+            new_path.push(neighbor_pack.name.clone());
+
+            if non_strict_nodes.contains(&neighbor) {
+                return Some(new_path);
+            }
+
+            // Only continue through strict nodes
+            let is_strict = neighbor_pack
+                .enforce_dependencies
+                .as_ref()
+                .map_or(false, |s| s.is_strict());
+            if is_strict {
+                queue.push_back((neighbor, new_path));
+            }
+        }
+    }
+
+    None
 }
 
 // TODO: Add test for does not enforce dependencies
@@ -365,5 +499,68 @@ packs/foo, packs/bar",
         .unwrap();
 
         checker.validate(&configuration);
+    }
+
+    #[test]
+    fn test_validate_strict_depends_on_non_strict() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/strict_depends_on_non_strict")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        let expected_message = vec![String::from(
+            "packs/foo has `enforce_dependencies: strict` but has a non-strict transitive dependency: packs/foo -> packs/bar",
+        )];
+        assert_eq!(error, Some(expected_message));
+    }
+
+    #[test]
+    fn test_validate_strict_transitive_non_strict() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/strict_transitive_non_strict")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        // Both foo and bar are strict and depend (transitively) on non-strict baz
+        // foo -> bar -> baz (baz is non-strict)
+        // bar -> baz (baz is non-strict)
+        assert!(error.is_some());
+        let errors = error.unwrap();
+        assert_eq!(errors.len(), 2);
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("packs/foo") && e.contains("packs/baz")));
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("packs/bar") && e.contains("packs/baz")));
+    }
+
+    #[test]
+    fn test_validate_strict_mode_no_violation() {
+        // The existing uses_strict_mode fixture has all strict packs, so no validation error
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/uses_strict_mode")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        assert_eq!(error, None);
     }
 }

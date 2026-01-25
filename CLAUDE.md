@@ -11,4 +11,7 @@ Rust CLI tool for working with packs (modular code organization).
 
 ## Before committing
 
-Run `cargo clippy` and `cargo test` to ensure code quality.
+Run these commands to ensure CI will pass:
+1. `cargo fmt` - Format code (CI checks formatting)
+2. `cargo clippy --all-targets --all-features` - Run linter (must pass with no warnings)
+3. `cargo test` - Run all tests
