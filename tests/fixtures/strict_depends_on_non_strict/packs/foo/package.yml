@@ -1,0 +1,3 @@
+enforce_dependencies: strict
+dependencies:
+  - packs/bar

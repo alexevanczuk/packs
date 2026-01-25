@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
@@ -95,12 +95,102 @@ The following groups of packages form a cycle:
             error_messages.push(error_message);
         }
 
+        // Validate that strict packs only depend on other strict packs transitively
+        let strict_packs: Vec<&Pack> = configuration
+            .pack_set
+            .packs
+            .iter()
+            .filter(|p| {
+                p.enforce_dependencies
+                    .as_ref()
+                    .map_or(false, |s| s.is_strict())
+            })
+            .collect();
+
+        for strict_pack in strict_packs {
+            let non_strict_deps =
+                find_non_strict_transitive_deps(strict_pack, &pack_to_node, &node_to_pack, &graph);
+
+            for (_dep_name, path) in non_strict_deps {
+                let path_display = path.join(" -> ");
+                error_messages.push(format!(
+                    "{} has `enforce_dependencies: strict` but has a non-strict transitive dependency: {}",
+                    strict_pack.name, path_display
+                ));
+            }
+        }
+
         if error_messages.is_empty() {
             None
         } else {
             Some(error_messages)
         }
     }
+}
+
+fn find_non_strict_transitive_deps<'a>(
+    start_pack: &'a Pack,
+    pack_to_node: &HashMap<&'a Pack, petgraph::prelude::NodeIndex>,
+    node_to_pack: &HashMap<petgraph::prelude::NodeIndex, &'a Pack>,
+    graph: &DiGraph<(), ()>,
+) -> Vec<(String, Vec<String>)> {
+    let mut results = Vec::new();
+    let mut visited: HashSet<petgraph::prelude::NodeIndex> = HashSet::new();
+
+    // BFS with path tracking
+    // Queue contains: (node_index, path_from_start)
+    let mut queue: VecDeque<(petgraph::prelude::NodeIndex, Vec<String>)> = VecDeque::new();
+
+    let start_node = match pack_to_node.get(start_pack) {
+        Some(node) => *node,
+        None => return results,
+    };
+
+    // Add direct dependencies to queue
+    for neighbor in graph.neighbors(start_node) {
+        if let Some(neighbor_pack) = node_to_pack.get(&neighbor) {
+            let path = vec![start_pack.name.clone(), neighbor_pack.name.clone()];
+            queue.push_back((neighbor, path));
+        }
+    }
+
+    while let Some((current_node, path)) = queue.pop_front() {
+        if visited.contains(&current_node) {
+            continue;
+        }
+        visited.insert(current_node);
+
+        let current_pack = match node_to_pack.get(&current_node) {
+            Some(pack) => pack,
+            None => continue,
+        };
+
+        // Check if this dependency is not strict
+        let is_strict = current_pack
+            .enforce_dependencies
+            .as_ref()
+            .map_or(false, |s| s.is_strict());
+
+        if !is_strict {
+            results.push((current_pack.name.clone(), path.clone()));
+            // Don't continue traversing past non-strict packs
+            // (they'll have their own violations if they're also strict)
+            continue;
+        }
+
+        // Add neighbors to queue with extended path
+        for neighbor in graph.neighbors(current_node) {
+            if !visited.contains(&neighbor) {
+                if let Some(neighbor_pack) = node_to_pack.get(&neighbor) {
+                    let mut new_path = path.clone();
+                    new_path.push(neighbor_pack.name.clone());
+                    queue.push_back((neighbor, new_path));
+                }
+            }
+        }
+    }
+
+    results
 }
 
 // TODO: Add test for does not enforce dependencies
@@ -365,5 +455,64 @@ packs/foo, packs/bar",
         .unwrap();
 
         checker.validate(&configuration);
+    }
+
+    #[test]
+    fn test_validate_strict_depends_on_non_strict() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/strict_depends_on_non_strict")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        let expected_message = vec![String::from(
+            "packs/foo has `enforce_dependencies: strict` but has a non-strict transitive dependency: packs/foo -> packs/bar",
+        )];
+        assert_eq!(error, Some(expected_message));
+    }
+
+    #[test]
+    fn test_validate_strict_transitive_non_strict() {
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/strict_transitive_non_strict")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        // Both foo and bar are strict and depend (transitively) on non-strict baz
+        // foo -> bar -> baz (baz is non-strict)
+        // bar -> baz (baz is non-strict)
+        assert!(error.is_some());
+        let errors = error.unwrap();
+        assert_eq!(errors.len(), 2);
+        assert!(errors.iter().any(|e| e.contains("packs/foo") && e.contains("packs/baz")));
+        assert!(errors.iter().any(|e| e.contains("packs/bar") && e.contains("packs/baz")));
+    }
+
+    #[test]
+    fn test_validate_strict_mode_no_violation() {
+        // The existing uses_strict_mode fixture has all strict packs, so no validation error
+        let checker = Checker {};
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/uses_strict_mode")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let error = checker.validate(&configuration);
+        assert_eq!(error, None);
     }
 }
