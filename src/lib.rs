@@ -84,6 +84,7 @@ mod test_util {
             from_raw(
                 &default_absolute_root,
                 RawConfiguration::default(),
+                None,
                 walk_directory_result,
                 &0,
             )

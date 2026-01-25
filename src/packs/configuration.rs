@@ -3,7 +3,7 @@ use super::caching::{
     per_file_cache::PerFileCache,
 };
 use super::checker::layer::Layers;
-use super::file_utils::user_inputted_paths_to_absolute_filepaths;
+use super::file_utils::{file_content_digest, user_inputted_paths_to_absolute_filepaths};
 
 use super::{
     constant_resolver::ConstantResolverConfiguration, raw_configuration,
@@ -26,6 +26,7 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
+    pub config_file_path: Option<PathBuf>,
     pub pack_set: PackSet,
     pub layers: Layers,
     pub experimental_parser: bool,
@@ -68,11 +69,24 @@ impl Configuration {
 
     pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
-            let cache_dir = if self.experimental_parser {
-                self.cache_directory.join("experimental")
+            let parser_dir = if self.experimental_parser {
+                "experimental"
             } else {
-                self.cache_directory.join("zeitwerk")
+                "zeitwerk"
             };
+
+            // Include config file digest in cache path so config changes invalidate cache
+            let config_digest_prefix = self
+                .config_file_path
+                .as_ref()
+                .and_then(|path| file_content_digest(path).ok())
+                .map(|digest| digest[..8].to_string())
+                .unwrap_or_else(|| "no_config".to_string());
+
+            let cache_dir = self
+                .cache_directory
+                .join(parser_dir)
+                .join(&config_digest_prefix);
 
             create_cache_dir_idempotently(&cache_dir);
 
@@ -101,13 +115,14 @@ pub(crate) fn get(
 ) -> anyhow::Result<Configuration> {
     debug!("Beginning to build configuration");
 
-    let raw_config = raw_configuration::get(absolute_root)?;
+    let (raw_config, config_file_path) = raw_configuration::get(absolute_root)?;
     let walk_directory_result =
         walk_directory(absolute_root.to_path_buf(), &raw_config)?;
 
     from_raw(
         absolute_root,
         raw_config,
+        config_file_path,
         walk_directory_result,
         input_files_count,
     )
@@ -116,6 +131,7 @@ pub(crate) fn get(
 pub(crate) fn from_raw(
     absolute_root: &Path,
     raw_config: RawConfiguration,
+    config_file_path: Option<PathBuf>,
     walk_directory_result: WalkDirectoryResult,
     input_files_count: &usize,
 ) -> anyhow::Result<Configuration> {
@@ -162,6 +178,7 @@ pub(crate) fn from_raw(
         absolute_root,
         cache_enabled,
         cache_directory,
+        config_file_path,
         pack_set,
         layers,
         experimental_parser,
@@ -391,6 +408,7 @@ mod tests {
         let configuration = configuration::from_raw(
             &absolute_root,
             raw,
+            None,
             walk_directory_result,
             &0,
         )
