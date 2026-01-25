@@ -83,10 +83,18 @@ impl Configuration {
                 .map(|digest| digest[..8].to_string())
                 .unwrap_or_else(|| "no_config".to_string());
 
-            let cache_dir = self
-                .cache_directory
-                .join(parser_dir)
-                .join(&config_digest_prefix);
+            let parser_cache_dir = self.cache_directory.join(parser_dir);
+            let cache_dir = parser_cache_dir.join(&config_digest_prefix);
+
+            // Clean up old cache directories with different config digests
+            if let Ok(entries) = std::fs::read_dir(&parser_cache_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() && path.file_name() != Some(std::ffi::OsStr::new(&config_digest_prefix)) {
+                        let _ = std::fs::remove_dir_all(&path);
+                    }
+                }
+            }
 
             create_cache_dir_idempotently(&cache_dir);
 
