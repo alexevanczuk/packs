@@ -431,4 +431,71 @@ mod tests {
 
         assert_eq!(actual_associations, expected_paths);
     }
+
+    #[test]
+    fn cache_directory_includes_config_digest() {
+        use tempfile::TempDir;
+
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let mut config = configuration::get(&absolute_root, &0).unwrap();
+
+        // Use temp directory to avoid conflicts with other tests
+        let temp_dir = TempDir::new().unwrap();
+        config.cache_directory = temp_dir.path().to_path_buf();
+        config.cache_enabled = true;
+
+        // Config file should be set
+        assert!(config.config_file_path.is_some());
+
+        // Get the cache and check it was created with a digest subdirectory
+        let _cache = config.get_cache();
+        let parser_dir = config.cache_directory.join("zeitwerk");
+
+        // Should have a subdirectory with 8-char hex name (config digest)
+        let entries: Vec<_> = std::fs::read_dir(&parser_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+
+        assert_eq!(entries.len(), 1);
+        let dir_name = entries[0].file_name();
+        let dir_name_str = dir_name.to_str().unwrap();
+        assert_eq!(dir_name_str.len(), 8);
+        assert!(dir_name_str.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn cache_cleanup_removes_old_digest_directories() {
+        use tempfile::TempDir;
+
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let mut config = configuration::get(&absolute_root, &0).unwrap();
+
+        // Use temp directory to avoid conflicts with other tests
+        let temp_dir = TempDir::new().unwrap();
+        config.cache_directory = temp_dir.path().to_path_buf();
+        config.cache_enabled = true;
+
+        let parser_dir = config.cache_directory.join("zeitwerk");
+
+        // Create a fake old cache directory
+        let old_cache_dir = parser_dir.join("deadbeef");
+        std::fs::create_dir_all(&old_cache_dir).unwrap();
+        std::fs::write(old_cache_dir.join("test_file"), "test").unwrap();
+
+        // Getting cache should clean up the old directory
+        let _cache = config.get_cache();
+
+        // Old directory should be gone
+        assert!(!old_cache_dir.exists());
+
+        // But new directory should exist
+        let entries: Vec<_> = std::fs::read_dir(&parser_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+        assert_eq!(entries.len(), 1);
+    }
 }
