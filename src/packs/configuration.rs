@@ -3,7 +3,9 @@ use super::caching::{
     per_file_cache::PerFileCache,
 };
 use super::checker::layer::Layers;
-use super::file_utils::user_inputted_paths_to_absolute_filepaths;
+use super::file_utils::{
+    file_content_digest, user_inputted_paths_to_absolute_filepaths,
+};
 
 use super::{
     constant_resolver::ConstantResolverConfiguration, raw_configuration,
@@ -26,6 +28,7 @@ pub struct Configuration {
     pub absolute_root: PathBuf,
     pub cache_enabled: bool,
     pub cache_directory: PathBuf,
+    pub config_file_path: Option<PathBuf>,
     pub pack_set: PackSet,
     pub layers: Layers,
     pub experimental_parser: bool,
@@ -68,11 +71,35 @@ impl Configuration {
 
     pub(crate) fn get_cache(&self) -> Box<dyn Cache + Send + Sync> {
         if self.cache_enabled {
-            let cache_dir = if self.experimental_parser {
-                self.cache_directory.join("experimental")
+            let parser_dir = if self.experimental_parser {
+                "experimental"
             } else {
-                self.cache_directory.join("zeitwerk")
+                "zeitwerk"
             };
+
+            // Include config file digest in cache path so config changes invalidate cache
+            let config_digest_prefix = self
+                .config_file_path
+                .as_ref()
+                .and_then(|path| file_content_digest(path).ok())
+                .map(|digest| digest[..8].to_string())
+                .unwrap_or_else(|| "no_config".to_string());
+
+            let parser_cache_dir = self.cache_directory.join(parser_dir);
+            let cache_dir = parser_cache_dir.join(&config_digest_prefix);
+
+            // Clean up old cache directories with different config digests
+            if let Ok(entries) = std::fs::read_dir(&parser_cache_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir()
+                        && path.file_name()
+                            != Some(std::ffi::OsStr::new(&config_digest_prefix))
+                    {
+                        let _ = std::fs::remove_dir_all(&path);
+                    }
+                }
+            }
 
             create_cache_dir_idempotently(&cache_dir);
 
@@ -101,13 +128,14 @@ pub(crate) fn get(
 ) -> anyhow::Result<Configuration> {
     debug!("Beginning to build configuration");
 
-    let raw_config = raw_configuration::get(absolute_root)?;
+    let (raw_config, config_file_path) = raw_configuration::get(absolute_root)?;
     let walk_directory_result =
         walk_directory(absolute_root.to_path_buf(), &raw_config)?;
 
     from_raw(
         absolute_root,
         raw_config,
+        config_file_path,
         walk_directory_result,
         input_files_count,
     )
@@ -116,6 +144,7 @@ pub(crate) fn get(
 pub(crate) fn from_raw(
     absolute_root: &Path,
     raw_config: RawConfiguration,
+    config_file_path: Option<PathBuf>,
     walk_directory_result: WalkDirectoryResult,
     input_files_count: &usize,
 ) -> anyhow::Result<Configuration> {
@@ -162,6 +191,7 @@ pub(crate) fn from_raw(
         absolute_root,
         cache_enabled,
         cache_directory,
+        config_file_path,
         pack_set,
         layers,
         experimental_parser,
@@ -391,6 +421,7 @@ mod tests {
         let configuration = configuration::from_raw(
             &absolute_root,
             raw,
+            None,
             walk_directory_result,
             &0,
         )
@@ -399,5 +430,72 @@ mod tests {
         let expected_paths = vec!["my_association".to_owned()];
 
         assert_eq!(actual_associations, expected_paths);
+    }
+
+    #[test]
+    fn cache_directory_includes_config_digest() {
+        use tempfile::TempDir;
+
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let mut config = configuration::get(&absolute_root, &0).unwrap();
+
+        // Use temp directory to avoid conflicts with other tests
+        let temp_dir = TempDir::new().unwrap();
+        config.cache_directory = temp_dir.path().to_path_buf();
+        config.cache_enabled = true;
+
+        // Config file should be set
+        assert!(config.config_file_path.is_some());
+
+        // Get the cache and check it was created with a digest subdirectory
+        let _cache = config.get_cache();
+        let parser_dir = config.cache_directory.join("zeitwerk");
+
+        // Should have a subdirectory with 8-char hex name (config digest)
+        let entries: Vec<_> = std::fs::read_dir(&parser_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+
+        assert_eq!(entries.len(), 1);
+        let dir_name = entries[0].file_name();
+        let dir_name_str = dir_name.to_str().unwrap();
+        assert_eq!(dir_name_str.len(), 8);
+        assert!(dir_name_str.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn cache_cleanup_removes_old_digest_directories() {
+        use tempfile::TempDir;
+
+        let absolute_root = PathBuf::from("tests/fixtures/simple_app");
+        let mut config = configuration::get(&absolute_root, &0).unwrap();
+
+        // Use temp directory to avoid conflicts with other tests
+        let temp_dir = TempDir::new().unwrap();
+        config.cache_directory = temp_dir.path().to_path_buf();
+        config.cache_enabled = true;
+
+        let parser_dir = config.cache_directory.join("zeitwerk");
+
+        // Create a fake old cache directory
+        let old_cache_dir = parser_dir.join("deadbeef");
+        std::fs::create_dir_all(&old_cache_dir).unwrap();
+        std::fs::write(old_cache_dir.join("test_file"), "test").unwrap();
+
+        // Getting cache should clean up the old directory
+        let _cache = config.get_cache();
+
+        // Old directory should be gone
+        assert!(!old_cache_dir.exists());
+
+        // But new directory should exist
+        let entries: Vec<_> = std::fs::read_dir(&parser_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_dir())
+            .collect();
+        assert_eq!(entries.len(), 1);
     }
 }

@@ -73,26 +73,30 @@ pub(crate) struct RawConfiguration {
     pub packs_first_mode: bool,
 }
 
-pub(crate) fn get(absolute_root: &Path) -> anyhow::Result<RawConfiguration> {
+pub(crate) fn get(
+    absolute_root: &Path,
+) -> anyhow::Result<(RawConfiguration, Option<PathBuf>)> {
     let absolute_path_to_packwerk_yml = absolute_root.join(CONFIG_FILE_NAME);
     let absolute_path_to_packs_yml =
         absolute_root.join(PACKS_FIRST_CONFIG_FILE_NAME);
 
     if absolute_path_to_packwerk_yml.exists() {
-        get_from_file_that_exists(absolute_path_to_packwerk_yml)
+        let config = get_from_file_that_exists(&absolute_path_to_packwerk_yml)?;
+        Ok((config, Some(absolute_path_to_packwerk_yml)))
     } else if absolute_path_to_packs_yml.exists() {
-        let mut config = get_from_file_that_exists(absolute_path_to_packs_yml)?;
+        let mut config =
+            get_from_file_that_exists(&absolute_path_to_packs_yml)?;
         config.packs_first_mode = true;
-        Ok(config)
+        Ok((config, Some(absolute_path_to_packs_yml)))
     } else {
-        Ok(RawConfiguration::default())
+        Ok((RawConfiguration::default(), None))
     }
 }
 
 fn get_from_file_that_exists(
-    absolute_path_to_packwerk_yml: PathBuf,
+    absolute_path_to_packwerk_yml: &Path,
 ) -> anyhow::Result<RawConfiguration> {
-    let mut file = File::open(&absolute_path_to_packwerk_yml).map_err(|e| {
+    let mut file = File::open(absolute_path_to_packwerk_yml).map_err(|e| {
         anyhow::Error::new(e).context(format!(
             "Could not open packwerk.yml at: {}",
             absolute_path_to_packwerk_yml.display(),
