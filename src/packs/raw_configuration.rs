@@ -84,7 +84,8 @@ pub(crate) fn get(
         let config = get_from_file_that_exists(&absolute_path_to_packwerk_yml)?;
         Ok((config, Some(absolute_path_to_packwerk_yml)))
     } else if absolute_path_to_packs_yml.exists() {
-        let mut config = get_from_file_that_exists(&absolute_path_to_packs_yml)?;
+        let mut config =
+            get_from_file_that_exists(&absolute_path_to_packs_yml)?;
         config.packs_first_mode = true;
         Ok((config, Some(absolute_path_to_packs_yml)))
     } else {

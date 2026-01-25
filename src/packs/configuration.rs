@@ -3,7 +3,9 @@ use super::caching::{
     per_file_cache::PerFileCache,
 };
 use super::checker::layer::Layers;
-use super::file_utils::{file_content_digest, user_inputted_paths_to_absolute_filepaths};
+use super::file_utils::{
+    file_content_digest, user_inputted_paths_to_absolute_filepaths,
+};
 
 use super::{
     constant_resolver::ConstantResolverConfiguration, raw_configuration,
@@ -90,7 +92,10 @@ impl Configuration {
             if let Ok(entries) = std::fs::read_dir(&parser_cache_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.is_dir() && path.file_name() != Some(std::ffi::OsStr::new(&config_digest_prefix)) {
+                    if path.is_dir()
+                        && path.file_name()
+                            != Some(std::ffi::OsStr::new(&config_digest_prefix))
+                    {
                         let _ = std::fs::remove_dir_all(&path);
                     }
                 }
