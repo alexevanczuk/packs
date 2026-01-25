@@ -262,9 +262,11 @@ pub fn run() -> anyhow::Result<()> {
 
     match args.command {
         Command::All => {
-            packs::check(&configuration, vec![])?;
-            packs::validate(&configuration)?;
-            packs::lint_package_yml_files(&configuration)
+            let check_result = packs::check(&configuration, vec![]);
+            let validate_result = packs::validate(&configuration);
+            let lint_result = packs::lint_package_yml_files(&configuration);
+
+            check_result.and(validate_result).and(lint_result)
         }
         Command::Greet => {
             packs::greet();
