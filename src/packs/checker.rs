@@ -341,8 +341,37 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
             &strict_violations.len()
         );
     }
-    package_todo::write_violations_to_disk(configuration, violations);
-    println!("Successfully updated package_todo.yml files!");
+    let stats =
+        package_todo::write_violations_to_disk(configuration, violations);
+
+    if stats.is_empty() {
+        println!("No changes to package_todo.yml files.");
+    } else {
+        let mut parts = Vec::new();
+        if stats.violations_added > 0 {
+            parts
+                .push(format!("{} violation(s) added", stats.violations_added));
+        }
+        if stats.violations_removed > 0 {
+            parts.push(format!(
+                "{} violation(s) removed",
+                stats.violations_removed
+            ));
+        }
+        if stats.files_changed > 0 {
+            parts.push(format!("{} file(s) modified", stats.files_changed));
+        }
+        if stats.files_added > 0 {
+            parts.push(format!("{} file(s) added", stats.files_added));
+        }
+        if stats.files_deleted > 0 {
+            parts.push(format!("{} file(s) deleted", stats.files_deleted));
+        }
+        println!(
+            "Successfully updated package_todo.yml files: {}",
+            parts.join(", ")
+        );
+    }
 
     Ok(())
 }

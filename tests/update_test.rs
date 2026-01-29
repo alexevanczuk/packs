@@ -18,9 +18,7 @@ fn test_update() -> Result<(), Box<dyn Error>> {
         .arg("update")
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "Successfully updated package_todo.yml files!",
-        ));
+        .stdout(predicate::str::contains("package_todo.yml"));
 
     let package_todo_yml_filepath =
         Path::new("tests/fixtures/simple_app/packs/foo/package_todo.yml");
@@ -63,9 +61,7 @@ fn test_update_with_experimental_parser() -> Result<(), Box<dyn Error>> {
         .arg("update")
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "Successfully updated package_todo.yml files!",
-        ));
+        .stdout(predicate::str::contains("package_todo.yml"));
 
     let package_todo_yml_filepath =
         Path::new("tests/fixtures/simple_app/packs/foo/package_todo.yml");
@@ -107,9 +103,9 @@ fn test_update_with_stale_violations() -> Result<(), Box<dyn Error>> {
         .arg("update")
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "Successfully updated package_todo.yml files!",
-        ));
+        .stdout(predicate::str::contains("1 violation(s) removed"))
+        .stdout(predicate::str::contains("1 file(s) modified"))
+        .stdout(predicate::str::contains("1 file(s) deleted"));
 
     let package_todo_yml_filepath = Path::new(
         "tests/fixtures/contains_stale_violations/packs/foo/package_todo.yml",
@@ -153,9 +149,8 @@ fn test_update_with_packs_first_app() -> Result<(), Box<dyn Error>> {
         .arg("update")
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "Successfully updated package_todo.yml files!",
-        ));
+        .stdout(predicate::str::contains("1 violation(s) added"))
+        .stdout(predicate::str::contains("1 file(s) added"));
 
     let package_todo_yml_filepath = Path::new(
         "tests/fixtures/simple_packs_first_app/packs/foo/package_todo.yml",
@@ -205,9 +200,7 @@ fn test_update_with_strict_violations() -> anyhow::Result<()> {
             "packs/foo cannot have privacy violations on packs/bar because strict mode is enabled for privacy violations in the enforcing pack's package.yml file",
         ))
         .stdout(predicate::str::contains("1 strict mode violation(s) detected."))
-        .stdout(predicate::str::contains(
-            "Successfully updated package_todo.yml files!",
-        ));
+        .stdout(predicate::str::contains("No changes to package_todo.yml files."));
 
     assert!(
         !path.exists(),
