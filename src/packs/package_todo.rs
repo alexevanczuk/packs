@@ -1,9 +1,38 @@
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::debug;
 
 use super::{pack::Pack, Configuration, Violation};
+
+#[derive(Debug, Default)]
+pub struct UpdateStats {
+    pub violations_added: usize,
+    pub violations_removed: usize,
+    pub files_changed: usize,
+    pub files_added: usize,
+    pub files_deleted: usize,
+}
+
+impl UpdateStats {
+    pub fn is_empty(&self) -> bool {
+        self.violations_added == 0
+            && self.violations_removed == 0
+            && self.files_changed == 0
+            && self.files_added == 0
+            && self.files_deleted == 0
+    }
+}
+
+fn count_violations(package_todo: &PackageTodo) -> usize {
+    package_todo
+        .violations_by_defining_pack
+        .values()
+        .flat_map(|by_constant| by_constant.values())
+        .map(|group| group.files.len())
+        .sum()
+}
 
 #[derive(PartialEq, Debug, Eq, Deserialize, Serialize, Default, Clone)]
 pub struct ViolationGroup {
@@ -133,7 +162,7 @@ pub fn package_todos_for_pack_name(
 pub fn write_violations_to_disk(
     configuration: &Configuration,
     violations: HashSet<Violation>,
-) {
+) -> UpdateStats {
     debug!("Starting writing violations to disk");
     // First we need to group the violations by the repsonsible pack, which today is always the referencing pack
     // Later if we change where a violation shows up, we should delegate to the checker
@@ -155,20 +184,70 @@ pub fn write_violations_to_disk(
     let package_todos_by_pack_name =
         package_todos_for_pack_name(violations_by_responsible_pack);
 
+    let violations_added = AtomicUsize::new(0);
+    let violations_removed = AtomicUsize::new(0);
+    let files_changed = AtomicUsize::new(0);
+    let files_added = AtomicUsize::new(0);
+    let files_deleted = AtomicUsize::new(0);
+
     let all_packs = &configuration.pack_set.packs;
     all_packs.par_iter().for_each(|p| {
-        let package_todo = package_todos_by_pack_name.get(&p.name);
-        match package_todo {
-            Some(package_todo) => write_package_todo_to_disk(
-                p,
-                package_todo,
-                configuration.packs_first_mode,
-            ),
-            None => delete_package_todo_from_disk(p),
+        let new_package_todo = package_todos_by_pack_name.get(&p.name);
+        let old_count = count_violations(&p.package_todo);
+        let old_exists = !p.package_todo.violations_by_defining_pack.is_empty();
+
+        match new_package_todo {
+            Some(package_todo) => {
+                let new_count = count_violations(package_todo);
+                match new_count.cmp(&old_count) {
+                    std::cmp::Ordering::Greater => {
+                        violations_added.fetch_add(
+                            new_count - old_count,
+                            Ordering::Relaxed,
+                        );
+                    }
+                    std::cmp::Ordering::Less => {
+                        violations_removed.fetch_add(
+                            old_count - new_count,
+                            Ordering::Relaxed,
+                        );
+                    }
+                    std::cmp::Ordering::Equal => {}
+                }
+
+                if old_exists {
+                    if &p.package_todo != package_todo {
+                        files_changed.fetch_add(1, Ordering::Relaxed);
+                    }
+                } else {
+                    files_added.fetch_add(1, Ordering::Relaxed);
+                }
+
+                write_package_todo_to_disk(
+                    p,
+                    package_todo,
+                    configuration.packs_first_mode,
+                );
+            }
+            None => {
+                if old_exists {
+                    violations_removed.fetch_add(old_count, Ordering::Relaxed);
+                    files_deleted.fetch_add(1, Ordering::Relaxed);
+                }
+                delete_package_todo_from_disk(p);
+            }
         }
     });
 
     debug!("Finished writing violations to disk");
+
+    UpdateStats {
+        violations_added: violations_added.load(Ordering::Relaxed),
+        violations_removed: violations_removed.load(Ordering::Relaxed),
+        files_changed: files_changed.load(Ordering::Relaxed),
+        files_added: files_added.load(Ordering::Relaxed),
+        files_deleted: files_deleted.load(Ordering::Relaxed),
+    }
 }
 
 fn serialize_package_todo(
