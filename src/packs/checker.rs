@@ -342,6 +342,10 @@ pub(crate) fn update(
     configuration: &Configuration,
     options: &UpdateOptions,
 ) -> anyhow::Result<()> {
+    if options.expand_to_pack && options.files.is_empty() {
+        bail!("--pack requires at least one file argument");
+    }
+
     let checkers = get_checkers(configuration);
 
     let absolute_paths = if options.is_scoped() {

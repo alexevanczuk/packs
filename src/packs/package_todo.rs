@@ -648,4 +648,98 @@ packs/bar:
 
         assert_eq!(expected, actual);
     }
+
+    #[test]
+    fn test_merge_package_todo_adds_new_entries() {
+        let base = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/bar".to_string(), bar_violations());
+                map
+            },
+        };
+
+        let new = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/bar".to_string(), baz_violations());
+                map
+            },
+        };
+
+        let merged = merge_package_todo(&base, &new);
+        let bar_pack = &merged.violations_by_defining_pack["packs/bar"];
+        assert!(
+            bar_pack.contains_key("::Bar"),
+            "original entry should be preserved"
+        );
+        assert!(bar_pack.contains_key("::Baz"), "new entry should be added");
+    }
+
+    #[test]
+    fn test_merge_package_todo_merges_files_and_types() {
+        let mut base_violations = BTreeMap::new();
+        base_violations.insert(
+            "::Bar".to_string(),
+            ViolationGroup {
+                violation_types: HashSet::from(["dependency".to_string()]),
+                files: HashSet::from(["file_a.rb".to_string()]),
+            },
+        );
+        let base = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/bar".to_string(), base_violations);
+                map
+            },
+        };
+
+        let mut new_violations = BTreeMap::new();
+        new_violations.insert(
+            "::Bar".to_string(),
+            ViolationGroup {
+                violation_types: HashSet::from(["privacy".to_string()]),
+                files: HashSet::from(["file_b.rb".to_string()]),
+            },
+        );
+        let new = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/bar".to_string(), new_violations);
+                map
+            },
+        };
+
+        let merged = merge_package_todo(&base, &new);
+        let group = &merged.violations_by_defining_pack["packs/bar"]["::Bar"];
+        assert!(group.files.contains("file_a.rb"));
+        assert!(group.files.contains("file_b.rb"));
+        assert!(group.violation_types.contains("dependency"));
+        assert!(group.violation_types.contains("privacy"));
+    }
+
+    #[test]
+    fn test_merge_package_todo_preserves_unrelated_packs() {
+        let base = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/existing".to_string(), bar_violations());
+                map
+            },
+        };
+
+        let new = PackageTodo {
+            violations_by_defining_pack: {
+                let mut map = BTreeMap::new();
+                map.insert("packs/new".to_string(), baz_violations());
+                map
+            },
+        };
+
+        let merged = merge_package_todo(&base, &new);
+        assert!(merged
+            .violations_by_defining_pack
+            .contains_key("packs/existing"));
+        assert!(merged.violations_by_defining_pack.contains_key("packs/new"));
+    }
 }
