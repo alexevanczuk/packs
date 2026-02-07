@@ -34,6 +34,21 @@ use super::bin_locater;
 use super::reference_extractor::get_all_references_and_sigils;
 use super::Sigil;
 
+pub struct UpdateOptions {
+    pub files: Vec<String>,
+    pub expand_to_pack: bool,
+    pub constant_name: Option<String>,
+    pub violation_type: Option<String>,
+}
+
+impl UpdateOptions {
+    pub fn is_scoped(&self) -> bool {
+        !self.files.is_empty()
+            || self.constant_name.is_some()
+            || self.violation_type.is_some()
+    }
+}
+
 #[derive(PartialEq, Clone, Eq, Hash, Debug)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
@@ -323,14 +338,26 @@ pub(crate) fn validate_all(
     }
 }
 
-pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
+pub(crate) fn update(
+    configuration: &Configuration,
+    options: &UpdateOptions,
+) -> anyhow::Result<()> {
     let checkers = get_checkers(configuration);
 
-    let violations = get_all_violations(
-        configuration,
-        &configuration.included_files,
-        &checkers,
-    )?;
+    let absolute_paths = if options.is_scoped() {
+        resolve_scoped_files(configuration, options)?
+    } else {
+        configuration.included_files.clone()
+    };
+
+    let violations =
+        get_all_violations(configuration, &absolute_paths, &checkers)?;
+
+    let violations = if options.is_scoped() {
+        filter_violations(violations, options)
+    } else {
+        violations
+    };
 
     let strict_violations = &violations
         .iter()
@@ -347,8 +374,12 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
             &strict_violations.len()
         );
     }
-    let stats =
-        package_todo::write_violations_to_disk(configuration, violations);
+
+    let stats = if options.is_scoped() {
+        package_todo::merge_violations_to_disk(configuration, violations)
+    } else {
+        package_todo::write_violations_to_disk(configuration, violations)
+    };
 
     if stats.is_empty() {
         println!("No changes to package_todo.yml files.");
@@ -380,6 +411,57 @@ pub(crate) fn update(configuration: &Configuration) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn resolve_scoped_files(
+    configuration: &Configuration,
+    options: &UpdateOptions,
+) -> anyhow::Result<HashSet<PathBuf>> {
+    let mut files = if options.files.is_empty() {
+        configuration.included_files.clone()
+    } else {
+        configuration.intersect_files(options.files.clone())
+    };
+
+    if options.expand_to_pack {
+        if options.files.is_empty() {
+            bail!("--pack requires at least one file argument");
+        }
+        let mut pack_names: HashSet<String> = HashSet::new();
+        for file in &files {
+            if let Some(pack) = configuration.pack_set.for_file(file)? {
+                pack_names.insert(pack.name.clone());
+            }
+        }
+        files = HashSet::new();
+        for pack_name in &pack_names {
+            files.extend(configuration.pack_set.files_for_pack(pack_name));
+        }
+    }
+
+    Ok(files)
+}
+
+fn filter_violations(
+    violations: HashSet<Violation>,
+    options: &UpdateOptions,
+) -> HashSet<Violation> {
+    violations
+        .into_iter()
+        .filter(|v| {
+            if let Some(ref constant) = options.constant_name {
+                if v.identifier.constant_name != *constant {
+                    return false;
+                }
+            }
+            if let Some(ref vtype) = options.violation_type {
+                if v.identifier.violation_type != *vtype {
+                    return false;
+                }
+            }
+            true
+        })
+        .collect()
 }
 
 pub(crate) fn remove_unnecessary_dependencies(

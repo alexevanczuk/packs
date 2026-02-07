@@ -178,12 +178,15 @@ pub fn check(
     Ok(())
 }
 
-pub fn update(configuration: &Configuration) -> anyhow::Result<()> {
+pub fn update(
+    configuration: &Configuration,
+    options: &checker::UpdateOptions,
+) -> anyhow::Result<()> {
     // Debug log configuration if ENV variable PACKS_DEBUG is set
     if std::env::var("PACKS_DEBUG").is_ok() {
         println!("Configuration: {:#?}", configuration);
     }
-    checker::update(configuration)
+    checker::update(configuration, options)
 }
 
 pub fn add_dependency(

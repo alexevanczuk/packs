@@ -104,6 +104,14 @@ impl PackSet {
         }
     }
 
+    pub fn files_for_pack(&self, pack_name: &str) -> HashSet<PathBuf> {
+        self.owning_pack_name_for_file
+            .iter()
+            .filter(|(_, name)| name.as_str() == pack_name)
+            .map(|(path, _)| path.clone())
+            .collect()
+    }
+
     // Returns all of the package dependencies in the pack set.
     pub fn all_pack_dependencies<'a>(
         &'a self,

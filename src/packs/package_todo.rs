@@ -250,6 +250,93 @@ pub fn write_violations_to_disk(
     }
 }
 
+fn merge_package_todo(base: &PackageTodo, new: &PackageTodo) -> PackageTodo {
+    let mut merged = base.clone();
+    for (defining_pack, constants) in &new.violations_by_defining_pack {
+        let existing_constants = merged
+            .violations_by_defining_pack
+            .entry(defining_pack.clone())
+            .or_default();
+        for (constant_name, violation_group) in constants {
+            let existing_group =
+                existing_constants.entry(constant_name.clone()).or_default();
+            existing_group
+                .files
+                .extend(violation_group.files.iter().cloned());
+            existing_group
+                .violation_types
+                .extend(violation_group.violation_types.iter().cloned());
+        }
+    }
+    merged
+}
+
+pub fn merge_violations_to_disk(
+    configuration: &Configuration,
+    violations: HashSet<Violation>,
+) -> UpdateStats {
+    debug!("Starting merging violations to disk");
+    let mut violations_by_responsible_pack: HashMap<String, Vec<Violation>> =
+        HashMap::new();
+    for violation in violations {
+        if violation.identifier.strict {
+            continue;
+        }
+        let referencing_pack_name =
+            violation.identifier.referencing_pack_name.to_owned();
+        violations_by_responsible_pack
+            .entry(referencing_pack_name)
+            .or_default()
+            .push(violation);
+    }
+
+    let new_package_todos =
+        package_todos_for_pack_name(violations_by_responsible_pack);
+
+    let violations_added = AtomicUsize::new(0);
+    let files_changed = AtomicUsize::new(0);
+    let files_added = AtomicUsize::new(0);
+
+    let all_packs = &configuration.pack_set.packs;
+    all_packs.par_iter().for_each(|p| {
+        if let Some(new_todo) = new_package_todos.get(&p.name) {
+            let old_count = count_violations(&p.package_todo);
+            let old_exists =
+                !p.package_todo.violations_by_defining_pack.is_empty();
+            let merged = merge_package_todo(&p.package_todo, new_todo);
+            let merged_count = count_violations(&merged);
+
+            if merged_count > old_count {
+                violations_added
+                    .fetch_add(merged_count - old_count, Ordering::Relaxed);
+            }
+
+            if merged != p.package_todo {
+                if old_exists {
+                    files_changed.fetch_add(1, Ordering::Relaxed);
+                } else {
+                    files_added.fetch_add(1, Ordering::Relaxed);
+                }
+                write_package_todo_to_disk(
+                    p,
+                    &merged,
+                    configuration.packs_first_mode,
+                );
+            }
+        }
+    });
+
+    debug!("Finished merging violations to disk");
+
+    UpdateStats {
+        violations_added: violations_added.load(Ordering::Relaxed),
+        violations_removed: 0,
+        files_changed: files_changed.load(Ordering::Relaxed),
+        files_added: files_added.load(Ordering::Relaxed),
+        files_deleted: 0,
+    }
+}
+
 fn serialize_package_todo(
     responsible_pack_name: &String,
     package_todo: &PackageTodo,

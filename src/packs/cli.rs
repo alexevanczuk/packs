@@ -95,7 +95,22 @@ enum Command {
     #[clap(
         about = "Update package_todo.yml files with the current violations"
     )]
-    Update,
+    Update {
+        /// Files to scope the update to (merge mode). Without files, replaces all package_todo.yml files.
+        files: Vec<String>,
+
+        /// Expand file arguments to their owning pack(s), updating all files in those packs
+        #[arg(long)]
+        pack: bool,
+
+        /// Only update violations for this constant (e.g. "::Foo")
+        #[arg(long)]
+        constant: Option<String>,
+
+        /// Only update violations of this type (e.g. "dependency", "privacy")
+        #[arg(long)]
+        violation_type: Option<String>,
+    },
 
     #[clap(about = "Look for validation errors in the codebase")]
     Validate,
@@ -311,7 +326,20 @@ pub fn run() -> anyhow::Result<()> {
             configuration.input_files_count = 1;
             packs::check(&configuration, vec![file])
         }
-        Command::Update => packs::update(&configuration),
+        Command::Update {
+            files,
+            pack,
+            constant,
+            violation_type,
+        } => packs::update(
+            &configuration,
+            &packs::checker::UpdateOptions {
+                files,
+                expand_to_pack: pack,
+                constant_name: constant,
+                violation_type,
+            },
+        ),
         Command::Validate => {
             packs::validate(&configuration)
             // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
