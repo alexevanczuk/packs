@@ -173,10 +173,7 @@ pub fn check(
     println!("{}", result);
     if result.has_violations() {
         let count = result.violation_count();
-        bail!(
-            "{} violation(s) found!",
-            count
-        )
+        bail!("{} violation(s) found!", count)
     }
     Ok(())
 }
