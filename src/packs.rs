@@ -172,7 +172,11 @@ pub fn check(
         .context("Failed to check files")?;
     println!("{}", result);
     if result.has_violations() {
-        bail!("Violations found!")
+        let count = result.violation_count();
+        bail!(
+            "{} violation(s) found!",
+            count
+        )
     }
     Ok(())
 }

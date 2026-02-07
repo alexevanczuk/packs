@@ -78,6 +78,12 @@ impl CheckAllResult {
             || !self.strict_mode_violations.is_empty()
     }
 
+    pub fn violation_count(&self) -> usize {
+        self.reportable_violations.len()
+            + self.stale_violations.len()
+            + self.strict_mode_violations.len()
+    }
+
     fn write_violations(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if !self.reportable_violations.is_empty() {
             let mut sorted_violations: Vec<&Violation> =
@@ -310,9 +316,9 @@ pub(crate) fn validate_all(
             println!("{}\n", validation_error);
         }
 
-        bail!("Packwerk validate failed")
+        bail!("Pks validate failed")
     } else {
-        println!("Packwerk validate succeeded!");
+        println!("Pks validate succeeded!");
         Ok(())
     }
 }
