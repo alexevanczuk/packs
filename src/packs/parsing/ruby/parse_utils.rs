@@ -127,18 +127,24 @@ pub fn get_reference_from_active_record_association(
         let first_arg: Option<&Node> = node.args.first();
 
         let mut name: Option<String> = None;
+        let mut is_through_association = false;
         for node in node.args.iter() {
             if let Node::Kwargs(kwargs) = node {
                 if let Some(found) = extract_class_name_from_kwargs(kwargs) {
                     name = Some(found);
                 }
+                if has_through_option(kwargs) {
+                    is_through_association = true;
+                }
             }
         }
 
         if let Some(Node::Sym(d)) = first_arg {
-            if name.is_none() {
+            if name.is_none() && !is_through_association {
                 // We singularize here because by convention Rails will singularize the class name as declared via a symbol,
                 // e.g. `has_many :companies` will look for a class named `Company`, not `Companies`
+                // However, for `through` associations, the class is determined by the source association,
+                // not by the association name, so we skip inference for those.
                 name = Some(to_class_case(
                     &d.name.to_string_lossy(),
                     true,
@@ -194,6 +200,19 @@ fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
     }
 
     None
+}
+
+fn has_through_option(kwargs: &nodes::Kwargs) -> bool {
+    for pair_node in kwargs.pairs.iter() {
+        if let Node::Pair(pair) = pair_node {
+            if let Node::Sym(k) = *pair.key.to_owned() {
+                if k.name.to_string_lossy() == *"through" {
+                    return true;
+                }
+            }
+        }
+    }
+    false
 }
 
 pub fn get_constant_assignment_definition(
