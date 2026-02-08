@@ -182,7 +182,8 @@ fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
                     if let Node::Send(send) = *pair.value.to_owned() {
                         if send.method_name == "name" {
                             if let Some(recv) = send.recv {
-                                if let Ok(const_name) = fetch_const_name(&recv) {
+                                if let Ok(const_name) = fetch_const_name(&recv)
+                                {
                                     return Some(const_name);
                                 }
                             }
