@@ -46,6 +46,7 @@ impl CheckerInterface for Checker {
         Ok(Some(Violation {
             message,
             identifier: pack_checker.violation_identifier(),
+            source_location: reference.source_location.clone(),
         }))
     }
 

@@ -23,6 +23,7 @@ use rayon::prelude::IntoParallelIterator;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::ParallelIterator;
 use reference::Reference;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
@@ -49,7 +50,7 @@ impl UpdateOptions {
     }
 }
 
-#[derive(PartialEq, Clone, Eq, Hash, Debug)]
+#[derive(PartialEq, Clone, Eq, Hash, Debug, Serialize)]
 pub struct ViolationIdentifier {
     pub violation_type: String,
     pub strict: bool,
@@ -58,10 +59,11 @@ pub struct ViolationIdentifier {
     pub referencing_pack_name: String,
     pub defining_pack_name: String,
 }
-#[derive(PartialEq, Clone, Eq, Hash, Debug)]
+#[derive(PartialEq, Clone, Eq, Hash, Debug, Serialize)]
 pub struct Violation {
-    message: String,
+    pub message: String,
     pub identifier: ViolationIdentifier,
+    pub source_location: crate::packs::SourceLocation,
 }
 
 pub(crate) trait CheckerInterface {
@@ -97,6 +99,27 @@ impl CheckAllResult {
         self.reportable_violations.len()
             + self.stale_violations.len()
             + self.strict_mode_violations.len()
+    }
+
+    pub fn to_json(&self) -> serde_json::Result<String> {
+        let mut sorted_violations: Vec<&Violation> =
+            self.reportable_violations.iter().collect();
+        sorted_violations.sort_by(|a, b| a.message.cmp(&b.message));
+
+        let output = CheckAllJsonOutput {
+            status: if self.has_violations() {
+                "failure"
+            } else {
+                "success"
+            },
+            violations: sorted_violations
+                .into_iter()
+                .map(JsonViolation::from)
+                .collect(),
+            stale_violations: &self.stale_violations,
+            strict_mode_violations: &self.strict_mode_violations,
+        };
+        serde_json::to_string(&output)
     }
 
     fn write_violations(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -139,6 +162,48 @@ impl Display for CheckAllResult {
         }
     }
 }
+
+#[derive(Serialize)]
+struct CheckAllJsonOutput<'a> {
+    status: &'a str,
+    violations: Vec<JsonViolation>,
+    stale_violations: &'a Vec<ViolationIdentifier>,
+    strict_mode_violations: &'a Vec<ViolationIdentifier>,
+}
+
+#[derive(Serialize)]
+struct JsonViolation {
+    message: String,
+    file: String,
+    line: usize,
+    column: usize,
+    violation_type: String,
+    strict: bool,
+    constant_name: String,
+    referencing_pack_name: String,
+    defining_pack_name: String,
+}
+
+impl From<&Violation> for JsonViolation {
+    fn from(v: &Violation) -> Self {
+        let stripped =
+            String::from_utf8_lossy(&strip_ansi_escapes::strip(&v.message))
+                .to_string();
+
+        JsonViolation {
+            message: stripped,
+            file: v.identifier.file.clone(),
+            line: v.source_location.line,
+            column: v.source_location.column,
+            violation_type: v.identifier.violation_type.clone(),
+            strict: v.identifier.strict,
+            constant_name: v.identifier.constant_name.clone(),
+            referencing_pack_name: v.identifier.referencing_pack_name.clone(),
+            defining_pack_name: v.identifier.defining_pack_name.clone(),
+        }
+    }
+}
+
 struct CheckAllBuilder<'a> {
     configuration: &'a Configuration,
     found_violations: &'a FoundViolations,
@@ -647,6 +712,7 @@ mod tests {
     use crate::packs::checker::{
         CheckAllResult, Violation, ViolationIdentifier,
     };
+    use crate::packs::SourceLocation;
 
     #[test]
     fn test_write_violations() {
@@ -661,7 +727,8 @@ mod tests {
                         constant_name: "::Foo::PrivateClass".to_string(),
                         referencing_pack_name: "bar".to_string(),
                         defining_pack_name: "foo".to_string(),
-                    }
+                    },
+                    source_location: SourceLocation { line: 10, column: 5 },
                 },
                 Violation {
                     message: "foo/bar/file2.rb:15:3\nDependency violation: `::Foo::AnotherClass` is not allowed to depend on `::Bar::SomeClass`".to_string(),
@@ -672,7 +739,8 @@ mod tests {
                         constant_name: "::Foo::AnotherClass".to_string(),
                         referencing_pack_name: "foo".to_string(),
                         defining_pack_name: "bar".to_string(),
-                    }
+                    },
+                    source_location: SourceLocation { line: 15, column: 3 },
                 }
             ].iter().cloned().collect(),
             stale_violations: Vec::new(),

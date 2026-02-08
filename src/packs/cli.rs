@@ -80,6 +80,10 @@ enum Command {
         #[arg(long)]
         ignore_recorded_violations: bool,
 
+        /// Output results as JSON
+        #[arg(long)]
+        json: bool,
+
         files: Vec<String>,
     },
 
@@ -88,6 +92,10 @@ enum Command {
         /// Ignore recorded violations when reporting violations
         #[arg(long)]
         ignore_recorded_violations: bool,
+
+        /// Output results as JSON
+        #[arg(long)]
+        json: bool,
 
         file: String,
     },
@@ -277,7 +285,7 @@ pub fn run() -> anyhow::Result<()> {
 
     match args.command {
         Command::All => {
-            let check_result = packs::check(&configuration, vec![]);
+            let check_result = packs::check(&configuration, vec![], false);
             let validate_result = packs::validate(&configuration);
             let lint_result = packs::lint_package_yml_files(&configuration);
 
@@ -307,15 +315,17 @@ pub fn run() -> anyhow::Result<()> {
         Command::ListIncludedFiles => packs::list_included_files(configuration),
         Command::Check {
             ignore_recorded_violations,
+            json,
             files,
         } => {
             configuration.ignore_recorded_violations =
                 ignore_recorded_violations;
             configuration.input_files_count = files.len();
-            packs::check(&configuration, files)
+            packs::check(&configuration, files, json)
         }
         Command::CheckContents {
             ignore_recorded_violations,
+            json,
             file,
         } => {
             configuration.ignore_recorded_violations =
@@ -324,7 +334,7 @@ pub fn run() -> anyhow::Result<()> {
             let absolute_path = get_absolute_path(file.clone(), &configuration);
             configuration.stdin_file_path = Some(absolute_path);
             configuration.input_files_count = 1;
-            packs::check(&configuration, vec![file])
+            packs::check(&configuration, vec![file], json)
         }
         Command::Update {
             files,
