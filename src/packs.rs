@@ -558,6 +558,21 @@ fn list_dependencies(
     Ok(())
 }
 
+fn for_file(configuration: &Configuration, file: String) -> anyhow::Result<()> {
+    let absolute_file_path =
+        file_utils::get_absolute_path(file.clone(), configuration);
+
+    match configuration.pack_set.for_file(&absolute_file_path)? {
+        Some(pack) => {
+            println!("{}", pack.yml.display());
+            Ok(())
+        }
+        None => {
+            bail!("No pack found for file: {}", file)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

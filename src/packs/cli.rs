@@ -193,6 +193,12 @@ enum Command {
         about = "List constant references and their definition files (for test selection)"
     )]
     ListReferences(ListReferencesArgs),
+
+    #[clap(about = "Print the path to the package.yml that owns a file")]
+    ForFile {
+        /// The file to find the owning package.yml for
+        file: String,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -391,5 +397,6 @@ pub fn run() -> anyhow::Result<()> {
             packs::lint_package_yml_files(&configuration)
         }
         Command::Create { name } => packs::create(&configuration, name),
+        Command::ForFile { file } => packs::for_file(&configuration, file),
     }
 }
