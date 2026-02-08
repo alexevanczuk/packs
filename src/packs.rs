@@ -167,13 +167,21 @@ See https://github.com/rubyatscale/packs#readme for more info!",
 pub fn check(
     configuration: &Configuration,
     files: Vec<String>,
+    json: bool,
 ) -> anyhow::Result<()> {
     let result = checker::check_all(configuration, files)
         .context("Failed to check files")?;
-    println!("{}", result);
-    if result.has_violations() {
-        let count = result.violation_count();
-        bail!("{} violation(s) found!", count)
+    if json {
+        println!("{}", result.to_json().context("Failed to serialize JSON")?);
+        if result.has_violations() {
+            std::process::exit(1);
+        }
+    } else {
+        println!("{}", result);
+        if result.has_violations() {
+            let count = result.violation_count();
+            bail!("{} violation(s) found!", count)
+        }
     }
     Ok(())
 }
@@ -349,10 +357,12 @@ pub struct Sigil {
     pub value: bool,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Eq, Clone)]
+#[derive(
+    Debug, PartialEq, Serialize, Deserialize, Default, Eq, Clone, Hash,
+)]
 pub struct SourceLocation {
-    line: usize,
-    column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 pub(crate) fn list_definitions(

@@ -57,6 +57,7 @@ pub mod tests {
                 referencing_pack_name: String::from("packs/foo"),
                 defining_pack_name: String::from("packs/bar"),
             },
+            source_location: SourceLocation { line: 3, column: 1 },
         }
     }
 
