@@ -174,8 +174,19 @@ fn extract_class_name_from_kwargs(kwargs: &nodes::Kwargs) -> Option<String> {
         if let Node::Pair(pair) = pair_node {
             if let Node::Sym(k) = *pair.key.to_owned() {
                 if k.name.to_string_lossy() == *"class_name" {
+                    // Handle string literal: class_name: "Foo::Bar"
                     if let Node::Str(v) = *pair.value.to_owned() {
                         return Some(v.value.to_string_lossy());
+                    }
+                    // Handle constant with .name: class_name: Foo::Bar.name
+                    if let Node::Send(send) = *pair.value.to_owned() {
+                        if send.method_name == "name" {
+                            if let Some(recv) = send.recv {
+                                if let Ok(const_name) = fetch_const_name(&recv) {
+                                    return Some(const_name);
+                                }
+                            }
+                        }
                     }
                 }
             }

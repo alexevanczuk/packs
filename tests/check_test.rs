@@ -230,13 +230,19 @@ fn test_check_with_stale_violations_when_file_no_longer_exists(
 
 #[test]
 fn test_check_with_relationship_violations() -> Result<(), Box<dyn Error>> {
+    // Tests that associations with explicit class_name (using .name) are correctly resolved
+    // The fixture has:
+    //   has_many :censuses       -> Census
+    //   has_many :tacos          -> Taco
+    //   belongs_to :my_widget, class_name: Census.name  -> Census (NOT MyWidget)
+    // Plus a direct reference to Census in the class_name argument itself
     Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_rails_relationships")
         .arg("check")
         .assert()
         .failure()
-        .stdout(predicate::str::contains("2 violation(s) detected:"))
+        .stdout(predicate::str::contains("4 violation(s) detected:"))
         .stdout(predicate::str::contains("Privacy violation: `::Taco` is private to `packs/baz`, but referenced from `packs/bar`"))
         .stdout(predicate::str::contains("Privacy violation: `::Census` is private to `packs/baz`, but referenced from `packs/bar`"));
 
