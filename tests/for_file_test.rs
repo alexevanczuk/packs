@@ -26,8 +26,7 @@ fn for_file_in_root() -> Result<(), Box<dyn Error>> {
         .arg("app/services/some_root_class.rb")
         .assert()
         .success()
-        .stdout(predicate::str::contains("package.yml"))
-        .stdout(predicate::str::contains("packs/").not());
+        .stdout(predicate::str::ends_with("simple_app/package.yml\n"));
     Ok(())
 }
 
