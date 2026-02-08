@@ -40,6 +40,7 @@ pub struct UpdateOptions {
     pub expand_to_pack: bool,
     pub constant_name: Option<String>,
     pub violation_type: Option<String>,
+    pub defining_pack_name: Option<String>,
 }
 
 impl UpdateOptions {
@@ -47,6 +48,7 @@ impl UpdateOptions {
         !self.files.is_empty()
             || self.constant_name.is_some()
             || self.violation_type.is_some()
+            || self.defining_pack_name.is_some()
     }
 }
 
@@ -525,6 +527,11 @@ fn filter_violations(
             }
             if let Some(ref vtype) = options.violation_type {
                 if v.identifier.violation_type != *vtype {
+                    return false;
+                }
+            }
+            if let Some(ref defining_pack) = options.defining_pack_name {
+                if v.identifier.defining_pack_name != *defining_pack {
                     return false;
                 }
             }

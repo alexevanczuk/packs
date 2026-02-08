@@ -118,6 +118,10 @@ enum Command {
         /// Only update violations of this type (e.g. "dependency", "privacy")
         #[arg(long)]
         violation_type: Option<String>,
+
+        /// Only update violations where the defining pack matches (e.g. "packs/bar")
+        #[arg(long)]
+        defining_pack: Option<String>,
     },
 
     #[clap(about = "Look for validation errors in the codebase")]
@@ -341,6 +345,7 @@ pub fn run() -> anyhow::Result<()> {
             pack,
             constant,
             violation_type,
+            defining_pack,
         } => packs::update(
             &configuration,
             &packs::checker::UpdateOptions {
@@ -348,6 +353,7 @@ pub fn run() -> anyhow::Result<()> {
                 expand_to_pack: pack,
                 constant_name: constant,
                 violation_type,
+                defining_pack_name: defining_pack,
             },
         ),
         Command::Validate => {

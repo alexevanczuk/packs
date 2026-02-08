@@ -453,3 +453,65 @@ fn test_update_with_pack_flag_requires_files() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+#[serial]
+fn test_update_with_defining_pack_filter() -> Result<(), Box<dyn Error>> {
+    let package_todo_yml_filepath =
+        Path::new("tests/fixtures/simple_app/packs/foo/package_todo.yml");
+    let _ = std::fs::remove_file(package_todo_yml_filepath);
+
+    // Use --defining-pack to only allow violations targeting packs/bar
+    Command::new(cargo_bin!("packs"))
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("update")
+        .arg("packs/foo/app/services/foo.rb")
+        .arg("--pack")
+        .arg("--defining-pack")
+        .arg("packs/bar")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("violation(s) added"));
+
+    let actual = std::fs::read_to_string(package_todo_yml_filepath)?;
+    assert!(
+        actual.contains("packs/bar"),
+        "should have violations for packs/bar"
+    );
+    assert!(actual.contains("::Bar"), "should have ::Bar constant");
+
+    std::fs::remove_file(package_todo_yml_filepath)?;
+    common::teardown();
+
+    Ok(())
+}
+
+#[test]
+#[serial]
+fn test_update_with_defining_pack_filter_no_match() -> Result<(), Box<dyn Error>>
+{
+    let package_todo_yml_filepath =
+        Path::new("tests/fixtures/simple_app/packs/foo/package_todo.yml");
+    let _ = std::fs::remove_file(package_todo_yml_filepath);
+
+    // Use --defining-pack with a pack that has no violations — nothing should be written
+    Command::new(cargo_bin!("packs"))
+        .arg("--project-root")
+        .arg("tests/fixtures/simple_app")
+        .arg("update")
+        .arg("packs/foo/app/services/foo.rb")
+        .arg("--defining-pack")
+        .arg("packs/nonexistent")
+        .assert()
+        .success();
+
+    assert!(
+        !package_todo_yml_filepath.exists(),
+        "no package_todo.yml should be created when no violations match"
+    );
+
+    common::teardown();
+
+    Ok(())
+}
