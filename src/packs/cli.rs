@@ -155,8 +155,8 @@ enum Command {
     #[clap(about = "Add everything a pack depends on (may cause cycles)")]
     AddDependencies { pack_name: String },
 
-    #[clap(about = "Lint package.yml files", aliases = ["lint"])]
-    LintPackageYmlFiles,
+    #[clap(about = "Lint package.yml and package_todo.yml files")]
+    Lint,
 
     #[clap(
         about = "Expose monkey patches of the Ruby stdlib, gems your app uses, and your application itself"
@@ -297,7 +297,7 @@ pub fn run() -> anyhow::Result<()> {
         Command::All => {
             let check_result = packs::check(&configuration, vec![], false);
             let validate_result = packs::validate(&configuration);
-            let lint_result = packs::lint_package_yml_files(&configuration);
+            let lint_result = packs::lint(&configuration);
 
             check_result.and(validate_result).and(lint_result)
         }
@@ -393,9 +393,7 @@ pub fn run() -> anyhow::Result<()> {
             &args.rubydir,
             &args.gemdir,
         ),
-        Command::LintPackageYmlFiles => {
-            packs::lint_package_yml_files(&configuration)
-        }
+        Command::Lint => packs::lint(&configuration),
         Command::Create { name } => packs::create(&configuration, name),
         Command::ForFile { file } => packs::for_file(&configuration, file),
     }
