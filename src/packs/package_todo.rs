@@ -342,7 +342,11 @@ pub fn lint_package_todo_yml_files(configuration: &Configuration) {
     let all_packs = &configuration.pack_set.packs;
     all_packs.par_iter().for_each(|p| {
         if !p.package_todo.violations_by_defining_pack.is_empty() {
-            write_package_todo_to_disk(p, &p.package_todo, configuration.packs_first_mode);
+            write_package_todo_to_disk(
+                p,
+                &p.package_todo,
+                configuration.packs_first_mode,
+            );
         }
     });
 }
