@@ -337,6 +337,20 @@ pub fn merge_violations_to_disk(
     }
 }
 
+/// Lint all package_todo.yml files by reading and rewriting them with proper sorting
+pub fn lint_package_todo_yml_files(configuration: &Configuration) {
+    let all_packs = &configuration.pack_set.packs;
+    all_packs.par_iter().for_each(|p| {
+        if !p.package_todo.violations_by_defining_pack.is_empty() {
+            write_package_todo_to_disk(
+                p,
+                &p.package_todo,
+                configuration.packs_first_mode,
+            );
+        }
+    });
+}
+
 fn serialize_package_todo(
     responsible_pack_name: &String,
     package_todo: &PackageTodo,

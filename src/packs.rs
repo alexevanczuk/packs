@@ -318,13 +318,21 @@ pub fn list(configuration: Configuration) {
     }
 }
 
-pub fn lint_package_yml_files(
-    configuration: &Configuration,
-) -> anyhow::Result<()> {
+pub fn lint(configuration: &Configuration) -> anyhow::Result<()> {
+    // Lint package.yml files
     for pack in &configuration.pack_set.packs {
         write_pack_to_disk(pack)?
     }
+    // Lint package_todo.yml files
+    package_todo::lint_package_todo_yml_files(configuration);
     Ok(())
+}
+
+#[deprecated(note = "Use lint() instead")]
+pub fn lint_package_yml_files(
+    configuration: &Configuration,
+) -> anyhow::Result<()> {
+    lint(configuration)
 }
 
 pub fn delete_cache(configuration: Configuration) {
