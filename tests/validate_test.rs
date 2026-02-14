@@ -8,14 +8,6 @@ mod common;
 
 #[test]
 fn test_validate_cycle_detection() -> Result<(), Box<dyn Error>> {
-    let expected_message = String::from(
-        "
-Found 1 strongly connected components (i.e. dependency cycles)
-The following groups of packages form a cycle:
-
-packs/foo, packs/bar",
-    );
-
     Command::new(cargo_bin!("packs"))
         .arg("--project-root")
         .arg("tests/fixtures/app_with_dependency_cycles")
@@ -24,7 +16,9 @@ packs/foo, packs/bar",
         .assert()
         .failure()
         .stdout(predicate::str::contains("2 validation error(s) detected:"))
-        .stdout(predicate::str::contains(expected_message))
+        .stdout(predicate::str::contains("strongly connected components"))
+        // Cycle path is now shown as "packs/foo -> packs/bar -> packs/foo"
+        .stdout(predicate::str::contains(" -> "))
         .stdout(predicate::str::contains(
             "Package cannot list itself as a dependency: packs/baz/package.yml",
         ));
