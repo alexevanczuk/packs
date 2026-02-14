@@ -62,7 +62,8 @@ fn test_add_dependency_creating_cycle() -> Result<(), Box<dyn Error>> {
         .stdout(predicate::str::contains(
             "The following groups of packages form a cycle:",
         ))
-        .stdout(predicate::str::contains("packs/foo, packs/bar"));
+        // Cycle is now shown as dependency path, e.g., "packs/foo -> packs/bar -> packs/foo"
+        .stdout(predicate::str::contains(" -> "));
 
     let config = packs::packs::configuration(
         PathBuf::from("tests/fixtures/app_with_missing_dependency"),

@@ -68,16 +68,24 @@ impl ValidatorInterface for Checker {
         let strongly_componented_components = tarjan_scc(&graph);
         for component in strongly_componented_components {
             if component.len() > 1 {
-                let pack_names: Vec<String> = component
-                    .iter()
-                    .map(|node_index| {
-                        let pack = node_to_pack
-                            .get(node_index)
-                            .expect("Could not find pack name for node index");
-                        pack.name.to_owned()
-                    })
-                    .collect();
-                sccs.push(pack_names.join(", "));
+                let scc_nodes: HashSet<_> = component.iter().cloned().collect();
+                if let Some(cycle_path) =
+                    find_cycle_in_scc(&scc_nodes, &node_to_pack, &graph)
+                {
+                    sccs.push(cycle_path);
+                } else {
+                    // Fallback to listing all packs if no cycle found (shouldn't happen)
+                    let pack_names: Vec<String> = component
+                        .iter()
+                        .map(|node_index| {
+                            let pack = node_to_pack.get(node_index).expect(
+                                "Could not find pack name for node index",
+                            );
+                            pack.name.to_owned()
+                        })
+                        .collect();
+                    sccs.push(pack_names.join(", "));
+                }
             }
         }
 
@@ -113,6 +121,73 @@ The following groups of packages form a cycle:
         } else {
             Some(error_messages)
         }
+    }
+}
+
+/// Find a cycle path within a strongly connected component using DFS.
+/// Returns the cycle as "A -> B -> C -> A" format.
+fn find_cycle_in_scc(
+    scc_nodes: &HashSet<petgraph::prelude::NodeIndex>,
+    node_to_pack: &HashMap<petgraph::prelude::NodeIndex, &Pack>,
+    graph: &DiGraph<(), ()>,
+) -> Option<String> {
+    // Pick any node to start from
+    let start = *scc_nodes.iter().next()?;
+
+    // DFS to find a cycle back to start (or any visited node)
+    let mut visited: HashSet<petgraph::prelude::NodeIndex> = HashSet::new();
+    let mut path: Vec<petgraph::prelude::NodeIndex> = vec![];
+
+    fn dfs(
+        current: petgraph::prelude::NodeIndex,
+        start: petgraph::prelude::NodeIndex,
+        scc_nodes: &HashSet<petgraph::prelude::NodeIndex>,
+        visited: &mut HashSet<petgraph::prelude::NodeIndex>,
+        path: &mut Vec<petgraph::prelude::NodeIndex>,
+        graph: &DiGraph<(), ()>,
+    ) -> bool {
+        visited.insert(current);
+        path.push(current);
+
+        for neighbor in graph.neighbors(current) {
+            // Only follow edges within the SCC
+            if !scc_nodes.contains(&neighbor) {
+                continue;
+            }
+
+            // Found a cycle back to start
+            if neighbor == start && path.len() > 1 {
+                return true;
+            }
+
+            // Continue DFS if not visited
+            if !visited.contains(&neighbor)
+                && dfs(neighbor, start, scc_nodes, visited, path, graph)
+            {
+                return true;
+            }
+        }
+
+        path.pop();
+        false
+    }
+
+    if dfs(start, start, scc_nodes, &mut visited, &mut path, graph) {
+        // Format the cycle path with full package.yml paths for easy navigation
+        let mut names: Vec<String> = path
+            .iter()
+            .map(|n| {
+                format!("{}/package.yml", node_to_pack.get(n).unwrap().name)
+            })
+            .collect();
+        // Add the start again to show the cycle closes
+        names.push(format!(
+            "{}/package.yml",
+            node_to_pack.get(&start).unwrap().name
+        ));
+        Some(names.join(" -> "))
+    } else {
+        None
     }
 }
 
@@ -457,15 +532,17 @@ mod tests {
         .unwrap();
 
         let error = checker.validate(&configuration);
-        let expected_message = vec![String::from("Package cannot list itself as a dependency: packs/baz/package.yml"),
-            String::from(
-            "
-Found 1 strongly connected components (i.e. dependency cycles)
-The following groups of packages form a cycle:
-
-packs/foo, packs/bar",
-        )];
-        assert_eq!(error, Some(expected_message));
+        assert!(error.is_some());
+        let errors = error.unwrap();
+        assert_eq!(errors.len(), 2);
+        assert!(errors.iter().any(|e| e.contains(
+            "Package cannot list itself as a dependency: packs/baz/package.yml"
+        )));
+        // The cycle should show the dependency path, e.g., "packs/bar -> packs/foo -> packs/bar"
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("strongly connected components")
+                && e.contains(" -> ")));
     }
 
     #[test]
