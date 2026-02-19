@@ -355,42 +355,7 @@ Style/FrozenStringLiteralComment:
     assert!(updated.contains("app/services/other.rb"));
 }
 
-// 13. Reference updating
-#[test]
-fn test_reference_updating() {
-    let tmp_dir = TempDir::new().unwrap();
-    let tmp = tmp_dir.path();
-    setup_project(tmp);
-    create_pack(tmp, "packs/organisms");
-    create_pack(tmp, "packs/animals");
-
-    create_file(
-        tmp,
-        "packs/organisms/app/services/horse.rb",
-        "class Horse; end",
-    );
-
-    // A file referencing the old pack name
-    create_file(
-        tmp,
-        "some_config.yml",
-        "dependencies:\n  - packs/organisms\n",
-    );
-
-    pks_move(
-        tmp,
-        "packs/animals",
-        &["packs/organisms/app/services/horse.rb"],
-    )
-    .success();
-
-    let config_content =
-        fs::read_to_string(tmp.join("some_config.yml")).unwrap();
-    assert!(config_content.contains("packs/animals"));
-    assert!(!config_content.contains("packs/organisms"));
-}
-
-// 14. Move into nested pack from root
+// 13. Move into nested pack from root
 #[test]
 fn test_move_into_nested_pack() {
     let tmp_dir = TempDir::new().unwrap();

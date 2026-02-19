@@ -727,36 +727,6 @@ fn move_to_pack(
         std::fs::write(&rubocop_todo_path, contents)?;
     }
 
-    // Step 6: Update references across the repo
-    // Collect unique origin_pack_name -> dest_pack_name pairs
-    let mut pack_renames: Vec<(String, String)> = Vec::new();
-    for source_file in &source_files {
-        let source_str = source_file.to_string_lossy().to_string();
-        let origin_pack = configuration.pack_set.packs.iter().find(|p| {
-            p.name != "."
-                && source_str
-                    .starts_with(&format!("{}/", p.relative_path.display()))
-        });
-
-        if let Some(origin) = origin_pack {
-            let rename = (
-                origin.name.clone(),
-                destination.trim_end_matches('/').to_string(),
-            );
-            if !pack_renames.contains(&rename) && rename.0 != rename.1 {
-                pack_renames.push(rename);
-            }
-        }
-    }
-
-    for (origin_name, dest_name) in &pack_renames {
-        update_references_in_project(
-            &configuration.absolute_root,
-            origin_name,
-            dest_name,
-        )?;
-    }
-
     Ok(())
 }
 
@@ -773,56 +743,6 @@ fn compute_spec_path(within_pack_path: &str) -> Option<String> {
     } else {
         None
     }
-}
-
-fn update_references_in_project(
-    absolute_root: &Path,
-    find: &str,
-    replace: &str,
-) -> anyhow::Result<()> {
-    use jwalk::WalkDir;
-
-    for entry in WalkDir::new(absolute_root)
-        .follow_links(true)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        if entry.file_type().is_dir() {
-            continue;
-        }
-
-        let path = entry.path();
-
-        // Skip binary files and common non-text directories
-        let relative = path
-            .strip_prefix(absolute_root)
-            .unwrap_or(&path)
-            .to_string_lossy()
-            .to_string();
-
-        if relative.starts_with("node_modules/")
-            || relative.starts_with("vendor/")
-            || relative.starts_with("tmp/")
-            || relative.starts_with(".git/")
-            || relative.starts_with("log/")
-        {
-            continue;
-        }
-
-        if let Ok(contents) = std::fs::read_to_string(&path) {
-            let count = contents.matches(find).count();
-            if count > 0 {
-                let new_contents = contents.replace(find, replace);
-                std::fs::write(&path, new_contents)?;
-                println!(
-                    "Replaced {} occurrence(s) of {} in {}",
-                    count, find, relative
-                );
-            }
-        }
-    }
-
-    Ok(())
 }
 
 fn for_file(configuration: &Configuration, file: String) -> anyhow::Result<()> {
