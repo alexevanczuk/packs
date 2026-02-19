@@ -55,6 +55,28 @@ fn test_error_when_destination_pack_does_not_exist() {
         .stderr(predicate::str::contains("pack not found"));
 }
 
+// 1b. Error when destination pack has automatic_pack_namespace
+#[test]
+fn test_error_when_destination_has_automatic_pack_namespace() {
+    let tmp_dir = TempDir::new().unwrap();
+    let tmp = tmp_dir.path();
+    setup_project(tmp);
+
+    let pack_dir = tmp.join("packs/namespaced");
+    fs::create_dir_all(&pack_dir).unwrap();
+    fs::write(
+        pack_dir.join("package.yml"),
+        "enforce_dependencies: true\nmetadata:\n  automatic_pack_namespace: true\n",
+    )
+    .unwrap();
+
+    create_file(tmp, "app/services/foo.rb", "class Foo; end");
+
+    pks_move(tmp, "packs/namespaced", &["app/services/foo.rb"])
+        .failure()
+        .stderr(predicate::str::contains("automatic_pack_namespace"));
+}
+
 // 2. Move file from root to pack
 #[test]
 fn test_move_file_from_root_to_pack() {

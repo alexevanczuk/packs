@@ -575,6 +575,28 @@ fn move_to_pack(
         .pack_set
         .for_pack(destination)
         .context(format!("Cannot move to '{}': pack not found", destination))?;
+
+    // Check if destination pack uses automatic_pack_namespace
+    if let Some(serde_yaml::Value::Mapping(map)) =
+        dest_pack.client_keys.get("metadata")
+    {
+        let has_auto_namespace = map
+            .get(serde_yaml::Value::String(
+                "automatic_pack_namespace".to_string(),
+            ))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        if has_auto_namespace {
+            bail!(
+                "Cannot move files into '{}': pack has automatic_pack_namespace enabled. \
+                 Files in this pack are automatically namespaced under the pack's module, \
+                 so moved files would need to be wrapped in that namespace to work correctly.",
+                destination
+            );
+        }
+    }
+
     let dest_relative_path = dest_pack.relative_path.clone();
 
     // Expand input paths: if a path is a directory, glob all files within it
