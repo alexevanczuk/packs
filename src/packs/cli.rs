@@ -199,6 +199,16 @@ enum Command {
         /// The file to find the owning package.yml for
         file: String,
     },
+
+    #[clap(about = "Move files to a pack")]
+    Move {
+        /// The destination pack (e.g. packs/animals)
+        destination: String,
+
+        /// One or more file or directory paths to move
+        #[arg(required = true)]
+        paths: Vec<String>,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -396,5 +406,8 @@ pub fn run() -> anyhow::Result<()> {
         Command::Lint => packs::lint(&configuration),
         Command::Create { name } => packs::create(&configuration, name),
         Command::ForFile { file } => packs::for_file(&configuration, file),
+        Command::Move { destination, paths } => {
+            packs::move_to_pack(&configuration, &destination, paths)
+        }
     }
 }
