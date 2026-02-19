@@ -566,6 +566,265 @@ fn list_dependencies(
     Ok(())
 }
 
+fn move_to_pack(
+    configuration: &Configuration,
+    destination: &str,
+    paths: Vec<String>,
+) -> anyhow::Result<()> {
+    let dest_pack = configuration
+        .pack_set
+        .for_pack(destination)
+        .context(format!("Cannot move to '{}': pack not found", destination))?;
+    let dest_relative_path = dest_pack.relative_path.clone();
+
+    // Expand input paths: if a path is a directory, glob all files within it
+    let mut source_files: Vec<PathBuf> = Vec::new();
+    for path_str in &paths {
+        let path_str = path_str.trim_end_matches('/');
+        let absolute_path = configuration.absolute_root.join(path_str);
+        if absolute_path.is_dir() {
+            let pattern = absolute_path.join("**/*.*");
+            let entries = glob::glob(pattern.to_str().unwrap())
+                .context("Failed to glob")?;
+            for entry in entries.flatten() {
+                let relative = entry
+                    .strip_prefix(&configuration.absolute_root)
+                    .unwrap()
+                    .to_path_buf();
+                let filename =
+                    relative.file_name().unwrap().to_string_lossy().to_string();
+                if filename != "package.yml" && filename != "package_todo.yml" {
+                    source_files.push(relative);
+                }
+            }
+        } else {
+            source_files.push(PathBuf::from(path_str));
+        }
+    }
+
+    // Compute file move operations
+    struct FileMoveOperation {
+        origin: PathBuf,
+        destination: PathBuf,
+    }
+
+    let mut operations: Vec<FileMoveOperation> = Vec::new();
+
+    for source_file in &source_files {
+        let source_str = source_file.to_string_lossy().to_string();
+
+        // Find the origin pack (longest prefix match).
+        // pack_set.packs is already sorted by name length descending.
+        let origin_pack = configuration.pack_set.packs.iter().find(|p| {
+            p.name != "."
+                && (source_str
+                    .starts_with(&format!("{}/", p.relative_path.display()))
+                    || source_str == p.relative_path.to_string_lossy())
+        });
+
+        let dest_path = if let Some(origin) = origin_pack {
+            let origin_prefix = format!("{}/", origin.relative_path.display());
+            if let Some(remainder) = source_str.strip_prefix(&origin_prefix) {
+                dest_relative_path.join(remainder)
+            } else {
+                dest_relative_path.join(&source_str)
+            }
+        } else {
+            dest_relative_path.join(&source_str)
+        };
+
+        // Compute origin pack name for reference updating later
+        operations.push(FileMoveOperation {
+            origin: source_file.clone(),
+            destination: dest_path.clone(),
+        });
+
+        // Auto-detect corresponding spec file
+        let within_pack = if let Some(origin) = origin_pack {
+            let origin_prefix = format!("{}/", origin.relative_path.display());
+            source_str
+                .strip_prefix(&origin_prefix)
+                .unwrap_or(&source_str)
+                .to_string()
+        } else {
+            source_str.clone()
+        };
+
+        let spec_origin_within_pack = compute_spec_path(&within_pack);
+
+        if let Some(spec_relative) = spec_origin_within_pack {
+            let spec_origin = if let Some(origin) = origin_pack {
+                origin.relative_path.join(&spec_relative)
+            } else {
+                PathBuf::from(&spec_relative)
+            };
+            let spec_dest = dest_relative_path.join(&spec_relative);
+
+            operations.push(FileMoveOperation {
+                origin: spec_origin,
+                destination: spec_dest,
+            });
+        }
+    }
+
+    // Step 4: Move files
+    println!("{}", "=".repeat(100));
+    println!("File Operations");
+
+    let mut moved_pairs: Vec<(String, String)> = Vec::new();
+
+    for op in &operations {
+        let origin_abs = configuration.absolute_root.join(&op.origin);
+        let dest_abs = configuration.absolute_root.join(&op.destination);
+        let origin_exists = origin_abs.exists();
+        let dest_exists = dest_abs.exists();
+
+        if origin_exists && dest_exists {
+            println!(
+                "[SKIP] Not moving {}, {} already exists",
+                op.origin.display(),
+                op.destination.display()
+            );
+        } else if origin_exists && !dest_exists {
+            if let Some(parent) = dest_abs.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::rename(&origin_abs, &dest_abs)?;
+            println!(
+                "Moving file {} to {}",
+                op.origin.display(),
+                op.destination.display()
+            );
+            moved_pairs.push((
+                op.origin.to_string_lossy().to_string(),
+                op.destination.to_string_lossy().to_string(),
+            ));
+        } else if !origin_exists && dest_exists {
+            println!(
+                "[SKIP] Not moving {}, does not exist, ({} already exists)",
+                op.origin.display(),
+                op.destination.display()
+            );
+        }
+        // If neither exists: silent (no output, same as Ruby)
+    }
+
+    // Step 5: Update .rubocop_todo.yml
+    let rubocop_todo_path =
+        configuration.absolute_root.join(".rubocop_todo.yml");
+    if rubocop_todo_path.exists() {
+        let mut contents = std::fs::read_to_string(&rubocop_todo_path)?;
+        for (origin, dest) in &moved_pairs {
+            let count = contents.matches(origin.as_str()).count();
+            if count > 0 {
+                contents = contents.replace(origin.as_str(), dest.as_str());
+                println!(
+                    "Replaced {} occurrence(s) of {} in .rubocop_todo.yml",
+                    count, origin
+                );
+            }
+        }
+        std::fs::write(&rubocop_todo_path, contents)?;
+    }
+
+    // Step 6: Update references across the repo
+    // Collect unique origin_pack_name -> dest_pack_name pairs
+    let mut pack_renames: Vec<(String, String)> = Vec::new();
+    for source_file in &source_files {
+        let source_str = source_file.to_string_lossy().to_string();
+        let origin_pack = configuration.pack_set.packs.iter().find(|p| {
+            p.name != "."
+                && source_str
+                    .starts_with(&format!("{}/", p.relative_path.display()))
+        });
+
+        if let Some(origin) = origin_pack {
+            let rename = (
+                origin.name.clone(),
+                destination.trim_end_matches('/').to_string(),
+            );
+            if !pack_renames.contains(&rename) && rename.0 != rename.1 {
+                pack_renames.push(rename);
+            }
+        }
+    }
+
+    for (origin_name, dest_name) in &pack_renames {
+        update_references_in_project(
+            &configuration.absolute_root,
+            origin_name,
+            dest_name,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn compute_spec_path(within_pack_path: &str) -> Option<String> {
+    if within_pack_path.starts_with("app/") {
+        // app/services/foo/bar.rb -> spec/services/foo/bar_spec.rb
+        let without_app = within_pack_path.strip_prefix("app/")?;
+        let without_ext = without_app.strip_suffix(".rb")?;
+        Some(format!("spec/{}_spec.rb", without_ext))
+    } else if within_pack_path.starts_with("lib/") {
+        // lib/foo.rb -> spec/lib/foo_spec.rb
+        let without_ext = within_pack_path.strip_suffix(".rb")?;
+        Some(format!("spec/{}_spec.rb", without_ext))
+    } else {
+        None
+    }
+}
+
+fn update_references_in_project(
+    absolute_root: &Path,
+    find: &str,
+    replace: &str,
+) -> anyhow::Result<()> {
+    use jwalk::WalkDir;
+
+    for entry in WalkDir::new(absolute_root)
+        .follow_links(true)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        if entry.file_type().is_dir() {
+            continue;
+        }
+
+        let path = entry.path();
+
+        // Skip binary files and common non-text directories
+        let relative = path
+            .strip_prefix(absolute_root)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .to_string();
+
+        if relative.starts_with("node_modules/")
+            || relative.starts_with("vendor/")
+            || relative.starts_with("tmp/")
+            || relative.starts_with(".git/")
+            || relative.starts_with("log/")
+        {
+            continue;
+        }
+
+        if let Ok(contents) = std::fs::read_to_string(&path) {
+            let count = contents.matches(find).count();
+            if count > 0 {
+                let new_contents = contents.replace(find, replace);
+                std::fs::write(&path, new_contents)?;
+                println!(
+                    "Replaced {} occurrence(s) of {} in {}",
+                    count, find, relative
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn for_file(configuration: &Configuration, file: String) -> anyhow::Result<()> {
     let absolute_file_path =
         file_utils::get_absolute_path(file.clone(), configuration);
