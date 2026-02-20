@@ -185,10 +185,9 @@ pub fn validate_structured(
     for component in strongly_connected_components {
         if component.len() > 1 {
             let scc_nodes: HashSet<_> = component.iter().cloned().collect();
-            if let Some(cycle_nodes) = find_cycle_in_scc_nodes(
-                &scc_nodes,
-                &dep_graph.graph,
-            ) {
+            if let Some(cycle_nodes) =
+                find_cycle_in_scc_nodes(&scc_nodes, &dep_graph.graph)
+            {
                 // Build cycle edges from the node path
                 let mut cycle_edges: Vec<CycleEdge> = vec![];
                 for i in 0..cycle_nodes.len() {
@@ -196,8 +195,7 @@ pub fn validate_structured(
                     let to_node = cycle_nodes[(i + 1) % cycle_nodes.len()];
                     let from_pack =
                         dep_graph.node_to_pack.get(&from_node).unwrap();
-                    let to_pack =
-                        dep_graph.node_to_pack.get(&to_node).unwrap();
+                    let to_pack = dep_graph.node_to_pack.get(&to_node).unwrap();
                     cycle_edges.push(CycleEdge {
                         from_pack: from_pack.name.clone(),
                         to_pack: to_pack.name.clone(),
@@ -767,18 +765,14 @@ mod tests {
             .filter(|e| e.error_type == "self_dependency")
             .collect();
         assert_eq!(self_dep_errors.len(), 1);
-        assert!(self_dep_errors[0]
-            .message
-            .contains("packs/baz/package.yml"));
+        assert!(self_dep_errors[0].message.contains("packs/baz/package.yml"));
         assert_eq!(
             self_dep_errors[0].file,
             Some("packs/baz/package.yml".to_string())
         );
 
-        let cycle_errors: Vec<_> = errors
-            .iter()
-            .filter(|e| e.error_type == "cycle")
-            .collect();
+        let cycle_errors: Vec<_> =
+            errors.iter().filter(|e| e.error_type == "cycle").collect();
         assert_eq!(cycle_errors.len(), 1);
         let edges = cycle_errors[0].cycle_edges.as_ref().unwrap();
         assert_eq!(edges.len(), 2);
@@ -806,10 +800,7 @@ mod tests {
             .filter(|e| e.error_type == "self_dependency")
             .collect();
         assert_eq!(self_dep.len(), 1);
-        assert_eq!(
-            self_dep[0].file,
-            Some("packs/baz/package.yml".to_string())
-        );
+        assert_eq!(self_dep[0].file, Some("packs/baz/package.yml".to_string()));
         assert!(self_dep[0].cycle_edges.is_none());
     }
 

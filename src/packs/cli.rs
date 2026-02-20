@@ -395,9 +395,7 @@ pub fn run() -> anyhow::Result<()> {
                 defining_pack_name: defining_pack,
             },
         ),
-        Command::Validate { json } => {
-            packs::validate(&configuration, json)
-        }
+        Command::Validate { json } => packs::validate(&configuration, json),
         Command::CheckUnnecessaryDependencies { auto_correct } => {
             packs::check_unnecessary_dependencies(&configuration, auto_correct)
         }

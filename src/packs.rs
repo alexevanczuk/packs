@@ -253,7 +253,10 @@ pub fn list_included_files(configuration: Configuration) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn validate(configuration: &Configuration, json: bool) -> anyhow::Result<()> {
+pub fn validate(
+    configuration: &Configuration,
+    json: bool,
+) -> anyhow::Result<()> {
     if json {
         checker::validate_all_json(configuration)
     } else {
@@ -285,7 +288,10 @@ pub fn remove_dependency(
     new_pack.dependencies.remove(&to);
     write_pack_to_disk(&new_pack)?;
 
-    println!("Successfully removed `{}` as a dependency from `{}`!", to, from);
+    println!(
+        "Successfully removed `{}` as a dependency from `{}`!",
+        to, from
+    );
     Ok(())
 }
 
