@@ -18,9 +18,9 @@ struct DependencyGraph<'a> {
     node_to_pack: HashMap<petgraph::prelude::NodeIndex, &'a Pack>,
 }
 
-fn build_dependency_graph<'a>(
-    configuration: &'a Configuration,
-) -> Result<(DependencyGraph<'a>, Vec<&'a Pack>), String> {
+fn build_dependency_graph(
+    configuration: &Configuration,
+) -> Result<(DependencyGraph<'_>, Vec<&Pack>), String> {
     let mut graph = DiGraph::<(), ()>::new();
     let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
         HashMap::new();

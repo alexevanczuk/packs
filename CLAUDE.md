@@ -13,8 +13,10 @@ Rust CLI tool for working with packs (modular code organization).
 
 Run these commands to ensure CI will pass:
 1. `cargo fmt` - Format code (CI checks formatting)
-2. `cargo clippy --all-targets --all-features` - Run linter (must pass with no warnings)
+2. `cargo clippy -- -D warnings` - Run linter (must pass with zero warnings; CI runs with `-D warnings` so any warning is a build failure)
 3. `cargo test` - Run all tests
+
+**All three must pass before every commit.** CI will reject pushes that fail any of these.
 
 ## Versioning
 
