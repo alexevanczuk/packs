@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::output_helper::print_reference_location;
 use super::pack_checker::PackChecker;
-use super::{CheckerInterface, ValidatorInterface};
+use super::{CheckerInterface, CycleEdge, ValidationError, ValidatorInterface};
 use crate::packs::checker::Reference;
 use crate::packs::pack::Pack;
 use crate::packs::{Configuration, Violation};
@@ -11,109 +11,132 @@ use petgraph::algo::tarjan_scc;
 use petgraph::prelude::DiGraph;
 use petgraph::Direction;
 
+/// Build graph infrastructure shared by both validate and validate_structured.
+struct DependencyGraph<'a> {
+    graph: DiGraph<(), ()>,
+    pack_to_node: HashMap<&'a Pack, petgraph::prelude::NodeIndex>,
+    node_to_pack: HashMap<petgraph::prelude::NodeIndex, &'a Pack>,
+}
+
+fn build_dependency_graph<'a>(
+    configuration: &'a Configuration,
+) -> Result<(DependencyGraph<'a>, Vec<&'a Pack>), String> {
+    let mut graph = DiGraph::<(), ()>::new();
+    let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
+        HashMap::new();
+    let mut node_to_pack: HashMap<petgraph::prelude::NodeIndex, &Pack> =
+        HashMap::new();
+    let mut self_deps: Vec<&Pack> = vec![];
+
+    for pack in &configuration.pack_set.packs {
+        let node = graph.add_node(());
+        pack_to_node.insert(pack, node);
+        node_to_pack.insert(node, pack);
+    }
+
+    match configuration.pack_set.all_pack_dependencies(configuration) {
+        Ok(pack_dependencies) => {
+            for pack_dependency in pack_dependencies {
+                if pack_dependency.from_pack == pack_dependency.to_pack {
+                    self_deps.push(pack_dependency.from_pack);
+                } else {
+                    let from_node = pack_to_node
+                        .get(&pack_dependency.from_pack)
+                        .expect("Could not find from_pack")
+                        .to_owned();
+                    let to_node = pack_to_node
+                        .get(&pack_dependency.to_pack)
+                        .expect("Could not find to_pack")
+                        .to_owned();
+                    graph.add_edge(from_node, to_node, ());
+                }
+            }
+        }
+        Err(msg) => {
+            return Err(msg.to_string());
+        }
+    }
+
+    Ok((
+        DependencyGraph {
+            graph,
+            pack_to_node,
+            node_to_pack,
+        },
+        self_deps,
+    ))
+}
+
 pub struct Checker {}
 impl ValidatorInterface for Checker {
     fn validate(&self, configuration: &Configuration) -> Option<Vec<String>> {
-        // configuration.pack_set
-        let mut graph = DiGraph::<(), ()>::new();
-        let mut pack_to_node: HashMap<&Pack, petgraph::prelude::NodeIndex> =
-            HashMap::new();
-        let mut node_to_pack: HashMap<petgraph::prelude::NodeIndex, &Pack> =
-            HashMap::new();
-        for pack in &configuration.pack_set.packs {
-            let node = graph.add_node(());
-            pack_to_node.insert(pack, node);
-            node_to_pack.insert(node, pack);
+        // Convert structured errors to strings for backward compatibility
+        let structured = validate_structured(configuration);
+        if structured.is_empty() {
+            return None;
         }
 
-        let mut add_edge = |from_pack: &Pack, to_pack: &Pack| {
-            let from_node = pack_to_node
-                .get(&from_pack)
-                .expect("Could not find from_pack")
-                .to_owned();
-            let to_node = pack_to_node
-                .get(&to_pack)
-                .expect("Could not find to_pack")
-                .to_owned();
-            graph.add_edge(from_node, to_node, ());
-        };
         let mut error_messages: Vec<String> = vec![];
 
-        match configuration.pack_set.all_pack_dependencies(configuration) {
-            Ok(pack_dependencies) => {
-                for pack_dependency in pack_dependencies {
-                    if pack_dependency.from_pack == pack_dependency.to_pack {
-                        error_messages.push(format!(
-                            "Package cannot list itself as a dependency: {}",
-                            pack_dependency
-                                .from_pack
-                                .relative_yml()
-                                .to_string_lossy()
-                        ));
-                    } else {
-                        add_edge(
-                            pack_dependency.from_pack,
-                            pack_dependency.to_pack,
-                        );
-                    }
-                }
-            }
-            Err(msg) => {
-                error_messages.push(msg.to_string());
-                return Some(error_messages);
-            }
+        // Collect configuration errors (e.g., unknown packs)
+        for err in structured
+            .iter()
+            .filter(|e| e.error_type == "configuration")
+        {
+            error_messages.push(err.message.clone());
+        }
+        // If we have configuration errors, return early (matches old behavior)
+        if !error_messages.is_empty() {
+            return Some(error_messages);
         }
 
-        let mut sccs = vec![];
-        let strongly_componented_components = tarjan_scc(&graph);
-        for component in strongly_componented_components {
-            if component.len() > 1 {
-                let scc_nodes: HashSet<_> = component.iter().cloned().collect();
-                if let Some(cycle_path) =
-                    find_cycle_in_scc(&scc_nodes, &node_to_pack, &graph)
-                {
-                    sccs.push(cycle_path);
-                } else {
-                    // Fallback to listing all packs if no cycle found (shouldn't happen)
-                    let pack_names: Vec<String> = component
+        // Collect self-dependency messages
+        for err in structured
+            .iter()
+            .filter(|e| e.error_type == "self_dependency")
+        {
+            error_messages.push(err.message.clone());
+        }
+
+        // Collect cycle messages
+        let cycle_errors: Vec<&ValidationError> = structured
+            .iter()
+            .filter(|e| e.error_type == "cycle")
+            .collect();
+        if !cycle_errors.is_empty() {
+            let mut sccs: Vec<String> = vec![];
+            for err in &cycle_errors {
+                if let Some(edges) = &err.cycle_edges {
+                    let path: Vec<String> = edges
                         .iter()
-                        .map(|node_index| {
-                            let pack = node_to_pack.get(node_index).expect(
-                                "Could not find pack name for node index",
-                            );
-                            pack.name.to_owned()
-                        })
+                        .map(|e| format!("{}/package.yml", e.from_pack))
                         .collect();
-                    sccs.push(pack_names.join(", "));
+                    let mut display = path;
+                    if let Some(first_edge) = edges.first() {
+                        display.push(format!(
+                            "{}/package.yml",
+                            first_edge.from_pack
+                        ));
+                    }
+                    sccs.push(display.join(" -> "));
                 }
+            }
+            if !sccs.is_empty() {
+                let sccs_display = sccs.join("\n\n");
+                error_messages.push(format!(
+                    "\nFound {} strongly connected components (i.e. dependency cycles)\nThe following groups of packages form a cycle:\n\n{}",
+                    sccs.len(),
+                    sccs_display
+                ));
             }
         }
 
-        if !sccs.is_empty() {
-            let sccs_display = sccs.join("\n\n");
-
-            let error_message = format!(
-                "
-Found {} strongly connected components (i.e. dependency cycles)
-The following groups of packages form a cycle:
-
-{}",
-                sccs.len(),
-                sccs_display
-            );
-            error_messages.push(error_message);
-        }
-
-        // Validate that strict packs only depend on other strict packs transitively
-        // Efficient approach: single reverse BFS from non-strict packs, then path-find only for violations
-        let strict_violations =
-            find_strict_violations(&pack_to_node, &node_to_pack, &graph);
-        for (strict_pack_name, path) in strict_violations {
-            let path_display = path.join(" -> ");
-            error_messages.push(format!(
-                "{} has `enforce_dependencies: strict` but has a non-strict transitive dependency: {}",
-                strict_pack_name, path_display
-            ));
+        // Collect strict_transitive messages
+        for err in structured
+            .iter()
+            .filter(|e| e.error_type == "strict_transitive")
+        {
+            error_messages.push(err.message.clone());
         }
 
         if error_messages.is_empty() {
@@ -124,17 +147,115 @@ The following groups of packages form a cycle:
     }
 }
 
+/// Returns structured validation errors for dependency-related checks.
+pub fn validate_structured(
+    configuration: &Configuration,
+) -> Vec<ValidationError> {
+    let mut errors: Vec<ValidationError> = vec![];
+
+    let (dep_graph, self_deps) = match build_dependency_graph(configuration) {
+        Ok(result) => result,
+        Err(msg) => {
+            errors.push(ValidationError {
+                error_type: "configuration".to_string(),
+                message: msg,
+                cycle_edges: None,
+                file: None,
+            });
+            return errors;
+        }
+    };
+
+    // Self-dependency errors
+    for pack in self_deps {
+        let file = pack.relative_yml().to_string_lossy().to_string();
+        errors.push(ValidationError {
+            error_type: "self_dependency".to_string(),
+            message: format!(
+                "Package cannot list itself as a dependency: {}",
+                file
+            ),
+            cycle_edges: None,
+            file: Some(file),
+        });
+    }
+
+    // Cycle detection
+    let strongly_connected_components = tarjan_scc(&dep_graph.graph);
+    for component in strongly_connected_components {
+        if component.len() > 1 {
+            let scc_nodes: HashSet<_> = component.iter().cloned().collect();
+            if let Some(cycle_nodes) = find_cycle_in_scc_nodes(
+                &scc_nodes,
+                &dep_graph.graph,
+            ) {
+                // Build cycle edges from the node path
+                let mut cycle_edges: Vec<CycleEdge> = vec![];
+                for i in 0..cycle_nodes.len() {
+                    let from_node = cycle_nodes[i];
+                    let to_node = cycle_nodes[(i + 1) % cycle_nodes.len()];
+                    let from_pack =
+                        dep_graph.node_to_pack.get(&from_node).unwrap();
+                    let to_pack =
+                        dep_graph.node_to_pack.get(&to_node).unwrap();
+                    cycle_edges.push(CycleEdge {
+                        from_pack: from_pack.name.clone(),
+                        to_pack: to_pack.name.clone(),
+                        file: from_pack
+                            .relative_yml()
+                            .to_string_lossy()
+                            .to_string(),
+                    });
+                }
+
+                let edge_display: Vec<String> = cycle_edges
+                    .iter()
+                    .map(|e| format!("{} -> {}", e.from_pack, e.to_pack))
+                    .collect();
+
+                errors.push(ValidationError {
+                    error_type: "cycle".to_string(),
+                    message: format!(
+                        "Dependency cycle detected: {}",
+                        edge_display.join(", ")
+                    ),
+                    cycle_edges: Some(cycle_edges),
+                    file: None,
+                });
+            }
+        }
+    }
+
+    // Strict transitive validation
+    let strict_violations = find_strict_violations(
+        &dep_graph.pack_to_node,
+        &dep_graph.node_to_pack,
+        &dep_graph.graph,
+    );
+    for (strict_pack_name, path) in strict_violations {
+        let path_display = path.join(" -> ");
+        errors.push(ValidationError {
+            error_type: "strict_transitive".to_string(),
+            message: format!(
+                "{} has `enforce_dependencies: strict` but has a non-strict transitive dependency: {}",
+                strict_pack_name, path_display
+            ),
+            cycle_edges: None,
+            file: None,
+        });
+    }
+
+    errors
+}
+
 /// Find a cycle path within a strongly connected component using DFS.
-/// Returns the cycle as "A -> B -> C -> A" format.
-fn find_cycle_in_scc(
+/// Returns the cycle as a Vec of NodeIndex values (without the closing node).
+fn find_cycle_in_scc_nodes(
     scc_nodes: &HashSet<petgraph::prelude::NodeIndex>,
-    node_to_pack: &HashMap<petgraph::prelude::NodeIndex, &Pack>,
     graph: &DiGraph<(), ()>,
-) -> Option<String> {
-    // Pick any node to start from
+) -> Option<Vec<petgraph::prelude::NodeIndex>> {
     let start = *scc_nodes.iter().next()?;
 
-    // DFS to find a cycle back to start (or any visited node)
     let mut visited: HashSet<petgraph::prelude::NodeIndex> = HashSet::new();
     let mut path: Vec<petgraph::prelude::NodeIndex> = vec![];
 
@@ -150,17 +271,14 @@ fn find_cycle_in_scc(
         path.push(current);
 
         for neighbor in graph.neighbors(current) {
-            // Only follow edges within the SCC
             if !scc_nodes.contains(&neighbor) {
                 continue;
             }
 
-            // Found a cycle back to start
             if neighbor == start && path.len() > 1 {
                 return true;
             }
 
-            // Continue DFS if not visited
             if !visited.contains(&neighbor)
                 && dfs(neighbor, start, scc_nodes, visited, path, graph)
             {
@@ -173,19 +291,7 @@ fn find_cycle_in_scc(
     }
 
     if dfs(start, start, scc_nodes, &mut visited, &mut path, graph) {
-        // Format the cycle path with full package.yml paths for easy navigation
-        let mut names: Vec<String> = path
-            .iter()
-            .map(|n| {
-                format!("{}/package.yml", node_to_pack.get(n).unwrap().name)
-            })
-            .collect();
-        // Add the start again to show the cycle closes
-        names.push(format!(
-            "{}/package.yml",
-            node_to_pack.get(&start).unwrap().name
-        ));
-        Some(names.join(" -> "))
+        Some(path)
     } else {
         None
     }
@@ -640,5 +746,85 @@ mod tests {
 
         let error = checker.validate(&configuration);
         assert_eq!(error, None);
+    }
+
+    #[test]
+    fn test_validate_structured_with_cycle() {
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_dependency_cycles")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let errors = validate_structured(&configuration);
+
+        // Should have self_dependency and cycle errors
+        let self_dep_errors: Vec<_> = errors
+            .iter()
+            .filter(|e| e.error_type == "self_dependency")
+            .collect();
+        assert_eq!(self_dep_errors.len(), 1);
+        assert!(self_dep_errors[0]
+            .message
+            .contains("packs/baz/package.yml"));
+        assert_eq!(
+            self_dep_errors[0].file,
+            Some("packs/baz/package.yml".to_string())
+        );
+
+        let cycle_errors: Vec<_> = errors
+            .iter()
+            .filter(|e| e.error_type == "cycle")
+            .collect();
+        assert_eq!(cycle_errors.len(), 1);
+        let edges = cycle_errors[0].cycle_edges.as_ref().unwrap();
+        assert_eq!(edges.len(), 2);
+        // The cycle is foo -> bar -> foo (or bar -> foo -> bar)
+        let pack_names: HashSet<String> =
+            edges.iter().map(|e| e.from_pack.clone()).collect();
+        assert!(pack_names.contains("packs/foo"));
+        assert!(pack_names.contains("packs/bar"));
+    }
+
+    #[test]
+    fn test_validate_structured_self_dependency() {
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/app_with_dependency_cycles")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let errors = validate_structured(&configuration);
+        let self_dep: Vec<_> = errors
+            .iter()
+            .filter(|e| e.error_type == "self_dependency")
+            .collect();
+        assert_eq!(self_dep.len(), 1);
+        assert_eq!(
+            self_dep[0].file,
+            Some("packs/baz/package.yml".to_string())
+        );
+        assert!(self_dep[0].cycle_edges.is_none());
+    }
+
+    #[test]
+    fn test_validate_structured_no_errors() {
+        let configuration = configuration::get(
+            PathBuf::from("tests/fixtures/simple_app")
+                .canonicalize()
+                .expect("Could not canonicalize path")
+                .as_path(),
+            &1,
+        )
+        .unwrap();
+
+        let errors = validate_structured(&configuration);
+        assert!(errors.is_empty());
     }
 }

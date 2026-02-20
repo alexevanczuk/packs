@@ -405,6 +405,81 @@ pub(crate) fn validate_all(
     }
 }
 
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct CycleEdge {
+    pub from_pack: String,
+    pub to_pack: String,
+    pub file: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct ValidationError {
+    pub error_type: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cycle_edges: Option<Vec<CycleEdge>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file: Option<String>,
+}
+
+#[derive(Serialize)]
+struct ValidateJsonOutput {
+    status: String,
+    validation_errors: Vec<ValidationError>,
+}
+
+pub(crate) fn validate_structured(
+    configuration: &Configuration,
+) -> Vec<ValidationError> {
+    let mut errors = dependency::validate_structured(configuration);
+
+    // Layer validation (string-based, converted to ValidationError)
+    let layer_checker = layer::Checker {
+        layers: configuration.layers.clone(),
+    };
+    if let Some(layer_errors) = layer_checker.validate(configuration) {
+        for msg in layer_errors {
+            errors.push(ValidationError {
+                error_type: "layer".to_string(),
+                message: msg,
+                cycle_edges: None,
+                file: None,
+            });
+        }
+    }
+
+    errors.dedup();
+    errors
+}
+
+pub(crate) fn validate_all_json(
+    configuration: &Configuration,
+) -> anyhow::Result<()> {
+    let validation_errors = validate_structured(configuration);
+    let has_errors = !validation_errors.is_empty();
+
+    let output = ValidateJsonOutput {
+        status: if has_errors {
+            "failure".to_string()
+        } else {
+            "success".to_string()
+        },
+        validation_errors,
+    };
+
+    println!(
+        "{}",
+        serde_json::to_string(&output)
+            .context("Failed to serialize validation JSON")?
+    );
+
+    if has_errors {
+        std::process::exit(1);
+    }
+
+    Ok(())
+}
+
 pub(crate) fn update(
     configuration: &Configuration,
     options: &UpdateOptions,
