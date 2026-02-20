@@ -234,7 +234,7 @@ pub fn add_dependency(
         &configuration.absolute_root,
         &configuration.input_files_count,
     )?;
-    let validation_result = packs::validate(&new_configuration);
+    let validation_result = packs::validate(&new_configuration, false);
     if validation_result.is_err() {
         println!("Added `{}` as a dependency to `{}`!", to, from);
         println!("Warning: This creates a cycle!");
@@ -253,8 +253,40 @@ pub fn list_included_files(configuration: Configuration) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn validate(configuration: &Configuration) -> anyhow::Result<()> {
-    checker::validate_all(configuration)
+pub fn validate(configuration: &Configuration, json: bool) -> anyhow::Result<()> {
+    if json {
+        checker::validate_all_json(configuration)
+    } else {
+        checker::validate_all(configuration)
+    }
+}
+
+pub fn remove_dependency(
+    configuration: &Configuration,
+    from: String,
+    to: String,
+) -> anyhow::Result<()> {
+    let pack_set = &configuration.pack_set;
+
+    let from_pack = pack_set
+        .for_pack(&from)
+        .context(format!("`{}` not found", from))?;
+
+    let _to_pack = pack_set
+        .for_pack(&to)
+        .context(format!("`{}` not found", to))?;
+
+    if !from_pack.dependencies.contains(&to) {
+        println!("`{}` does not depend on `{}`!", from_pack.name, to);
+        return Ok(());
+    }
+
+    let mut new_pack = from_pack.clone();
+    new_pack.dependencies.remove(&to);
+    write_pack_to_disk(&new_pack)?;
+
+    println!("Successfully removed `{}` as a dependency from `{}`!", to, from);
+    Ok(())
 }
 
 pub fn configuration(

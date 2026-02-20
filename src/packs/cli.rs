@@ -125,7 +125,11 @@ enum Command {
     },
 
     #[clap(about = "Look for validation errors in the codebase")]
-    Validate,
+    Validate {
+        /// Output results as JSON
+        #[arg(long)]
+        json: bool,
+    },
 
     #[clap(about = "Add a dependency from one pack to another")]
     AddDependency {
@@ -198,6 +202,15 @@ enum Command {
     ForFile {
         /// The file to find the owning package.yml for
         file: String,
+    },
+
+    #[clap(about = "Remove a dependency from one pack to another")]
+    RemoveDependency {
+        /// The pack that currently depends on another pack
+        from: String,
+
+        /// The pack that is currently depended on
+        to: String,
     },
 }
 
@@ -296,7 +309,7 @@ pub fn run() -> anyhow::Result<()> {
     match args.command {
         Command::All => {
             let check_result = packs::check(&configuration, vec![], false);
-            let validate_result = packs::validate(&configuration);
+            let validate_result = packs::validate(&configuration, false);
             let lint_result = packs::lint(&configuration);
 
             check_result.and(validate_result).and(lint_result)
@@ -362,9 +375,8 @@ pub fn run() -> anyhow::Result<()> {
                 defining_pack_name: defining_pack,
             },
         ),
-        Command::Validate => {
-            packs::validate(&configuration)
-            // Err("💡 Please use `packs check` to detect dependency cycles and run other configuration validations".into())
+        Command::Validate { json } => {
+            packs::validate(&configuration, json)
         }
         Command::CheckUnnecessaryDependencies { auto_correct } => {
             packs::check_unnecessary_dependencies(&configuration, auto_correct)
@@ -396,5 +408,8 @@ pub fn run() -> anyhow::Result<()> {
         Command::Lint => packs::lint(&configuration),
         Command::Create { name } => packs::create(&configuration, name),
         Command::ForFile { file } => packs::for_file(&configuration, file),
+        Command::RemoveDependency { from, to } => {
+            packs::remove_dependency(&configuration, from, to)
+        }
     }
 }
