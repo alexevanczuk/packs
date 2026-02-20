@@ -212,6 +212,19 @@ enum Command {
         /// The pack that is currently depended on
         to: String,
     },
+
+    #[clap(about = "Move files to a pack")]
+    Move {
+        /// The destination pack (e.g. packs/animals)
+        destination: String,
+
+        /// One or more file or directory paths to move
+        #[arg(required = true)]
+        paths: Vec<String>,
+    },
+
+    #[clap(about = "Upgrade pks to the latest version via cargo install")]
+    Upgrade,
 }
 
 #[derive(Debug, Args)]
@@ -267,6 +280,13 @@ pub fn run() -> anyhow::Result<()> {
     // command matching is not dependent on configuration files being available.
     if let Command::Init { use_packwerk } = args.command {
         packs::init(&absolute_root, use_packwerk)?
+    }
+
+    if let Command::Upgrade = args.command {
+        let status = std::process::Command::new("cargo")
+            .args(["install", "pks"])
+            .status()?;
+        std::process::exit(status.code().unwrap_or(1));
     }
 
     // Input filesize TBD
@@ -411,5 +431,9 @@ pub fn run() -> anyhow::Result<()> {
         Command::RemoveDependency { from, to } => {
             packs::remove_dependency(&configuration, from, to)
         }
+        Command::Move { destination, paths } => {
+            packs::move_to_pack(&configuration, &destination, paths)
+        }
+        Command::Upgrade => unreachable!("handled before config loading"),
     }
 }
