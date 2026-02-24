@@ -283,6 +283,31 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     if let Command::Upgrade = args.command {
+        let cargo_bin = std::env::var("CARGO_HOME")
+            .map(PathBuf::from)
+            .or_else(|_| {
+                std::env::var("HOME").map(|h| PathBuf::from(h).join(".cargo"))
+            })
+            .expect("Could not determine CARGO_HOME or HOME directory")
+            .join("bin");
+
+        let current_exe = std::env::current_exe()
+            .expect("Could not determine current executable path");
+
+        let canonical_exe =
+            current_exe.canonicalize().unwrap_or(current_exe.clone());
+        let canonical_cargo_bin =
+            cargo_bin.canonicalize().unwrap_or(cargo_bin.clone());
+
+        if !canonical_exe.starts_with(&canonical_cargo_bin) {
+            eprintln!(
+                "Error: `pks upgrade` only works when pks was installed via `cargo install`."
+            );
+            eprintln!("Current executable: {}", current_exe.display());
+            eprintln!("Expected location:  {}/", cargo_bin.display());
+            std::process::exit(1);
+        }
+
         let status = std::process::Command::new("cargo")
             .args(["install", "pks"])
             .status()?;
